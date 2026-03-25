@@ -2,9 +2,17 @@
 
 ## 修订记录
 
-| 版本 | 日期 | 变更摘要 | 变更人 |
-|------|------|----------|--------|
-| 1.0 | 2026-03-25 | 初版创建 | 成伟 |
+| 版本 | 日期       | 变更摘要 | 变更人 |
+| ---- | ---------- | -------- | ------ |
+| 1.0  | 2026-03-25 | 初版创建 | 成伟   |
+| 1.1  | 2026-03-25 | 新增获取指定用户分组接口 | 付光伟   |
+
+为便于人与 AI 追溯变更历史，所有修订记录必须使用统一格式的四列表格，包含以下字段：**版本**、**日期**、**变更摘要**、**变更人**。
+
+**核心规则：**
+- 每次内容变更**必须在表格末尾追加新行**，不得修改、覆盖或删除任何历史行。
+- 行级差异以 Git 记录为准，无需在表格中体现具体代码差异。
+
 
 ## 一、概述
 
@@ -36,6 +44,7 @@
 **通用辅助接口：**
 - **按姓名搜索全部员工(带外部联系人)** — 模糊查询员工姓名以获取 `empId`。
 - **上传本地文件** — 上传二进制文件并获取 `fileId` 用于发送附件。
+- **获取指定用户的所有分组及成员** — 获取指定用户的分组及成员，支持按成员过滤。
 
 ---
 
@@ -89,11 +98,14 @@ https://{域名}/open-api/{接口地址}
 
 1. 若你只有“姓名”而非 `empId`（员工 ID），先调用 **4.01 按姓名搜索全部员工(带外部联系人)**（`GET /cwork-user/searchEmpByName`）获取员工列表。
 2. 若发汇报需要关联附件，先调用 **4.02 上传本地文件**（`POST /cwork-file/uploadWholeFile`）上传二进制文件，获取返回的 `fileId`。该 `fileId` 即为后续发送汇报参数中 `fileVOList` 里的 `fileId`。
-   - **关于 `type` 的说明**：
-     - **`type="file"`** (常用)：代表真实的本地文件。必须先上传文件获取 `fileId`。
-     - **`type="url"`**：代表外部超链接。无需上传文件，直接在 `url` 字段传入链接，`fileId` 可为空。
+    - **关于 `type` 的说明**：
+        - **`type="file"`** (常用)：代表真实的本地文件。必须先上传文件获取 `fileId`。
+        - **`type="url"`**：代表外部超链接。无需上传文件，直接在 `url` 字段传入链接，`fileId` 可为空。
 3. 调用 **4.1 发送汇报**（`POST /work-report/report/record/submit`），传入 `main`、`contentHtml`、`reportLevelList` 以及 **`fileVOList`**。**接收人由 `reportLevelList` 决定**。
-   示例：通过 `reportLevelList` 指定接收人，并通过 `fileVOList` 携带附件（type=file）与外部链接（type=url）：
+    - **支持按分组选取人员**：除 `levelUserList`（单人列表）外，还可使用 `groupIdList` 直接指定分组 ID。若使用分组，该分组下的所有成员都将收到汇报。
+    - **获取分组 ID**：先调用 **4.03 获取指定用户的所有分组及成员**（`POST /cwork-user/group/queryTargetUserGroups`）获取符合条件的 `groupId`。
+
+   示例一：按单个人员（`levelUserList`）指定接收人：
 
 ```json
 {
@@ -110,15 +122,51 @@ https://{域名}/open-api/{接口地址}
       ],
       "nodeName": "建议人",
       "type": "suggest"
-    },
+    }
+  ]
+}
+```
+
+示例二：按分组（`groupIdList`）指定接收人：
+
+```json
+{
+  "main": "标题",
+  "contentHtml": "markdown正文内容",
+  "contentType": "markdown",
+  "reportLevelList": [
     {
-      "level": 2,
+      "level": 1,
+      "groupIdList": [2036325013120483329],
+      "nodeName": "接收人",
+      "type": "read"
+    }
+  ]
+}
+```
+
+示例三：综合示例（多层级、分组、附件与外部链接）：
+
+```json
+{
+  "main": "项目周报",
+  "contentHtml": "markdown正文内容",
+  "contentType": "markdown",
+  "reportLevelList": [
+    {
+      "level": 1,
       "levelUserList": [
         {
           "empId": 1512393035869810690
         }
       ],
-      "nodeName": "决策人",
+      "nodeName": "建议人",
+      "type": "suggest"
+    },
+    {
+      "level": 2,
+      "groupIdList": [123456789],
+      "nodeName": "决策人组",
       "type": "decide"
     }
   ],
@@ -230,6 +278,41 @@ curl -X POST 'https://{域名}/open-api/cwork-file/uploadWholeFile' \
   "resultMsg": "成功",
   "data": 2036325013120483329
 }
+```
+
+---
+
+### 4.03 获取指定用户的所有分组及成员
+
+获取指定用户（及其实权覆盖的）所有分组以及分组成员简要信息。支持通过 `checkEmpId` 过滤仅包含该特定成员的分组列表。
+
+**基本信息**
+
+| 项目         | 说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/cwork-user/group/queryTargetUserGroups` |
+| 请求方式     | `POST`                              |
+| Content-Type | `application/json`                  |
+
+**请求参数**
+
+| 参数名        | 类型 | 必填 | 说明                                                                                              |
+| ------------- | ---- | ---- | ------------------------------------------------------------------------------------------------- |
+| `checkEmpId`  | Long | 否   | 校验是否在分组中的用户 ID。如果传入，则只返回包含该成员的分组列表（常用于查询 B 是否在 A 的分组中）。 |
+
+**响应参数**
+
+`data` 类型为 `List<TargetUserGroupVO>`（结构见 **5.25**）。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/cwork-user/group/queryTargetUserGroups' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "checkEmpId": 1512393035869810001
+  }'
 ```
 
 ---
@@ -456,7 +539,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/reply' \
         "replyCount": 0,
         "fileCount": 0,
         "userStatus": null,
-        " 成伟 ": null
+        "reportEventVO": null
       }
     ],
     "pageNum": 1,
@@ -1014,7 +1097,7 @@ curl -N -X POST 'https://{域名}/open-api/work-report/open-platform/report/aiSs
 > **分配人员 ID (empId) 说明**：
 > 若在配置各项参与人（汇报人、责任人等）时只有对方“姓名”而没有 `empId`（员工 ID），需遵循以下处理流程：
 > 1. 先调用 **4.01 按姓名搜索全部员工(带外部联系人)**（`GET /cwork-user/searchEmpByName`）获取员工列表。
->    - 查询不到：请提示用户“未找到该姓名对应的员工，请确认姓名或直接提供员工 ID”。
+     >    - 查询不到：请提示用户“未找到该姓名对应的员工，请确认姓名或直接提供员工 ID”。
 >    - 同名返回多条：请提示用户“存在同名员工，请指定唯一员工（例如结合部门、职级等信息协助挑选）后再传”。
 > 2. 获取到唯一的员工 ID（该 4.01 接口返回列表数据对象中的 `id` 字段）后，再将其填入本接口的 `reportEmpIdList`、`ownerEmpIdList` 等各项干系人数组参数中。
 
@@ -1166,7 +1249,8 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `level`         | Integer                     | 层级：1-20                                           |
 | `nodeCode`      | String                      | 节点编码（表单权限节点编码，startNode 表示发起节点） |
 | `nodeName`      | String                      | 节点名称                                             |
-| `levelUserList` | List\<ReportLevelUserParam> | 当前层级用户列表                                     |
+| `levelUserList` | List\<ReportLevelUserParam> | 当前层级用户列表（见下表）                           |
+| `groupIdList`   | List\<Long>                 | 分组 ID 列表（通过 **4.03** 接口获取）               |
 
 `ReportLevelUserParam`：
 
@@ -1213,7 +1297,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `replyCount`       | Integer       | 回复总数                                                                |
 | `fileCount`        | Long          | 上传附件数                                                              |
 | `userStatus`       | String        | 状态                                                                    |
-| ` 成伟 `    |  成伟  | 汇报事件对象（见 **5.21**）                                             |
+| `reportEventVO`    | ReportEventVO | 汇报事件对象（见 **5.21**）                                             |
 
 ### 5.5 TodoTaskDetailVO
 
@@ -1436,7 +1520,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `createTime`       | Timestamp          | 汇报时间                |
 | `detail`           | ReportTodoDetailVO | 详情对象（见 **5.10**） |
 
-### 5.20  成伟 
+### 5.20 ReportEventVO
 
 | 字段名 | 类型      | 说明     |
 | ------ | --------- | -------- |
@@ -1481,6 +1565,22 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `fsize`  | Long   | 文件大小                                       |
 | `url`    | String | 文件链接（超链类型的 url，或附件的直接下载链接） |
 
+### 5.25 TargetUserGroupVO
+
+| 字段名      | 类型             | 说明                       |
+| ----------- | ---------------- | -------------------------- |
+| `groupId`   | Long             | 分组 ID                    |
+| `groupName` | String           | 分组名称                   |
+| `ownType`   | Integer          | 归属类型, 1: 个人; 2: 公司 |
+| `members`   | List\<MemberVO> | 成员列表（见 **5.26**）    |
+
+### 5.26 MemberVO
+
+| 字段名 | 类型   | 说明    |
+| ------ | ------ | ------- |
+| `id`   | Long   | 人员 ID |
+| `name` | String | 姓名    |
+
 ---
 
 ## 六、错误码说明
@@ -1503,7 +1603,3 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 3. **SSE 接口**：`/work-report/open-platform/report/aiSseQaV2` 为 `text/event-stream`，客户端需使用支持 SSE 的方式持续读取流。
 4. **汇报内容字段**：提交汇报时建议只传 `contentHtml`，服务端会生成纯文本 `content`；回复同理。
 
----
-
-**文档版本**：v1.0  
-**更新日期**：2026-03-23
