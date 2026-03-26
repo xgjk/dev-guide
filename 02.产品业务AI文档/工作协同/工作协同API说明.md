@@ -6,6 +6,7 @@
 | ---- | ---------- | -------- | ------ |
 | 1.0  | 2026-03-25 | 初版创建 | 成伟   |
 | 1.1  | 2026-03-25 | 新增获取指定用户分组接口 | 付光伟   |
+| 1.2  | 2026-03-26 | 新增个人分组创建与成员管理接口、重构文档结构及序号 | 付光伟 |
 
 为便于人与 AI 追溯变更历史，所有修订记录必须使用统一格式的四列表格，包含以下字段：**版本**、**日期**、**变更摘要**、**变更人**。
 
@@ -16,7 +17,14 @@
 
 ## 一、概述
 
-本文档描述了 **工作协同服务** 对外开放的全部 API 接口。通过这些接口，可以实现以下业务能力：
+**基础服务接口：**
+1. **按姓名搜索全部员工(带外部联系人)** — 模糊查询员工姓名以获取 `empId`。
+2. **上传本地文件** — 上传二进制文件并获取 `fileId` 用于发送附件。
+3. **获取指定用户的所有分组及成员** — 获取指定用户的分组及成员，支持按成员过滤。
+4. **快捷创建或更新个人分组** — 支持快速新建或对已有分组更名。
+5. **增量管理个人分组成员** — 对个人分组进行加人/减人的批量操作。
+
+**工作协同服务接口：**
 
 1. **发送汇报** — 创建并提交一条汇报记录（可关联任务/事项，可指定接收人/抄送人/多级节点）。
 2. **汇报回复** — 对指定汇报进行回复（可带附件）。
@@ -41,10 +49,7 @@
 21. **获取我的新消息列表** — 列表获取当前用户的新读消息列表。
 22. **阅读汇报（清除未读/新消息）** — 标记汇报为已读并清除相关新消息通知。
 
-**通用辅助接口：**
-- **按姓名搜索全部员工(带外部联系人)** — 模糊查询员工姓名以获取 `empId`。
-- **上传本地文件** — 上传二进制文件并获取 `fileId` 用于发送附件。
-- **获取指定用户的所有分组及成员** — 获取指定用户的分组及成员，支持按成员过滤。
+
 
 ---
 
@@ -96,14 +101,14 @@ https://{域名}/open-api/{接口地址}
 
 > 需求：向多名员工同步工作进展，并允许他们在汇报上回复讨论。
 
-1. 若你只有“姓名”而非 `empId`（员工 ID），先调用 **4.01 按姓名搜索全部员工(带外部联系人)**（`GET /cwork-user/searchEmpByName`）获取员工列表。
-2. 若发汇报需要关联附件，先调用 **4.02 上传本地文件**（`POST /cwork-file/uploadWholeFile`）上传二进制文件，获取返回的 `fileId`。该 `fileId` 即为后续发送汇报参数中 `fileVOList` 里的 `fileId`。
+1. 若你只有“姓名”而非 `empId`（员工 ID），先调用 **4.1 按姓名搜索全部员工(带外部联系人)**（`GET /cwork-user/searchEmpByName`）获取员工列表。
+2. 若发汇报需要关联附件，先调用 **4.2 上传本地文件**（`POST /cwork-file/uploadWholeFile`）上传二进制文件，获取返回的 `fileId`。该 `fileId` 即为后续发送汇报参数中 `fileVOList` 里的 `fileId`。
     - **关于 `type` 的说明**：
         - **`type="file"`** (常用)：代表真实的本地文件。必须先上传文件获取 `fileId`。
         - **`type="url"`**：代表外部超链接。无需上传文件，直接在 `url` 字段传入链接，`fileId` 可为空。
-3. 调用 **4.1 发送汇报**（`POST /work-report/report/record/submit`），传入 `main`、`contentHtml`、`reportLevelList` 以及 **`fileVOList`**。**接收人由 `reportLevelList` 决定**。
+3. 调用 **5.1 发送汇报**（`POST /work-report/report/record/submit`），传入 `main`、`contentHtml`、`reportLevelList` 以及 **`fileVOList`**。**接收人由 `reportLevelList` 决定**。
     - **支持按分组选取人员**：除 `levelUserList`（单人列表）外，还可使用 `groupIdList` 直接指定分组 ID。若使用分组，该分组下的所有成员都将收到汇报。
-    - **获取分组 ID**：先调用 **4.03 获取指定用户的所有分组及成员**（`POST /cwork-user/group/queryTargetUserGroups`）获取符合条件的 `groupId`。
+    - **获取分组 ID**：先调用 **4.3 获取指定用户的所有分组及成员**（`POST /cwork-user/group/queryTargetUserGroups`）获取符合条件的 `groupId`。
 
    示例一：按单个人员（`levelUserList`）指定接收人：
 
@@ -185,23 +190,23 @@ https://{域名}/open-api/{接口地址}
 }
 ```
 
-3. 接收人通过系统内查看收件箱：调用 **4.3 收件箱分页查询**（`POST /work-report/report/record/inbox`），按时间/类型等筛选获取列表。
-4. 需要查看具体正文与回复列表时，调用 **4.5 获取汇报内容**（`GET /work-report/report/info`），传入 `reportId`。
-5. 对汇报进行讨论回复时，调用 **4.2 汇报回复**（`POST /work-report/report/record/reply`），传入 `reportRecordId` 与 `contentHtml`（可带附件）。
+3. 接收人通过系统内查看收件箱：调用 **5.3 收件箱分页查询**（`POST /work-report/report/record/inbox`），按时间/类型等筛选获取列表。
+4. 需要查看具体正文与回复列表时，调用 **5.5 获取汇报内容**（`GET /work-report/report/info`），传入 `reportId`。
+5. 对汇报进行讨论回复时，调用 **5.2 汇报回复**（`POST /work-report/report/record/reply`），传入 `reportRecordId` 与 `contentHtml`（可带附件）。
 
 ### 场景二：处理决策/建议/反馈待办
 
 > 需求：获取当前用户需要处理的待办，并完成待办（建议/决策）。
 
-1. 调用 **4.15 分页获取决策/建议/反馈待办列表**（`POST /work-report/reportInfoOpenQuery/todoList`）获取待办列表项（含 `todoId`、`todoType` 等）。
-2. 查看待办详情对象（AI 摘要/进展/是否需要当前处理人操作）在列表项的 `detail` 字段中（见 **5.10 ReportTodoDetailVO**）。
-3. 完成待办时，调用 **4.18 完成待办（建议/决策）**（`POST /work-report/open-platform/todo/completeTodo`），传入 `todoId` 与 `content`；当 `todoType` 为决策类时需额外传 `operate=agree/disagree`。
+1. 调用 **5.15 分页获取决策/建议/反馈待办列表**（`POST /work-report/reportInfoOpenQuery/todoList`）获取待办列表项（含 `todoId`、`todoType` 等）。
+2. 查看待办详情对象（AI 摘要/进展/是否需要当前处理人操作）在列表项的 `detail` 字段中（见 **6.10 ReportTodoDetailVO**）。
+3. 完成待办时，调用 **5.18 完成待办（建议/决策）**（`POST /work-report/open-platform/todo/completeTodo`），传入 `todoId` 与 `content`；当 `todoType` 为决策类时需额外传 `operate=agree/disagree`。
 
 ---
 
-## 四、接口详细说明
+## 四、基础服务接口
 
-### 4.01 按姓名搜索全部员工(带外部联系人)
+### 4.1 按姓名搜索全部员工(带外部联系人)
 
 按姓名模糊搜索全部员工，包含内部员工与外部联系人；用于将“姓名”转换为工作协同接口所需的 `empId`。
 
@@ -237,7 +242,7 @@ curl -X GET 'https://{域名}/open-api/cwork-user/searchEmpByName?searchKey=%E5%
 - 返回的 `inside.empList[].id` 可直接作为工作协同接口中 `reportLevelList[].levelUserList[].empId` 的取值。
 
 
-### 4.02 上传本地文件
+### 4.2 上传本地文件
 
 上传本地文件到协同平台文件服务器，返回文件资源 ID（`fileId`）。该 ID 在发送汇报接口 `fileVOList` 中作为 `fileId` 传入（此时 `type` 需设为 `file`）。
 
@@ -282,7 +287,7 @@ curl -X POST 'https://{域名}/open-api/cwork-file/uploadWholeFile' \
 
 ---
 
-### 4.03 获取指定用户的所有分组及成员
+### 4.3 获取指定用户的所有分组及成员
 
 获取指定用户（及其实权覆盖的）所有分组以及分组成员简要信息。支持通过 `checkEmpId` 过滤仅包含该特定成员的分组列表。
 
@@ -315,9 +320,135 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/queryTargetUserGroups' 
   }'
 ```
 
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": [
+    {
+      "groupId": 123456789,
+      "groupName": "协同开发组",
+      "ownType": 1,
+      "members": [
+        {
+          "id": 1512393035869810690,
+          "name": "张三",
+          "title": "高级架构师"
+        },
+        {
+          "id": 1512393035869810001,
+          "name": "李四",
+          "title": "资深开发工程师"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ---
 
-### 4.1 发送汇报
+### 4.4 快捷创建或更新个人分组
+
+用于快速创建一个新的个人分组，或对已存在的个人分组进行重命名。会自动归类到当前用户的“默认个人类别”中。
+
+**基本信息**
+
+| 项目         | 说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/cwork-user/group/saveOrUpdatePersonalGroup` |
+| 请求方式     | `POST`                              |
+| Content-Type | `application/json`                  |
+
+**请求参数**
+
+| 参数名 | 类型   | 必填 | 说明                                 |
+| ------ | ------ | ---- | ------------------------------------ |
+| `id`   | Long   | 否   | 分组 ID。不传则为新增；传则为更名。 |
+| `name` | String | 是   | 分组名称。                           |
+
+**响应参数**
+
+`data` 类型为 `Long`，返回操作成功后的分组 ID。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/cwork-user/group/saveOrUpdatePersonalGroup' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "name": "新项目协同组"
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": 1512393035869810691
+}
+```
+
+---
+
+### 4.5 增量管理个人分组成员
+
+对指定分组的人员进行增量添加或移除。支持在单次请求中同时执行加人和减人操作。
+
+**基本信息**
+
+| 项目         |说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/cwork-user/group/manageGroupMembers` |
+| 请求方式     | `POST`                              |
+| Content-Type | `application/json`                  |
+
+**请求参数**
+
+| 参数名         | 类型         | 必填 | 说明           |
+| -------------- | ------------ | ---- | -------------- |
+| `groupId`      | Long         | 是   | 分组 ID。      |
+| `addEmpIds`    | List\<Long\> | 否   | 待加入成员 ID 列表。 |
+| `removeEmpIds` | List\<Long\> | 否   | 待移除成员 ID 列表。 |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，成功返回 `true`。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "groupId": 123456789,
+    "addEmpIds": [1512393035869810690],
+    "removeEmpIds": [1512393035869810001]
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": true
+}
+```
+
+
+---
+
+## 五、工作协同服务接口
+
+### 5.1 发送汇报
 
 用于创建并提交一条汇报记录，支持关联任务/事项、接收人/抄送人、多级节点（指引/签批/决策/建议链路）。
 
@@ -345,8 +476,8 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/queryTargetUserGroups' 
 | `contentHtml`     | String                  | 是   | 汇报内容（富文本/字符串）                                                                                           |
 | `acceptEmpIdList` | List\<Long>             | 否   | 接收人员 id 列表；仅在 `reportLevelList` 为空时作为兜底：系统会用该列表自动生成 1 级“read 接收人”节点               |
 | `copyEmpIdList`   | List\<Long>             | 否   | 抄送人员 id 列表                                                                                                    |
-| `reportLevelList` | List\<ReportLevelParam> | 否   | 多级用户列表（read-传阅、suggest-建议、decide-决策等节点）；**接收人以该字段为准**；结构见 **5.1 ReportLevelParam** |
-| `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件列表；结构见 **5.24 OpenPlatformFileVO** |
+| `reportLevelList` | List\<ReportLevelParam> | 否   | 多级用户列表（read-传阅、suggest-建议、decide-决策等节点）；**接收人以该字段为准**；结构见 **6.1 ReportLevelParam** |
+| `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件列表；结构见 **6.24 OpenPlatformFileVO** |
 
 > 注意：服务端会将 `contentHtml` 去除 HTML 标签生成 `content`（纯文本）后提交；调用方无需传 `content`。
 
@@ -411,11 +542,11 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
 
 **数据流向**
 
-- 返回 `data.id`（若平台返回）可用于后续通过 **4.5 获取汇报内容** 查询详情（入参 `reportId`）。
+- 返回 `data.id`（若平台返回）可用于后续通过 **5.5 获取汇报内容** 查询详情（入参 `reportId`）。
 
 ---
 
-### 4.2 汇报回复
+### 5.2 汇报回复
 
 对指定汇报进行回复，可携带附件列表。
 
@@ -469,7 +600,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/reply' \
 
 ---
 
-### 4.3 收件箱分页查询
+### 5.3 收件箱分页查询
 
 分页查询当前用户收件箱汇报列表。
 
@@ -511,8 +642,8 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/reply' \
 
 `data` 类型为 `PageInfo<ReportRecordPageVO>`，结构如下：
 
-- 分页结构见 **5.3 PageInfo**
-- 列表元素结构见 **5.4 ReportRecordPageVO**
+- 分页结构见 **6.3 PageInfo**
+- 列表元素结构见 **6.4 ReportRecordPageVO**
 
 **响应示例**
 
@@ -564,7 +695,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/inbox' \
 
 ---
 
-### 4.4 待处理列表分页查询
+### 5.4 待处理列表分页查询
 
 分页查询当前用户待办列表（任务/签批/指引/反馈等）。
 
@@ -591,8 +722,8 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/inbox' \
 
 `data` 类型为 `PageInfo<TodoTaskDetailVO>`，结构见：
 
-- **5.3 PageInfo**
-- **5.5 TodoTaskDetailVO**
+- **6.3 PageInfo**
+- **6.5 TodoTaskDetailVO**
 
 **请求示例**
 
@@ -609,7 +740,7 @@ curl -X POST 'https://{域名}/open-api/work-report/todoTask/todoList' \
 
 ---
 
-### 4.5 获取汇报内容
+### 5.5 获取汇报内容
 
 获取指定汇报正文及回复列表。
 
@@ -629,7 +760,7 @@ curl -X POST 'https://{域名}/open-api/work-report/todoTask/todoList' \
 
 **响应参数**
 
-`data` 类型为 `ReportDTO`，结构见 **5.6 ReportDTO**。
+`data` 类型为 `ReportDTO`，结构见 **6.6 ReportDTO**。
 
 **响应示例**
 
@@ -663,7 +794,7 @@ curl -X GET 'https://{域名}/open-api/work-report/report/info?reportId=12345678
 
 ---
 
-### 4.6 获取事项列表
+### 5.6 获取事项列表
 
 查询最近处理过的事项列表（用于发起汇报时选择事项）。
 
@@ -687,7 +818,7 @@ curl -X GET 'https://{域名}/open-api/work-report/report/info?reportId=12345678
 
 **响应参数**
 
-`data` 类型为 `RecentTemplateResultVO`，结构见 **5.7 RecentTemplateResultVO** 与 **5.8 RecentTemplateVO**。
+`data` 类型为 `RecentTemplateResultVO`，结构见 **6.7 RecentTemplateResultVO** 与 **6.8 RecentTemplateVO**。
 
 **请求示例**
 
@@ -702,7 +833,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listTemplates' \
 
 ---
 
-### 4.7 根据事项 ID 列表获取事项信息
+### 5.7 根据事项 ID 列表获取事项信息
 
 批量查询事项简易信息（事项 ID 与名称）。
 
@@ -724,7 +855,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listTemplates' \
 
 **响应参数**
 
-`data` 类型为 `List<TemplateSimpleVO>`，结构见 **5.9 TemplateSimpleVO**。
+`data` 类型为 `List<TemplateSimpleVO>`，结构见 **6.9 TemplateSimpleVO**。
 
 **请求示例**
 
@@ -737,7 +868,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 ---
 
-### 4.8 获取待办及未读汇报列表【新的待办和汇报】
+### 5.8 获取待办及未读汇报列表【新的待办和汇报】
 
 插件场景：一次返回最新待办列表与未读汇报列表聚合对象。
 
@@ -761,11 +892,11 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **响应参数**
 
-`data` 类型为 `PluginReportAllVO`，结构见 **5.11 PluginReportAllVO**、**5.12 PluginItemListVO**、**5.13 PluginItemDetailVO**。
+`data` 类型为 `PluginReportAllVO`，结构见 **6.11 PluginReportAllVO**、**6.12 PluginItemListVO**、**6.13 PluginItemDetailVO**。
 
 ---
 
-### 4.9 获取最新待办列表
+### 5.9 获取最新待办列表
 
 插件场景：分页获取最新待办列表。
 
@@ -779,15 +910,15 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **请求参数**
 
-同 **4.8**（`PluginReportParam`）。
+同 **5.8**（`PluginReportParam`）。
 
 **响应参数**
 
-`data` 类型为 `PluginItemListVO`（见 **5.12**）。
+`data` 类型为 `PluginItemListVO`（见 **6.12**）。
 
 ---
 
-### 4.10 获取未读汇报列表
+### 5.10 获取未读汇报列表
 
 插件场景：分页获取未读汇报列表。
 
@@ -801,15 +932,15 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **请求参数**
 
-同 **4.8**（`PluginReportParam`）。
+同 **5.8**（`PluginReportParam`）。
 
 **响应参数**
 
-`data` 类型为 `PluginItemListVO`（见 **5.12**）。
+`data` 类型为 `PluginItemListVO`（见 **6.12**）。
 
 ---
 
-### 4.11 工作任务列表查询
+### 5.11 工作任务列表查询
 
 分页查询工作任务列表，支持按角色/状态/关键词/标签/优先级等筛选。
 
@@ -841,11 +972,11 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **响应参数**
 
-`data` 类型为 `PageInfo<ReportPlanSearchPageVO>`（见 **5.3** 与 **5.14**）。
+`data` 类型为 `PageInfo<ReportPlanSearchPageVO>`（见 **6.3** 与 **6.14**）。
 
 ---
 
-### 4.12 获取用户创建的反馈类型待办列表
+### 5.12 获取用户创建的反馈类型待办列表
 
 查询用户创建的反馈待办列表；不传 `empId` 默认查询登录用户。
 
@@ -865,11 +996,11 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **响应参数**
 
-`data` 类型为 `List<TodoTaskCreatedFeedbackVO>`（见 **5.15**）。
+`data` 类型为 `List<TodoTaskCreatedFeedbackVO>`（见 **6.15**）。
 
 ---
 
-### 4.13 任务简易信息 VO
+### 5.13 任务简易信息 VO
 
 获取任务简易信息及该任务提交的汇报简易信息列表。
 
@@ -889,11 +1020,11 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **响应参数**
 
-`data` 类型为 `ReportPlanSimpleInfoVO`（见 **5.16** 与 **5.17 ReportSimpleInfoVO**）。
+`data` 类型为 `ReportPlanSimpleInfoVO`（见 **6.16** 与 **6.17 ReportSimpleInfoVO**）。
 
 ---
 
-### 4.14 发件箱
+### 5.14 发件箱
 
 分页查询当前用户发件箱汇报列表。
 
@@ -911,11 +1042,11 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 **响应参数**
 
-`data` 类型为 `PageInfo<ReportRecordPageVO>`（见 **5.3** 与 **5.4**）。
+`data` 类型为 `PageInfo<ReportRecordPageVO>`（见 **6.3** 与 **6.4**）。
 
 ---
 
-### 4.15 分页获取当前用户的决策/建议/反馈待办列表
+### 5.15 分页获取当前用户的决策/建议/反馈待办列表
 
 分页获取当前用户需要处理的汇报待办列表（决策/建议/反馈）。
 
@@ -946,7 +1077,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 ---
 
-### 4.16 分页获取当前用户的未读汇报列表
+### 5.16 分页获取当前用户的未读汇报列表
 
 分页获取当前用户未读汇报列表。
 
@@ -972,7 +1103,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 ---
 
-### 4.17 判断员工对指定汇报是否已读
+### 5.17 判断员工对指定汇报是否已读
 
 根据汇报 ID 与员工 ID 判断已读状态。
 
@@ -997,7 +1128,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 ---
 
-### 4.18 完成待办（建议/决策）
+### 5.18 完成待办（建议/决策）
 
 提交建议/决策内容，完成指定待办。决策类待办需要传 `operate=agree/disagree`。
 
@@ -1038,7 +1169,7 @@ curl -X POST 'https://{域名}/open-api/work-report/open-platform/todo/completeT
 
 ---
 
-### 4.19 汇报内容 AI 问答（流式返回）
+### 5.19 汇报内容 AI 问答（流式返回）
 
 对指定汇报集合进行 AI SSE 问答/编辑，响应为 `text/event-stream`。
 
@@ -1080,7 +1211,7 @@ curl -N -X POST 'https://{域名}/open-api/work-report/open-platform/report/aiSs
 
 ---
 
-### 4.20 创建工作任务
+### 5.20 创建工作任务
 
 通过 OpenAPI 创建高级工作任务，并指定汇报人和（可选的）责任人/协办人等任务相关人。
 
@@ -1096,10 +1227,10 @@ curl -N -X POST 'https://{域名}/open-api/work-report/open-platform/report/aiSs
 
 > **分配人员 ID (empId) 说明**：
 > 若在配置各项参与人（汇报人、责任人等）时只有对方“姓名”而没有 `empId`（员工 ID），需遵循以下处理流程：
-> 1. 先调用 **4.01 按姓名搜索全部员工(带外部联系人)**（`GET /cwork-user/searchEmpByName`）获取员工列表。
+> 1. 先调用 **4.1 按姓名搜索全部员工(带外部联系人)**（`GET /cwork-user/searchEmpByName`）获取员工列表。
      >    - 查询不到：请提示用户“未找到该姓名对应的员工，请确认姓名或直接提供员工 ID”。
 >    - 同名返回多条：请提示用户“存在同名员工，请指定唯一员工（例如结合部门、职级等信息协助挑选）后再传”。
-> 2. 获取到唯一的员工 ID（该 4.01 接口返回列表数据对象中的 `id` 字段）后，再将其填入本接口的 `reportEmpIdList`、`ownerEmpIdList` 等各项干系人数组参数中。
+> 2. 获取到唯一的员工 ID（该 4.1 接口返回列表数据对象中的 `id` 字段）后，再将其填入本接口的 `reportEmpIdList`、`ownerEmpIdList` 等各项干系人数组参数中。
 
 **基本信息**
 
@@ -1170,7 +1301,7 @@ curl -X POST 'https://{域名}/open-api/work-report/open-platform/report/plan/cr
 
 ---
 
-### 4.21 获取我的新消息列表
+### 5.21 获取我的新消息列表
 
 
 **基本信息**
@@ -1206,7 +1337,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/findMyNe
 
 ---
 
-### 4.22 阅读汇报（清除未读/新消息）
+### 5.22 阅读汇报（清除未读/新消息）
 
 标记指定汇报为已读，并清除该汇报在当前用户下的所有新消息/未读提醒。
 
@@ -1239,9 +1370,9 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 ---
 
-## 五、公共数据结构
+## 六、公共数据结构
 
-### 5.1 ReportLevelParam
+### 6.1 ReportLevelParam
 
 | 字段名          | 类型                        | 说明                                                 |
 | --------------- | --------------------------- | ---------------------------------------------------- |
@@ -1259,7 +1390,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `empId`       | Long   | 员工 id |
 | `requirement` | String | AI 要求 |
 
-### 5.2 ReportReplyInnerParam.ReportFileVO
+### 6.2 ReportReplyInnerParam.ReportFileVO
 
 | 字段名   | 类型    | 说明                                                                                                     |
 | -------- | ------- | -------------------------------------------------------------------------------------------------------- |
@@ -1268,7 +1399,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `name`   | String  | 文件名称（链接描述）                                                                                     |
 | `type`   | String  | file=附件、url=超链、audio=音频、document=文档（带版本）、document-database=知识库（fileId 为知识库 id） |
 
-### 5.3 PageInfo\<T>
+### 6.3 PageInfo\<T>
 
 | 字段名     | 类型     | 说明              |
 | ---------- | -------- | ----------------- |
@@ -1278,7 +1409,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `pageSize` | int      | 每页数量          |
 | `size`     | int      | 当前页数量        |
 
-### 5.4 ReportRecordPageVO
+### 6.4 ReportRecordPageVO
 
 | 字段名             | 类型          | 说明                                                                    |
 | ------------------ | ------------- | ----------------------------------------------------------------------- |
@@ -1299,7 +1430,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `userStatus`       | String        | 状态                                                                    |
 | `reportEventVO`    | ReportEventVO | 汇报事件对象（见 **5.21**）                                             |
 
-### 5.5 TodoTaskDetailVO
+### 6.5 TodoTaskDetailVO
 
 字段较多，常用字段如下：
 
@@ -1329,7 +1460,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `orderUpdateTime`  | Timestamp | 待办更新时间                             |
 | `reportStatus`     | Integer   | 0-关闭、1-待汇报、2-已汇报、3-逾期       |
 
-### 5.6 ReportDTO
+### 6.6 ReportDTO
 
 | 字段名       | 类型            | 说明     |
 | ------------ | --------------- | -------- |
@@ -1348,27 +1479,27 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `replyEmpName` | String    | 回复人姓名 |
 | `createTime`   | Timestamp | 创建时间   |
 
-### 5.7 RecentTemplateResultVO
+### 6.7 RecentTemplateResultVO
 
 | 字段名                   | 类型                    | 说明                               |
 | ------------------------ | ----------------------- | ---------------------------------- |
 | `recentOperateTemplates` | List\<RecentTemplateVO> | 最近操作过的事项列表（见 **5.8**） |
 
-### 5.8 RecentTemplateVO
+### 6.8 RecentTemplateVO
 
 | 字段名       | 类型   | 说明     |
 | ------------ | ------ | -------- |
 | `templateId` | Long   | 事项 ID  |
 | `main`       | String | 事项名称 |
 
-### 5.9 TemplateSimpleVO
+### 6.9 TemplateSimpleVO
 
 | 字段名       | 类型   | 说明     |
 | ------------ | ------ | -------- |
 | `templateId` | Long   | 事项 ID  |
 | `main`       | String | 事项名称 |
 
-### 5.10 ReportTodoDetailVO
+### 6.10 ReportTodoDetailVO
 
 | 字段名                  | 类型          | 说明                                                    |
 | ----------------------- | ------------- | ------------------------------------------------------- |
@@ -1377,14 +1508,14 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `needAction`            | String        | 是否需要当前操作人决策/建议/反馈（如“需要决策”）        |
 | `hasSubsequentDecision` | Boolean       | 后续是否还有决策建议节点                                |
 
-### 5.11 PluginReportAllVO
+### 6.11 PluginReportAllVO
 
 | 字段名             | 类型             | 说明                        |
 | ------------------ | ---------------- | --------------------------- |
 | `latestTodoList`   | PluginItemListVO | 最新待办列表（见 **5.12**） |
 | `unreadReportList` | PluginItemListVO | 未读汇报列表（见 **5.12**） |
 
-### 5.12 PluginItemListVO
+### 6.12 PluginItemListVO
 
 | 字段名   | 类型                      | 说明                |
 | -------- | ------------------------- | ------------------- |
@@ -1392,7 +1523,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `hasNew` | Boolean                   | 是否有新数据        |
 | `list`   | List\<PluginItemDetailVO> | 列表（见 **5.13**） |
 
-### 5.13 PluginItemDetailVO
+### 6.13 PluginItemDetailVO
 
 | 字段名             | 类型      | 说明                                                                |
 | ------------------ | --------- | ------------------------------------------------------------------- |
@@ -1406,7 +1537,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `levelType`        | String    | 节点类型：suggest-建议节点、decide-决策节点                         |
 | `employee`         | String    | 人员名称                                                            |
 
-### 5.14 ReportPlanSearchPageVO
+### 6.14 ReportPlanSearchPageVO
 
 字段较多，常用字段如下：
 
@@ -1434,7 +1565,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `reporterList`      | List\<EmployeeSimpleVO> | 汇报人信息（见 **5.22**）            |
 | `isRead`            | Integer                 | 0-未读、1-已读                       |
 
-### 5.15 TodoTaskCreatedFeedbackVO
+### 6.15 TodoTaskCreatedFeedbackVO
 
 | 字段名       | 类型       | 说明                                     |
 | ------------ | ---------- | ---------------------------------------- |
@@ -1447,7 +1578,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `createTime` | Timestamp  | 待办创建时间                             |
 | `updateTime` | Timestamp  | 待办处理时间                             |
 
-### 5.16 ReportPlanSimpleInfoVO
+### 6.16 ReportPlanSimpleInfoVO
 
 | 字段名                    | 类型                      | 说明                                       |
 | ------------------------- | ------------------------- | ------------------------------------------ |
@@ -1470,7 +1601,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `formTemplateId`          | Long                      | 表单模板 id                                |
 | `reportList`              | List\<ReportSimpleInfoVO> | 任务提交的汇报信息（见 **5.17**）          |
 
-### 5.17 ReportSimpleInfoVO
+### 6.17 ReportSimpleInfoVO
 
 | 字段名             | 类型      | 说明                                 |
 | ------------------ | --------- | ------------------------------------ |
@@ -1496,7 +1627,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `templateId`       | Long      | 事项 id                              |
 | `formTemplateId`   | Long      | 表单模板 id                          |
 
-### 5.18 ReportTodoListItemVO
+### 6.18 ReportTodoListItemVO
 
 | 字段名             | 类型               | 说明                                               |
 | ------------------ | ------------------ | -------------------------------------------------- |
@@ -1509,7 +1640,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `todoId`           | Long               | 待办 id                                            |
 | `detail`           | ReportTodoDetailVO | 详情对象（见 **5.10**）                            |
 
-### 5.19 ReportUnreadListItemVO
+### 6.19 ReportUnreadListItemVO
 
 | 字段名             | 类型               | 说明                    |
 | ------------------ | ------------------ | ----------------------- |
@@ -1520,28 +1651,28 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `createTime`       | Timestamp          | 汇报时间                |
 | `detail`           | ReportTodoDetailVO | 详情对象（见 **5.10**） |
 
-### 5.20 ReportEventVO
+### 6.20 ReportEventVO
 
 | 字段名 | 类型      | 说明     |
 | ------ | --------- | -------- |
 | `name` | String    | 事件名称 |
 | `time` | Timestamp | 事件时间 |
 
-### 5.21 EmployeeSimpleVO
+### 6.21 EmployeeSimpleVO
 
 | 字段名 | 类型   | 说明    |
 | ------ | ------ | ------- |
 | `id`   | Long   | 员工 id |
 | `name` | String | 姓名    |
 
-### 5.22 OpenPlatformNewMsgSummaryVO
+### 6.22 OpenPlatformNewMsgSummaryVO
 
 | 字段名     | 类型                           | 说明         |
 | ---------- | ------------------------------ | ------------ |
 | `total`    | Integer                        | 新消息总数   |
 | `msgList`  | List\<OpenPlatformNewMsgVO>    | 新消息列表（见 **5.23**）   |
 
-### 5.23 OpenPlatformNewMsgVO
+### 6.23 OpenPlatformNewMsgVO
 
 | 字段名                       | 类型      | 说明                                                                                          |
 | ---------------------------- | --------- | --------------------------------------------------------------------------------------------- |
@@ -1555,7 +1686,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `replyEmployeeDeptAndTitle`  | String    | 发送消息人员部门职位信息(例如: `[开发组-Web开发工程师]`)                                        |
 | `type`                       | String    | 通知类型中文描述(我收到的回复/@我的回复/指引/签批/反馈/写汇报通知/汇报提交通知/其他消息) |
 
-### 5.24 OpenPlatformFileVO
+### 6.24 OpenPlatformFileVO
 
 | 字段名   | 类型   | 说明                                           |
 | -------- | ------ | ---------------------------------------------- |
@@ -1565,7 +1696,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `fsize`  | Long   | 文件大小                                       |
 | `url`    | String | 文件链接（超链类型的 url，或附件的直接下载链接） |
 
-### 5.25 TargetUserGroupVO
+### 6.25 TargetUserGroupVO
 
 | 字段名      | 类型             | 说明                       |
 | ----------- | ---------------- | -------------------------- |
@@ -1574,16 +1705,17 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `ownType`   | Integer          | 归属类型, 1: 个人; 2: 公司 |
 | `members`   | List\<MemberVO> | 成员列表（见 **5.26**）    |
 
-### 5.26 MemberVO
+### 6.26 MemberVO
 
 | 字段名 | 类型   | 说明    |
 | ------ | ------ | ------- |
 | `id`   | Long   | 人员 ID |
 | `name` | String | 姓名    |
+| `title`| String | 职位    |
 
 ---
 
-## 六、错误码说明
+## 七、错误码说明
 
 > 以下为通用与鉴权相关错误码示例，具体以平台配置与返回为准。
 
@@ -1596,7 +1728,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 ---
 
-## 七、注意事项
+## 八、注意事项
 
 1. **ID 精度**：所有 ID 建议按 Long/字符串处理，前端请避免用 JS Number 直接承载超大整数。
 2. **时间戳单位**：文档中 `beginTime/endTime/lastUpdateTime/timestamp` 均为 **毫秒**。
