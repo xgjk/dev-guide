@@ -334,23 +334,9 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/report/reportInfo' \
 
 | 字段名           | 类型                     | 说明                                     |
 | ---------------- | ------------------------ | ---------------------------------------- |
-| `_id`            | String                   | 分片记录 ID                                |
-| `meetingChatId`  | String                   | 会议聊天 ID                                |
 | `startTime`      | Long                     | 开始时间（录音经过的毫秒数）                  |
-| `length`         | Long                     | 时长（毫秒）                                |
-| `fileUrl`        | String                   | 文件 URL                                   |
-| `fileSize`       | Long                     | 文件大小                                    |
-| `taskId`         | String                   | 任务 ID                                    |
-| `fileHash`       | String                   | 文件哈希                                    |
 | `text`           | String                   | 转写文本                                    |
-| `summary`        | String                   | 摘要                                       |
-| `summaryState`   | Integer                  | 总结状态：0=未开始, 1=处理中, 2=成功, 3=失败   |
-| `sttState`       | Integer                  | 转文字状态：0=处理中, 1=成功, 2=失败           |
-| `recordType`     | Integer                  | 录音类型：0=用户上传拆片, 1=上传音频V2          |
 | `realTime`       | Long                     | 现实时间戳                                   |
-| `fixRush`        | Boolean                  | 是否为补全的最后一片                           |
-| `pinList`        | List\<Map\>              | 标记列表                                    |
-| `parentRecordId` | String                   | 父记录 ID（子慧记专用）                       |
 
 **响应示例**
 
@@ -359,17 +345,10 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/report/reportInfo' \
   "resultCode": 1,
   "resultMsg": null,
   "data": [
-    {
-      "_id": "rec001",
-      "meetingChatId": "664f1a2b3c4d5e6f7a8b9c0d",
-      "startTime": 0,
-      "length": 300000,
-      "fileUrl": "https://example.com/audio/part1.mp3",
-      "fileSize": 1024000,
-      "text": "大家好，今天我们讨论...",
-      "summaryState": 2,
-      "sttState": 1,
-      "recordType": 0
+    {	
+	  "realTime": 1774613847119
+      "startTime": 120000,
+      "text": "片段会议原文..."
     }
   ]
 }
@@ -743,11 +722,10 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/uploadContentToPersonalProject'
   "resultCode": 1,
   "resultMsg": null,
   "data": [
-    {
-      "_id": "rec002",
-      "meetingChatId": "664f1a2b3c4d5e6f7a8b9c0d",
+    {	
+	  "realTime": 1774613847119
       "startTime": 120000,
-      "text": "增量片段..."
+      "text": "片段会议原文..."
     }
   ]
 }
