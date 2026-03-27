@@ -346,7 +346,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/report/reportInfo' \
   "resultMsg": null,
   "data": [
     {	
-	  "realTime": 1774613847119
+	  "realTime": 1774613847119,
       "startTime": 120000,
       "text": "片段会议原文..."
     }
@@ -723,7 +723,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/uploadContentToPersonalProject'
   "resultMsg": null,
   "data": [
     {	
-	  "realTime": 1774613847119
+	  "realTime": 1774613847119,
       "startTime": 120000,
       "text": "片段会议原文..."
     }
