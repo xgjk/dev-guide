@@ -4,20 +4,24 @@
 
 | 版本 | 日期 | 变更摘要 | 变更人 |
 |------|------|----------|--------|
+| 1.1 | 2026-03-27 | 增加模版新建/编辑/删除接口，删除前二次确认约束 | AI协作助手 |
 | 1.0 | 2026-03-26 | 初版创建，仅覆盖 AI情报助手已定义的报告场景 API | AI协作助手 |
 
 ## 一、概述
 
-本文档描述了 **AI情报系统** 在“选模版-生成报告-查看进度与结果-修改章节内容”场景下对外提供的 API 接口。通过这些接口，可以实现以下业务能力：
+本文档描述了 **AI情报系统** 在“模版管理（查询/新建/编辑/删除）-生成报告-查看进度与结果-修改章节内容”场景下对外提供的 API 接口。通过这些接口，可以实现以下业务能力：
 
 1. **分页查询模版列表** — 按关键词、目录、是否仅看我的等条件筛选可用模版
 2. **获取模版详情** — 查看模版的章节、子章节与提示词结构，判断是否适合当前报告任务
-3. **发起报告生成任务** — 基于指定模版和上下文创建异步报告任务
-4. **查询任务状态** — 查询报告任务当前状态与进度，用于轮询任务结果
-5. **获取报告详情** — 查看报告全文、章节结构及子章节内容
-6. **分页查询报告列表** — 按关键词、状态、目录等条件定位历史报告
-7. **直接编辑报告章节** — 覆盖指定子章节内容，适用于人工修改不满意章节
-8. **查询章节历史版本** — 查看章节直接编辑后的历史版本记录
+3. **新建模版** — 创建新模版并定义章节/子章节结构与提示词
+4. **编辑模版** — 更新已有模版的结构与提示词
+5. **删除模版（二次确认）** — 删除指定模版，删除动作需二次确认
+6. **发起报告生成任务** — 基于指定模版和上下文创建异步报告任务
+7. **查询任务状态** — 查询报告任务当前状态与进度，用于轮询任务结果
+8. **获取报告详情** — 查看报告全文、章节结构及子章节内容
+9. **分页查询报告列表** — 按关键词、状态、目录等条件定位历史报告
+10. **直接编辑报告章节** — 覆盖指定子章节内容，适用于人工修改不满意章节
+11. **查询章节历史版本** — 查看章节直接编辑后的历史版本记录
 
 ---
 
@@ -121,6 +125,29 @@ curl -X GET 'https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_g
 1. 先调用 **4.5 获取报告详情**（`POST /ai-report/task/taskDetailV2`），传入 `taskId`，从返回的 `sectionList[].questionList[]._id` 中定位目标子章节的 `questionId`
 2. 调用 **4.7 直接编辑报告章节**（`POST /ai-report/task/updateQuestionResult`），传入 `questionId` 和新的 `result` 内容，保存修改
 3. 调用 **4.8 查询章节历史版本**（`POST /ai-report/task/listResultVersion`），传入同一个 `questionId`，查看该章节的历史版本记录
+
+### 场景四：新建模版
+
+> 需求：用户在现有模版不满足业务场景时，创建一份新模版用于后续报告生成。
+
+1. 调用 **4.9 新建模版**（`POST /ai-report/moban/createMoban`），提交模版名称、章节结构和提示词
+2. 从返回结果获取新模版标识，后续可用于 **4.2 获取模版详情** 或 **4.3 发起报告生成任务**
+
+### 场景五：编辑模版
+
+> 需求：用户需要优化已有模版的章节结构或提示词内容。
+
+1. 先调用 **4.2 获取模版详情** 确认当前模版结构
+2. 调用 **4.10 编辑模版**（`POST /ai-report/moban/updateMoban`），提交 `mobanId` 与更新内容
+3. 编辑完成后可再次调用 **4.2 获取模版详情** 校验变更
+
+### 场景六：删除模版（二次确认）
+
+> 需求：用户确认模版已废弃，需要安全删除，避免误删。
+
+1. 先确认目标模版标识（`mobanId`）
+2. 调用 **4.11 删除模版**（`POST /ai-report/moban/deleteMoban`），并传入 `confirmDelete=true`
+3. 若未传 `confirmDelete=true`，接口应拒绝执行删除
 
 ---
 
@@ -739,6 +766,166 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersi
 
 ---
 
+### 4.9 新建模版
+
+创建新的报告模版，支持写入上下文字段定义、章节结构和子章节提示词。
+
+**基本信息**
+
+| 项目 | 说明 |
+|------|------|
+| 接口地址 | `/ai-report/moban/createMoban` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `name` | String | 是 | 模版名称 |
+| `desc` | String | 否 | 模版描述 |
+| `dirId` | String | 否 | 目录 ID |
+| `mobanTypeId` | String | 否 | 模版类型 ID |
+| `prompt` | String | 否 | 任务级提示词 |
+| `doSummary` | Number | 否 | 是否生成总结：`0` 否，`1` 是 |
+| `enableImageGeneration` | Number | 否 | 是否开启图片生成：`0` 否，`1` 是 |
+| `aiType` | String | 否 | AI 类型 |
+| `requireContext` | List\<ContextFieldVO> | 否 | 上下文字段定义 |
+| `sectionList` | List\<MobanSectionVO> | 是 | 章节结构（至少 1 个章节） |
+
+`ContextFieldVO` 字段：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `key` | String | 字段 key |
+| `name` | String | 字段名称 |
+| `desc` | String | 字段描述 |
+| `type` | String | 字段类型 |
+| `required` | Boolean | 是否必填 |
+
+`MobanSectionVO` 字段：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `name` | String | 章节名称（必填） |
+| `prompt` | String | 章节提示词 |
+| `questionList` | List\<MobanQuestionVO> | 子章节列表（必填） |
+
+`MobanQuestionVO` 字段：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `title` | String | 子章节标题（必填） |
+| `content` | String | 子章节问题内容 |
+| `prompt` | String | 子章节提示词 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/createMoban' \
+  -H 'access-token: {access-token}' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "创新药尽调模版",
+    "desc": "用于早期创新药项目尽调",
+    "prompt": "请基于公开信息输出专业分析",
+    "sectionList": [
+      {
+        "name": "项目概览",
+        "questionList": [
+          {
+            "title": "项目基本信息",
+            "content": "请总结项目背景与核心价值",
+            "prompt": "按业务、技术、竞争格局三个维度展开"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+---
+
+### 4.10 编辑模版
+
+更新已有模版的名称、描述、上下文字段、章节结构和提示词。
+
+**基本信息**
+
+| 项目 | 说明 |
+|------|------|
+| 接口地址 | `/ai-report/moban/updateMoban` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+与 **4.9 新建模版** 基本一致，新增必填字段：
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `mobanId` | String | 是 | 模版 ID |
+
+其余字段同 **4.9**。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/updateMoban' \
+  -H 'access-token: {access-token}' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "mobanId": "moban_1001",
+    "name": "创新药尽调模版（更新版）",
+    "sectionList": [
+      {
+        "name": "项目概览",
+        "questionList": [
+          {
+            "title": "项目基本信息",
+            "prompt": "重点补充适应症市场空间"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+---
+
+### 4.11 删除模版（二次确认）
+
+删除指定模版。该操作为高风险动作，必须传入二次确认参数。
+
+**基本信息**
+
+| 项目 | 说明 |
+|------|------|
+| 接口地址 | `/ai-report/moban/deleteMoban` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `mobanId` | String | 是 | 目标模版 ID |
+| `confirmDelete` | Boolean | 是 | 删除二次确认，必须为 `true` |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/deleteMoban' \
+  -H 'access-token: {access-token}' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "mobanId": "moban_1001",
+    "confirmDelete": true
+  }'
+```
+
+---
+
 ## 五、公共数据结构
 
 ### 5.1 MobanPageResult
@@ -850,6 +1037,27 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersi
 | `result` | String | 该版本内容 |
 | `createTime` | String | 创建时间 |
 | `personId` | String | 操作人标识 |
+
+### 5.14 ContextFieldVO
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `key` | String | 上下文字段 key |
+| `name` | String | 上下文字段名称 |
+| `desc` | String | 字段描述 |
+| `type` | String | 字段类型 |
+| `required` | Boolean | 是否必填 |
+
+### 5.15 Create/Update Moban Request（关键结构）
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `mobanId` | String | 编辑模版时必填，新建时不传 |
+| `name` | String | 模版名称，必填 |
+| `sectionList` | List\<MobanSectionVO> | 章节列表，必填 |
+| `sectionList[].questionList` | List\<MobanQuestionVO> | 子章节列表，必填 |
+| `sectionList[].questionList[].title` | String | 子章节标题，必填 |
+| `confirmDelete` | Boolean | 删除模版时必填，且必须为 `true` |
 
 ---
 
