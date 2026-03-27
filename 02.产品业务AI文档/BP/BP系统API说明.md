@@ -6,6 +6,7 @@
 |------|------|----------|--------|
 | 1.0 | 2026-03-25 | 初版创建 | 成伟 |
 | 1.1 | 2026-03-25 | 新增 4.13 获取BP完整Markdown内容接口 | 曾文哲 |
+| 1.2 | 2026-03-27 | 新增 4.14~4.15 接口（根据目标/成果ID新增下级任务） | 刘会芳 |
 
 ## 一、概述
 
@@ -24,6 +25,8 @@
 11. **按名称模糊搜索任务** — 根据分组 ID 和名称关键字模糊搜索任务，返回任务基本信息、参与人及上下级任务信息
 12. **按名称模糊搜索分组** — 根据周期 ID 和名称关键字模糊搜索分组，返回分组基本信息及上下级信息
 13. **获取BP完整Markdown内容** — 根据分组 ID 获取该分组下完整 BP 的 Markdown 格式内容，包含本级目标树、上对齐关系、下对齐关系
+14. **根据目标ID新增关键成果** — 纯新增成果，不影响该目标下已有的其他成果
+15. **根据成果ID新增关键举措** — 纯新增举措，不影响该成果下已有的其他举措
 
 ---
 
@@ -1116,6 +1119,138 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/document/getB
 **数据流向**
 
 返回的 Markdown 文本可直接用于 AI 分析、文档展示等场景。该接口整合了分组下的完整 BP 信息（目标树 + 对齐关系），是获取分组 BP 全貌的推荐接口。
+
+---
+
+### 4.14 根据目标ID新增关键成果
+
+根据目标 ID 纯新增一个关键成果。不同于 4.15 的更新逻辑，本接口专门用于增量添加场景，不影响该目标下已有的其他成果，并返回新生成成果的任务 ID。
+
+**基本信息**
+
+| 项目     | 说明                          |
+| -------- | ----------------------------- |
+| 接口地址 | `/bp/task/v2/addKeyResult`    |
+| 请求方式 | `POST`                        |
+
+**请求参数（Request Body，JSON 对象）**
+
+| 字段               | 类型                     | 必填 | 说明                                                                             |
+| ------------------ | ------------------------ | ---- | -------------------------------------------------------------------------------- |
+| `goalId`           | Long                     | 是   | 目标 ID                                                                          |
+| `name`             | String                   | 是   | 关键成果名称                                                                     |
+| `ruleType`         | String                   | 否   | 汇报周期类型，可选：`weekday` / `week` / `month` / `doubleWeek` / `doubleMonth` / `threeMonth` |
+| `requiredIndex`    | String                   | 否   | 汇报日（与 ruleType 组合使用）                                                   |
+| `planStartDate`    | String                   | 否   | 计划开始日期，格式 `yyyy-MM-dd`                                                  |
+| `planEndDate`      | String                   | 否   | 计划结束日期，格式 `yyyy-MM-dd`                                                  |
+| `ownerIds`         | List\<Long\>             | 否   | 承接人 ID 列表                                                                   |
+| `ownerDeptIds`     | List\<Long\>             | 否   | 承接人部门 ID 列表                                                               |
+| `collaboratorIds`  | List\<Long\>             | 否   | 协办人 ID 列表                                                                   |
+| `copyToIds`        | List\<Long\>             | 否   | 抄送人 ID 列表                                                                   |
+| `supervisorIds`    | List\<Long\>             | 否   | 监督人 ID 列表                                                                   |
+| `observerIds`      | List\<Long\>             | 否   | 观察人 ID 列表                                                                   |
+| `upwardTaskIdList` | List\<Long\>             | 否   | 向上对齐任务 ID 列表                                                             |
+| `weight`           | BigDecimal               | 否   | 权重（0-100）                                                                    |
+| `description`      | String                   | 否   | 关键成果详细描述                                                                 |
+| `measureStandard`  | String                   | 否   | 衡量标准                                                                         |
+| `actionPlan`       | String                   | 否   | 行动计划                                                                         |
+| `uploadSpFileDTOS` | List\<UploadSpFileParam\>| 否   | 附件文件信息                                                                     |
+
+**UploadSpFileParam 结构：**
+
+| 字段         | 类型   | 必填 | 说明                         |
+| ------------ | ------ | ---- | ---------------------------- |
+| `name`       | String | 是   | 文件名称                     |
+| `type`       | String | 是   | 文件类型，固定值：`file`     |
+| `resourceId` | String | 否   | 文件唯一标识 ID              |
+| `suffix`     | String | 否   | 文件后缀                     |
+| `fSize`      | Long   | 否   | 文件大小（字节）             |
+
+**响应参数**
+
+`data` 为 `Long`，代表新创建的关键成果任务 ID。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/addKeyResult' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "goalId": "2014631829004374017",
+    "name": "新增 Q2 业绩增长点",
+    "description": "通过下沉市场获取新增用户",
+    "planStartDate": "2026-04-01",
+    "planEndDate": "2026-06-30"
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": "2014631829004376001"
+}
+```
+
+---
+
+### 4.15 根据成果ID新增关键举措
+
+根据关键成果 ID 纯新增一个关键举措。不影响该成果下已有的其他举措，并返回新生成举措的任务 ID。
+
+**基本信息**
+
+| 项目     | 说明                      |
+| -------- | ------------------------- |
+| 接口地址 | `/bp/task/v2/addAction`   |
+| 请求方式 | `POST`                    |
+
+**请求参数（Request Body，JSON 对象）**
+
+| 字段               | 类型                     | 必填 | 说明                                       |
+| ------------------ | ------------------------ | ---- | ------------------------------------------ |
+| `keyResultId`      | Long                     | 是   | 分组/成果 ID（此处为关键成果任务 ID）      |
+| `name`             | String                   | 是   | 关键举措名称                               |
+| `ruleType`         | String                   | 否   | 汇报周期类型                               |
+| `requiredIndex`    | String                   | 否   | 汇报日                                     |
+| `planStartDate`    | String                   | 否   | 计划开始日期                               |
+| `planEndDate`      | String                   | 否   | 计划结束日期                               |
+| `ownerIds`         | List\<Long\>             | 否   | 承接人 ID 列表                             |
+| `upwardTaskIdList` | List\<Long\>             | 否   | 向上对齐任务 ID 列表                       |
+| `weight`           | BigDecimal               | 否   | 权重（0-100）                              |
+| `description`      | String                   | 否   | 关键举措描述                               |
+| `measureStandard`  | String                   | 否   | 衡量标准                                   |
+| `uploadSpFileDTOS` | List\<UploadSpFileParam\>| 否   | 附件文件信息（同 4.14）                    |
+
+**响应参数**
+
+`data` 为 `Long`，代表新创建的关键举措任务 ID。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/addAction' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "keyResultId": "2014631829004374018",
+    "name": "拓展三线城市分销商",
+    "measureStandard": "签约 10 家以上"
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": "2014631829004376002"
+}
+```
 
 ---
 
