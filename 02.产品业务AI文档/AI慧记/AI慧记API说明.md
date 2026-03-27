@@ -4,6 +4,7 @@
 
 | 版本 | 日期 | 变更摘要 | 变更人 |
 |------|------|----------|--------|
+| 1.1 | 2026-03-27 | 新增 4.10 分片录音列表 V2、4.11 按会议编号查询慧记列表 | - |
 | 1.0 | 2026-03-25 | 初版创建 | 成伟 |
 
 ## 一、概述
@@ -19,6 +20,8 @@
 7. **检查二次语音转文字** — 查询指定会议聊天的二次语音转文字处理状态与进度
 8. **检查二次语音转文字 V2** — 查询二次语音转文字处理状态（简化版）
 9. **上传内容到个人知识库** — 将文本内容上传到用户个人知识库的指定文件夹
+10. **查询分片录音列表 V2** — 在分片录音列表基础上，支持按 `lastStartTime` 在网关侧增量过滤（可选）
+11. **按会议编号查询慧记列表** — 按会议编号拉取慧记记录列表（委托会议域 AI 摘要插件，需 `appKey` 与登录用户上下文）
 
 ---
 
@@ -708,6 +711,145 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/uploadContentToPersonalProject'
 
 ---
 
+### 4.10 查询分片录音列表 V2
+
+在 **4.4 查询分片录音列表** 能力基础上，增加可选参数 `lastStartTime`：传入时由 **open-api 网关**在拉取慧记服务全量分片列表后，按 `startTime` **大于** `lastStartTime` 在内存中过滤，用于增量同步；不传时与 4.4 全量行为一致。**下游慧记服务仍只接收 `meetingChatId`**，大会议场景全量拉取后再过滤时请注意性能与流量。
+
+**基本信息**
+
+| 项目         | 说明                                      |
+| ------------ | ----------------------------------------- |
+| 接口地址     | `/ai-huiji/meetingChat/splitRecordListV2` |
+| 请求方式     | `POST`                                    |
+| Content-Type | `application/json`                        |
+
+**请求参数**
+
+请求体为 JSON，字段如下：
+
+| 参数名           | 类型   | 必填 | 说明 |
+| ---------------- | ------ | ---- | ---- |
+| `meetingChatId`  | String | 是   | 会议聊天 ID，与 4.4 一致 |
+| `lastStartTime`  | Long   | 否   | 上次已同步的最大 **startTime**（与分片上的 `startTime` 同语义，相对录音起点的毫秒）。**不传**：返回全量分片列表；**传**：仅返回 `startTime` **大于** 该值的记录（`startTime` 为 `null` 的分片在增量模式下会被过滤掉） |
+
+**响应参数**
+
+`data` 类型为 `List<SplitRecordVO>`，字段说明同 **4.4 查询分片录音列表**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {
+      "_id": "rec002",
+      "meetingChatId": "664f1a2b3c4d5e6f7a8b9c0d",
+      "startTime": 120000,
+      "text": "增量片段..."
+    }
+  ]
+}
+```
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/splitRecordListV2' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "meetingChatId": "664f1a2b3c4d5e6f7a8b9c0d",
+    "lastStartTime": 120034
+  }'
+```
+
+**说明**
+
+- 与 **4.4** 使用相同的慧记下游接口拉取数据，**增量过滤在 open-api 侧完成**。
+- 若慧记服务端后续原生支持时间筛选，可优先使用服务端能力以减少全量传输。
+
+---
+
+### 4.11 按会议编号查询慧记列表
+
+根据 **会议编号** 查询当前用户相关的慧记记录列表。内部将请求转发至 **会议域 AI 摘要插件**（`getLastRecordList`），返回结构与插件一致。调用前需能通过网关解析 **当前登录员工**（如 `access-token` 等开放鉴权方式），并需携带 **`appKey`**。
+
+**基本信息**
+
+| 项目         | 说明                                               |
+| ------------ | -------------------------------------------------- |
+| 接口地址     | `/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber` |
+| 请求方式     | `POST`                                             |
+| Content-Type | `application/json`                                 |
+
+**请求头（除 2.3 公共头外）**
+
+| Header    | 说明 |
+| --------- | ---- |
+| `appKey`  | 应用密钥，与 2.3 一致，**必填**（亦支持 `app_key`） |
+| （鉴权）  | 需具备员工上下文（如 `access-token` 等），由网关注入 `employeeId` 等，用于查询用户手机号并调用会议插件 |
+
+**请求参数**
+
+请求体为 JSON，字段如下：
+
+| 参数名           | 类型   | 必填 | 说明 |
+| ---------------- | ------ | ---- | ---- |
+| `meetingNumber`  | String | 是   | 会议编号（业务约定格式） |
+| `lastTs`         | Long   | 否   | 上次时间戳（增量，**毫秒**）。**未传或 ≤0**：在会议插件侧按 **最近一个月** 起点拉取；**>0**：按插件与会议域约定做增量 |
+
+**响应参数**
+
+`data` 类型为 `List<AiSummaryLastRecordItemVO>`，元素字段如下：
+
+| 字段名                 | 类型    | 说明 |
+| ---------------------- | ------- | ---- |
+| `chatId`               | String  | 慧记/会话 ID |
+| `isDoneRecordingFile`  | Boolean | 是否已完成录音文件 |
+| `open`                 | Boolean | 是否开启 |
+| `startTime`            | Long    | 开始时间（毫秒，语义以会议域为准） |
+| `stopTime`             | Long    | 结束时间（毫秒） |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {
+      "chatId": "37644c5a-5ddd-48f1-b473-75098924d7a0",
+      "isDoneRecordingFile": true,
+      "open": false,
+      "startTime": 0,
+      "stopTime": 3600000
+    }
+  ]
+}
+```
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "meetingNumber": "MTG-20260327-001",
+    "lastTs": 0
+  }'
+```
+
+**说明**
+
+- 接口名含 “Ids” 为历史命名；当前返回为 **慧记记录项列表**（含 `chatId` 等），而非仅 ID 字符串数组。
+- 需在开放平台的 **访问白名单** 中放行本路径（如 `AccessRule` / `accessUrls`），否则可能返回无权限。
+- 会议域域名等由服务端配置（如 Nacos `meetingServiceHost`），与本文档 2.2 域名可能不同，以实际部署为准。
+
+---
+
 ## 五、公共数据结构
 
 ### 5.1 FindChatVO
@@ -796,5 +938,5 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/uploadContentToPersonalProject'
 
 ---
 
-**文档版本**：v1.0
-**更新日期**：2026-03-17
+**文档版本**：v1.1
+**更新日期**：2026-03-27
