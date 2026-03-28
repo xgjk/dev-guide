@@ -7,6 +7,7 @@
 | 1.0 | 2026-03-25 | 初版创建 | 成伟 |
 | 1.1 | 2026-03-25 | 新增 4.13 获取BP完整Markdown内容接口 | 曾文哲 |
 | 1.2 | 2026-03-27 | 新增 4.14~4.15 接口（根据目标/成果ID新增下级任务） | 刘会芳 |
+| 1.3 | 2026-03-28 | 新增 4.16 接口（获取关键岗位详情） | 刘会芳 |
 
 ## 一、概述
 
@@ -27,6 +28,7 @@
 13. **获取BP完整Markdown内容** — 根据分组 ID 获取该分组下完整 BP 的 Markdown 格式内容，包含本级目标树、上对齐关系、下对齐关系
 14. **根据目标ID新增关键成果** — 纯新增成果，不影响该目标下已有的其他成果
 15. **根据成果ID新增关键举措** — 纯新增举措，不影响该成果下已有的其他举措
+16. **获取关键岗位详情** — 获取当前关键岗位状态、原因以及节点下所有目标和成果的权重分配情况
 
 ---
 
@@ -1249,6 +1251,103 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/addA
   "resultCode": 1,
   "resultMsg": null,
   "data": "2014631829004376002"
+}
+```
+
+---
+
+### 4.16 获取关键岗位详情
+
+获取关键岗位详情：返回当前关键岗位状态、原因以及节点下所有目标和成果（含已有权重）。通常用于关键岗位设置弹窗的初始化。
+
+**基本信息**
+
+| 项目     | 说明                             |
+| -------- | -------------------------------- |
+| 接口地址 | `/bp/group/getKeyPositionDetail` |
+| 请求方式 | `GET`                            |
+
+**请求参数**
+
+| 参数      | 类型 | 必填 | 说明    |
+| --------- | ---- | ---- | ------- |
+| `groupId` | Long | 是   | 分组 ID |
+
+**响应参数**
+
+`data` 类型为 `KeyPositionDetailVO`，字段如下：
+
+| 字段                       | 类型               | 说明                         |
+| -------------------------- | ------------------ | ---------------------------- |
+| `groupId`                  | Long               | 分组 ID                      |
+| `groupName`                | String             | 岗位名称（人员姓名）         |
+| `keyPosition`              | Boolean            | 是否关键岗位                 |
+| `keyPositionReason`        | String             | 设置为关键岗位的原因         |
+| `bonusCoefficient`         | BigDecimal         | 奖金系数建议(月)             |
+| `bonusCoefficientPersonal` | BigDecimal         | 个人奖金系数建议(月)         |
+| `bonusCoefficientDept`     | BigDecimal         | 部门奖金系数建议(月)         |
+| `bonusCoefficientCenter`   | BigDecimal         | 中心奖金系数建议(月)         |
+| `bonusCoefficientGroup`    | BigDecimal         | 集团奖金系数建议(月)         |
+| `bonusCoefficientReason`   | String             | 奖金系数建议原因             |
+| `isParentAdmin`            | Boolean            | 是否为直接上级组织管理员     |
+| `isDirectLeader`           | Boolean            | 是否为组织架构的直属上级领导 |
+| `goals`                    | List\<GoalWeightVO\>  | 目标及权重列表               |
+
+**GoalWeightVO 结构：**
+
+| 字段      | 类型                    | 说明                                             |
+| --------- | ----------------------- | ------------------------------------------------ |
+| `taskId`  | Long                    | 目标任务 ID                                      |
+| `name`    | String                  | 目标名称                                         |
+| `status`  | Integer                 | 目标状态（0-草稿、1-待发布、2-进行中、3-已关闭） |
+| `weight`  | BigDecimal              | 目标权重（0-100）                                |
+| `results` | List\<ResultWeightVO\>  | 成果权重列表                                     |
+
+**ResultWeightVO 结构：**
+
+| 字段     | 类型       | 说明                                             |
+| -------- | ---------- | ------------------------------------------------ |
+| `taskId` | Long       | 成果任务 ID                                      |
+| `name`   | String     | 成果名称                                         |
+| `status` | Integer    | 成果状态（0-草稿、1-待发布、2-进行中、3-已关闭） |
+| `weight` | BigDecimal | 成果权重（0-100）                                |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "groupId": "2014631829004371002",
+    "groupName": "张三",
+    "keyPosition": true,
+    "keyPositionReason": "业务核心负责人",
+    "bonusCoefficient": 1.2,
+    "bonusCoefficientPersonal": 1.0,
+    "bonusCoefficientDept": 1.1,
+    "bonusCoefficientCenter": 1.0,
+    "bonusCoefficientGroup": 1.0,
+    "bonusCoefficientReason": "表现优异",
+    "isParentAdmin": true,
+    "isDirectLeader": false,
+    "goals": [
+      {
+        "taskId": "2014631829004374017",
+        "name": "Q1业绩目标",
+        "status": 2,
+        "weight": 60,
+        "results": [
+          {
+            "taskId": "2014631829004374018",
+            "name": "客户拜访量达到50家",
+            "status": 2,
+            "weight": 100
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
