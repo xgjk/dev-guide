@@ -8,6 +8,9 @@
 | 1.1  | 2026-03-25 | 新增获取指定用户分组接口 | 付光伟   |
 | 1.2  | 2026-03-26 | 新增个人分组创建与成员管理接口、重构文档结构及序号 | 付光伟 |
 | 1.3  | 2026-03-26 | 在获取分组及管理成员接口中增加按姓名搜索员工 ID 的说明 | 付光伟 |
+| 1.4  | 2026-03-28 | 新增「新增草稿相关接口,5.24-5.28」 | 成伟   |
+
+
 
 为便于人与 AI 追溯变更历史，所有修订记录必须使用统一格式的四列表格，包含以下字段：**版本**、**日期**、**变更摘要**、**变更人**。
 
@@ -49,6 +52,11 @@
 20. **创建工作任务** — 通过 OpenAPI 创建高级工作任务，并分配汇报人员和其他干系人（责任人/协办人等）。
 21. **获取我的新消息列表** — 列表获取当前用户的新读消息列表。
 22. **阅读汇报（清除未读/新消息）** — 标记汇报为已读并清除相关新消息通知。
+23. **新增或更新汇报草稿** — 保存汇报草稿（**更新必须传汇报 `id`**，且为**全量更新**，缺省字段会清空原草稿中对应数据；正式发送请用发送汇报接口）。
+24. **草稿箱分页查询** — 分页获取当前用户的草稿箱列表。
+25. **草稿汇报详情** — 根据汇报 ID 获取草稿态汇报详情（正文、接收人/抄送、多级节点、附件等）。
+26. **删除草稿** — 按草稿 ID 删除草稿箱中的一条草稿。
+27. **将草稿转为正式汇报发出** — OpenAPI 已声明路径与入参，**当前服务端未实现**；正式发出请使用发送汇报接口。
 
 
 
@@ -310,7 +318,7 @@ curl -X POST 'https://{域名}/open-api/cwork-file/uploadWholeFile' \
 
 **响应参数**
 
-`data` 类型为 `List<TargetUserGroupVO>`（结构见 **5.25**）。
+`data` 类型为 `List<TargetUserGroupVO>`（结构见 **6.25 TargetUserGroupVO**）。
 
 **请求示例**
 
@@ -471,6 +479,7 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 
 | 参数名            | 类型                    | 必填 | 说明                                                                                                                |
 | ----------------- | ----------------------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `id`          | Long                    | 否   | 汇报的id，只用于将草稿状态的汇报发出的场景，非草稿的汇报不要传此参数                                                                                                         |
 | `planId`          | Long                    | 否   | 工作任务 id                                                                                                         |
 | `templateId`      | Long                    | 否   | 事项 id                                                                                                             |
 | `typeId`          | Long                    | 否   | 业务类型 id，默认 `9999`（代表其他汇报）                                                                            |
@@ -1375,6 +1384,324 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 ---
 
+### 5.24 新增或更新汇报草稿
+
+保存或更新当前用户的汇报草稿；请求体模型与正式提交相近，但草稿场景下对接收人等字段的约束更宽松。正式发出汇报请使用 **5.1 发送汇报**（`POST /work-report/report/record/submit`）。
+
+> **更新约定（务必遵守）**  
+> - **若是更新草稿，必须在请求体中传入 `id`（汇报 id）**；不传则一律视为**新增**，会生成新的草稿记录。`id` 可与 **5.24** 返回的 `data.id`、**5.25** 列表中 `bizType=report` 时的 `businessId`、或 **5.26** 路径中的 `reportRecordId` 对齐。  
+> - **更新语义为全量更新（覆盖写）**：服务端按本次请求体整体落库，**未传入的字段不会保留旧值**。例如原草稿已填写接收人，本次更新若**不带** `acceptEmpIdList`（或等价地传空列表，以实际联调为准），则**接收人会被清空**；`copyEmpIdList`、`reportLevelList`、`fileVOList` 等集合类字段同理。建议更新前先调用 **5.26 草稿汇报详情** 取回完整数据，在完整对象上修改后再调用本接口保存。
+
+**基本信息**
+
+| 项目         | 说明                                    |
+| ------------ | --------------------------------------- |
+| 接口地址     | `/work-report/draftBox/saveOrUpdate`    |
+| 请求方式     | `POST`                                  |
+| Content-Type | `application/json`                      |
+
+**请求参数**
+
+请求体为 JSON，字段如下（OpenAPI 模型名：`开放平台-提交汇报参数`）。结构与 **5.1 发送汇报** 中 `SubmitReportParam` 一致处可直接复用；下列说明以草稿接口为准。
+
+| 参数名            | 类型                      | 必填 | 说明                                                                                       |
+| ----------------- | ------------------------- | ---- | ----------------------------------------------------------------------------------------- |
+| `id`              | Long                      | 条件 | **更新时必填**：汇报 id；新增草稿可不传。不传 `id` 视为新增，会产生新草稿。                 |
+| `planId`          | Long                      | 否   | 工作任务 id                                                                                |
+| `templateId`      | Long                      | 否   | 事项 id                                                                                    |
+| `typeId`          | Long                      | 否   | 业务类型 id，默认 `9999`（其他汇报）                                                       |
+| `main`            | String                    | 是   | 汇报标题                                                                                   |
+| `grade`           | String                    | 否   | 优先级：一般、紧急；默认一般                                                               |
+| `privacyLevel`    | String                    | 否   | 密级：非涉密、涉密；默认非涉密                                                             |
+| `contentType`     | String                    | 否   | 正文类型：`html`、`markdown`；**默认 `markdown`**（与 **5.1** 默认值表述以本接口为准）     |
+| `contentHtml`     | String                    | 是   | 汇报内容（富文本或 Markdown 字符串）                                                       |
+| `acceptEmpIdList` | List\<Long>               | 否   | 接收人员 id 列表；新增时可为空。**更新时若省略且按空处理，会清空原接收人**（全量更新，见上文）。 |
+| `copyEmpIdList`   | List\<Long>               | 否   | 抄送人员 id 列表；**更新时省略可能导致原抄送被清空**。                                     |
+| `reportLevelList` | List\<ReportLevelParam>   | 否   | 多级节点；结构见 **6.1**。**更新时须带齐须保留的节点，省略可能导致原节点被清空**。          |
+| `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件，见 **6.24**。**更新时省略可能导致原附件关联被清空**。                            |
+
+> 说明：服务端对正文的处理与 **5.1** 相同，会将 `contentHtml` 去标签生成纯文本 `content` 落库；调用方无需传 `content`。
+
+**响应参数**
+
+`data` 类型为 `BaseInfo`（主要字段为主键 `id`），与 **5.1** 响应一致。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "id": 1234567890
+  }
+}
+```
+
+**请求示例**
+
+新增草稿（不传 `id`）：
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "main": "草稿标题",
+    "contentHtml": "## 尚未填完的正文",
+    "contentType": "markdown",
+    "typeId": 9999
+  }'
+```
+
+更新草稿（**必须带 `id`**，且建议带齐需保留的接收人/抄送/节点/附件等，避免被全量清空）：
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "id": 2036325013120483330,
+    "main": "草稿标题（已改）",
+    "contentHtml": "## 已补充正文",
+    "contentType": "markdown",
+    "typeId": 9999,
+    "acceptEmpIdList": [1512393035869810690],
+    "reportLevelList": []
+  }'
+```
+
+**数据流向**
+
+- 返回的 `data.id` 为汇报的id，非草稿id，可用于后续草稿列表、详情或更新、提交草稿等流程（具体以平台提供的草稿相关接口为准）。
+
+---
+
+### 5.25 草稿箱分页查询
+
+分页查询当前登录用户的草稿箱列表。
+
+**基本信息**
+
+| 项目         | 说明                                 |
+| ------------ | ------------------------------------ |
+| 接口地址     | `/work-report/draftBox/listByPage`   |
+| 请求方式     | `POST`                               |
+| Content-Type | `application/json`                   |
+
+**请求参数**
+
+请求体为 JSON，字段如下（模型名：`DraftBoxQueryParam`）：
+
+| 参数名      | 类型    | 必填 | 说明              |
+| ----------- | ------- | ---- | ----------------- |
+| `pageIndex` | Integer | 是   | 页码，从 1 开始   |
+| `pageSize`  | Integer | 是   | 每页条数，默认20          |
+
+**响应参数**
+
+`data` 类型为 `PageInfo<DraftBoxListVO>`：
+
+- 分页外层结构见 **6.3 PageInfo\<T>**
+- 列表元素结构见 **6.27 DraftBoxListVO**
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "total": 2,
+    "list": [
+      {
+        "id": 2036325013120483329,
+        "bizType": "report",
+        "businessId": 2036325013120483330,
+        "title": "周报草稿",
+        "content": "## 本周进展\n- 接口联调",
+        "grade": "一般",
+        "existsFiles": 1,
+        "status": 1,
+        "createTime": "2026-03-28 10:00:00",
+        "updateTime": "2026-03-28 11:30:00"
+      }
+    ],
+    "pageNum": 1,
+    "pageSize": 20,
+    "size": 1
+  }
+}
+```
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/draftBox/listByPage' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "pageIndex": 1,
+    "pageSize": 20
+  }'
+```
+
+**数据流向**
+
+- 列表项中的 `id` 为**草稿 ID**（用于后续的删除草稿使用）；`bizType=report` 时 `businessId` 为关联的**汇报 ID**，可与 **5.24** 返回的汇报 id、草稿详情/提交/删除等接口配合使用。
+
+---
+
+### 5.26 草稿汇报详情
+
+根据**汇报 ID**查询草稿态汇报的完整编辑数据（OpenAPI：`draftBoxDetailUsingGET`，摘要「34、草稿汇报详情」）。路径参数与 **5.25** 列表中的 `businessId`（`bizType=report` 时）或 **5.24** 返回的汇报 id 一致。
+
+**基本信息**
+
+| 项目         | 说明                                                       |
+| ------------ | ---------------------------------------------------------- |
+| 接口地址     | `/work-report/draftBox/detail/{reportRecordId}`            |
+| 请求方式     | `GET`                                                      |
+| Content-Type | -                                                          |
+
+**请求参数**
+
+路径参数：
+
+| 参数名            | 类型 | 必填 | 说明    |
+| ----------------- | ---- | ---- | ------- |
+| `reportRecordId`  | Long | 是   | 汇报 id |
+
+**响应参数**
+
+`data` 类型为 `汇报详情VO`（OpenAPI 模型名），结构见 **6.28 汇报详情VO**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "id": 2036325013120483330,
+    "main": "周报草稿",
+    "contentHtml": "<p>正文</p>",
+    "contentType": "markdown",
+    "typeId": 9999,
+    "templateId": null,
+    "planId": null,
+    "grade": "一般",
+    "privacyLevel": "非涉密",
+    "reportCode": "RPT-20260328-001",
+    "reportRecordType": 5,
+    "status": 2,
+    "acceptEmployeeList": [],
+    "copyEmployeeList": [],
+    "reportLevelList": [],
+    "fileList": []
+  }
+}
+```
+
+**请求示例**
+
+```bash
+curl -X GET 'https://{域名}/open-api/work-report/draftBox/detail/2036325013120483330' \
+  -H 'appKey: {appKey}'
+```
+
+**数据流向**
+
+- 用于在编辑页回显草稿：与 **5.24 新增或更新汇报草稿** 组成「保存—列表—详情—再保存」闭环。
+- `status=2` 表示暂存（草稿），具体枚举以 **6.28** 为准。
+
+---
+
+### 5.27 删除草稿
+
+按**草稿 ID**删除当前用户在草稿箱中的对应草稿（OpenAPI：`deleteDraftUsingPOST`，摘要「33、删除草稿」）。路径中的 `id` 为 **草稿 ID**，与 **5.25 草稿箱分页查询** 列表项中的 `id` 一致（不是汇报 `businessId`）。
+
+**基本信息**
+
+| 项目         | 说明                                      |
+| ------------ | ----------------------------------------- |
+| 接口地址     | `/work-report/draftBox/delete/{id}`     |
+| 请求方式     | `POST`                                    |
+| Content-Type | -（无请求体，仅路径参数）                 |
+
+**请求参数**
+
+路径参数：
+
+| 参数名 | 类型 | 必填 | 说明    |
+| ------ | ---- | ---- | ------- |
+| `id`   | Long | 是   | 草稿 id |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，表示是否删除成功（OpenAPI：`Result«boolean»`）。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": true
+}
+```
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/draftBox/delete/2036325013120483329' \
+  -H 'appKey: {appKey}'
+```
+
+**数据流向**
+
+- 删除成功后客户端可刷新 **5.25** 列表或关闭详情页；若需同时清理本地编辑态，请以 `resultCode` 与 `data` 为准。
+
+---
+
+### 5.28 将草稿转为正式汇报发出
+
+> **实现状态（务必阅读）**  
+> 本接口在 [Swagger / OpenAPI](https://cwork-test-open-api.xgjktech.com.cn/swagger-ui/index.html#/%E5%B7%A5%E4%BD%9C%E5%8D%8F%E5%90%8C%E6%9C%8D%E5%8A%A1/submitDraftBoxUsingPOST) 中**已定义**（摘要「31、将草稿转为正式汇报发出」），但**服务端尚未实现**。请勿在联调、测试验收或生产逻辑中依赖该路径；将草稿内容**正式发出**应使用 **5.1 发送汇报**（`POST /work-report/report/record/submit`），按需先通过 **5.24** / **5.26** 取回草稿再组包提交。
+
+以下仅作契约备案，便于与 OpenAPI 对照；**在实现落地前，调用可能返回未实现、404 或与文档不符的行为**。
+
+**基本信息**
+
+| 项目         | 说明                                   |
+| ------------ | -------------------------------------- |
+| 接口地址     | `/work-report/draftBox/submit/{id}`    |
+| 请求方式     | `POST`                                 |
+| Content-Type | -（无请求体，仅路径参数）              |
+
+**请求参数**
+
+路径参数（与 OpenAPI 描述一致）：
+
+| 参数名 | 类型 | 必填 | 说明    |
+| ------ | ---- | ---- | ------- |
+| `id`   | Long | 是   | 汇报 id |
+
+> 与 **5.25** 的对应关系：`bizType=report` 时列表项的 `businessId` 即为汇报 id，可与本路径 `{id}` 对齐（仍以实际联调为准）。
+
+**响应参数（OpenAPI 声明）**
+
+`data` 类型为 `Boolean`（`Result«boolean»`），语义上表示是否提交成功——**在未实现阶段无保证**。
+
+**请求示例（仅供参考）**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/2036325013120483330' \
+  -H 'appKey: {appKey}'
+```
+
+---
+
 ## 六、公共数据结构
 
 ### 6.1 ReportLevelParam
@@ -1708,7 +2035,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `groupId`   | Long             | 分组 ID                    |
 | `groupName` | String           | 分组名称                   |
 | `ownType`   | Integer          | 归属类型, 1: 个人; 2: 公司 |
-| `members`   | List\<MemberVO> | 成员列表（见 **5.26**）    |
+| `members`   | List\<MemberVO> | 成员列表（见 **6.26 MemberVO**）    |
 
 ### 6.26 MemberVO
 
@@ -1717,6 +2044,64 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `id`   | Long   | 人员 ID |
 | `name` | String | 姓名    |
 | `title`| String | 职位    |
+
+### 6.27 DraftBoxListVO
+
+草稿箱列表单行数据（**5.25 草稿箱分页查询** 中 `list` 元素类型）。
+
+| 字段名        | 类型      | 说明                                                                 |
+| ------------- | --------- | -------------------------------------------------------------------- |
+| `id`          | Long      | 草稿 ID                                                              |
+| `bizType`     | String    | 业务类型：`report`-汇报、`plan`-任务                                 |
+| `businessId`  | Long      | `bizType=report` 时为汇报 id；`bizType=plan` 时为任务 id               |
+| `title`       | String    | 标题                                                                 |
+| `content`     | String    | 正文摘要（仅展示约前 200 个字符）                                    |
+| `grade`       | String    | 优先等级：一般、紧急                                                 |
+| `existsFiles` | Integer   | 附件状态：`0`-无附件，`1`-有附件                                     |
+| `status`      | Integer   | 草稿箱状态：`1`-有效，`2`-无效，`3`-删除                             |
+| `createTime`  | Timestamp | 创建时间                                                             |
+| `updateTime`  | Timestamp | 更新时间                                                             |
+
+### 6.28 汇报详情VO
+
+**5.26 草稿汇报详情** 成功时 `data` 的类型（OpenAPI：`汇报详情VO`）。与 **6.1 ReportLevelParam** 不同，本结构用于**详情查询结果**：接收人/抄送为 `EmployeeSimpleVO` 列表，多级节点为 `ReportLevelVO`（内含 `empList`），附件字段名为 `fileList`。
+
+| 字段名                 | 类型                      | 说明                                                                 |
+| ---------------------- | ------------------------- | -------------------------------------------------------------------- |
+| `id`                   | Long                      | 汇报 ID                                                              |
+| `main`                 | String                    | 汇报主题                                                             |
+| `contentHtml`          | String                    | 汇报内容（富文本）                                                   |
+| `contentType`          | String                    | 正文类型：`html`、`markdown`                                         |
+| `typeId`               | Long                      | 业务类型 id                                                          |
+| `templateId`           | Long                      | 事项 id                                                              |
+| `planId`               | Long                      | 工作任务 id                                                          |
+| `grade`                | String                    | 优先级：一般、紧急                                                   |
+| `privacyLevel`         | String                    | 密级：非涉密、涉密（涉密下载需申请）                                 |
+| `reportCode`           | String                    | 唯一编码                                                             |
+| `reportRecordType`     | Integer                   | 工作汇报类型：1-工作交流、2-工作指引、3-文件签批、4-AI 汇报、5-工作汇报 |
+| `status`               | Integer                   | 状态：1-已提交、2-暂存（草稿）、3-已撤回、6-已驳回                   |
+| `acceptEmployeeList`   | List\<EmployeeSimpleVO> | 接收人信息列表（见 **6.21 EmployeeSimpleVO**）                       |
+| `copyEmployeeList`     | List\<EmployeeSimpleVO> | 抄送人员列表（见 **6.21 EmployeeSimpleVO**）                       |
+| `reportLevelList`      | List\<ReportLevelVO>      | 工作指引/签批多级用户列表（见下表 **ReportLevelVO**）                |
+| `fileList`             | List\<OpenPlatformFileVO> | 关联附件；元素结构同 **6.24 OpenPlatformFileVO**（OpenAPI 模型名：`工作汇报-附件信息`） |
+
+**ReportLevelVO**（`reportLevelList` 元素，查询结果形态；提交时仍使用 **6.1 ReportLevelParam**）：
+
+| 字段名     | 类型                       | 说明                                                         |
+| ---------- | -------------------------- | ------------------------------------------------------------ |
+| `type`     | String                     | 类型：`read`-传阅、`suggest`-建议、`decide`-决策             |
+| `level`    | Integer                    | 层级：1–20                                                   |
+| `nodeCode` | String                     | 节点编码；签批事项表单权限节点，`startNode` 表示发起节点     |
+| `nodeName` | String                     | 节点名称                                                     |
+| `empList`  | List\<ReportLevelUserVO>   | 当前层级用户列表（见下表）                                   |
+
+**ReportLevelUserVO**（`empList` 元素）：
+
+| 字段名        | 类型   | 说明    |
+| ------------- | ------ | ------- |
+| `empId`       | Long   | 员工 id |
+| `name`        | String | 姓名    |
+| `requirement` | String | AI 要求 |
 
 ---
 
