@@ -8,6 +8,7 @@
 | 1.1 | 2026-03-25 | 新增 4.13 获取BP完整Markdown内容接口 | 曾文哲 |
 | 1.2 | 2026-03-27 | 新增 4.14~4.15 接口（根据目标/成果ID新增下级任务） | 刘会芳 |
 | 1.3 | 2026-03-28 | 新增 4.16 接口（获取关键岗位详情） | 刘会芳 |
+| 1.4 | 2026-03-28 | 更新 4.16 接口奖金系数单位（个人/部门/中心/集团）由 “月” 改为 “%” | 刘会芳 |
 
 ## 一、概述
 
@@ -1284,10 +1285,10 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/addA
 | `keyPosition`              | Boolean            | 是否关键岗位                 |
 | `keyPositionReason`        | String             | 设置为关键岗位的原因         |
 | `bonusCoefficient`         | BigDecimal         | 奖金系数建议(月)             |
-| `bonusCoefficientPersonal` | BigDecimal         | 个人奖金系数建议(月)         |
-| `bonusCoefficientDept`     | BigDecimal         | 部门奖金系数建议(月)         |
-| `bonusCoefficientCenter`   | BigDecimal         | 中心奖金系数建议(月)         |
-| `bonusCoefficientGroup`    | BigDecimal         | 集团奖金系数建议(月)         |
+| `bonusCoefficientPersonal` | BigDecimal         | 个人奖金系数建议(%)         |
+| `bonusCoefficientDept`     | BigDecimal         | 部门奖金系数建议(%)         |
+| `bonusCoefficientCenter`   | BigDecimal         | 中心奖金系数建议(%)         |
+| `bonusCoefficientGroup`    | BigDecimal         | 集团奖金系数建议(%)         |
 | `bonusCoefficientReason`   | String             | 奖金系数建议原因             |
 | `isParentAdmin`            | Boolean            | 是否为直接上级组织管理员     |
 | `isDirectLeader`           | Boolean            | 是否为组织架构的直属上级领导 |
