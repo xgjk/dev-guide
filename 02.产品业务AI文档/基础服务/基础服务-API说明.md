@@ -3,8 +3,9 @@
 ## 修订记录
 
 | 版本 | 日期 | 变更摘要 | 变更人 |
-|------|------|----------|--------|
-| 1.0 | 2026-03-25 | 初版创建 | 成伟 |
+|------|------|----------|-----|
+| 1.0 | 2026-03-25 | 初版创建 | 成伟  |
+| 1.1 | 2026-03-29 | 新增 5.4 根据员工id获取岗位信息接口；新增 6.8 EmpPositionVO 数据结构 | 曾文哲 |
 
 ## 一、概述
 
@@ -17,6 +18,7 @@
    - **按姓名搜索全部员工** — 支持模糊搜索内部员工与外部联系人。
    - **批量获取员工信息** — 根据企业 ID 和 personId 批量查询。
    - **获取组织架构信息** — 查询员工的直属领导、二三级部门名称等。
+   - **获取员工岗位信息** — 根据员工 ID 查询其所有岗位（名称、职责、状态）。
 
 ---
 
@@ -346,6 +348,53 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-user/employee/ge
 
 ---
 
+### 5.4 根据员工 id 获取岗位信息
+
+根据员工 ID 获取该员工关联的所有岗位信息，包含岗位名称、岗位职责及状态。
+
+**基本信息**
+
+| 项目         | 说明                                                |
+| ------------ | --------------------------------------------------- |
+| 接口地址         | `/cwork-user/employee/getPositionsByEmpId`         |
+| 请求方式         | `GET`                                              |
+
+**请求参数**
+
+| 参数名  | 类型 | 必填 | 说明   |
+| ------- | ---- | ---- | ------ |
+| `empId` | Long | 是   | 员工 id |
+
+**响应参数**
+
+`data` 类型为 `List<EmpPositionVO>`，详见 **[6.8 EmpPositionVO](#68-emppositionvo)**。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-user/employee/getPositionsByEmpId?empId=10001' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": [
+    {
+      "id": 50001,
+      "name": "Java高级工程师",
+      "jobDuty": "负责核心系统架构设计与开发",
+      "state": "NORMAL"
+    }
+  ]
+}
+```
+
+---
+
 ## 六、公共数据结构
 
 ### 6.1 DownloadFileVO
@@ -435,6 +484,18 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-user/employee/ge
 
 ---
 
+### 6.8 EmpPositionVO
+员工岗位信息。
+
+| 字段      | 类型   | 说明                              |
+| --------- | ------ | --------------------------------- |
+| `id`      | Long   | 岗位 id                           |
+| `name`    | String | 岗位名称                          |
+| `jobDuty` | String | 岗位职责                          |
+| `state`   | String | 岗位状态（`NORMAL`：正常，`CLOSED`：停用） |
+
+---
+
 ## 七、错误码说明
 
 开放平台接口统一使用 `resultCode` 表示业务处理结果。除通用的成功（1）和失败（0）外，系统还定义了以下标准错误码，便于调用方进行精确的分支处理与异常提示：
@@ -475,6 +536,6 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-user/employee/ge
 
 ---
 
-**文档版本**：v1.3  
-**更新日期**：2026-03-17  
+**文档版本**：v1.4  
+**更新日期**：2026-03-29  
 **维护人/团队**：基础服务团队
