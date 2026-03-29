@@ -1,4 +1,4 @@
-# XGJK Skill 包协议规范 v1.05
+﻿# XGJK Skill 包协议规范 v1.05
 
 本文档是一份**自包含的协议规范**。任何 AI 或开发者只需阅读本文档，即可从零创建一个符合 XGJK 标准的完整 Skill 包，无需额外的模板文件夹。
 
@@ -782,7 +782,7 @@ Skill 包生成后，必须逐项检查以下内容：
  └─ 优先级 3（最后手段）：向用户索取 CWork Key 并调用鉴权接口换取 token
      └─ 仅在优先级 1 和 2 都无值时才执行此步骤
      └─ 鉴权接口：
-        GET https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
+        GET https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
         返回字段映射：data.xgToken → Header access-token
         接口文档：../openapi/common/appkey.md
 \```
@@ -891,7 +891,7 @@ Skill 包生成后，必须逐项检查以下内容：
 > **性质**：固定内容，原样复制，禁止修改。
 
 ```markdown
-# GET https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
+# GET https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
 
 ## 作用
 

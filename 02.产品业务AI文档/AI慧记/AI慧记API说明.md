@@ -1,4 +1,4 @@
-# AI慧记 Open API 接口文档
+﻿# AI慧记 Open API 接口文档
 
 ## 修订记录
 
@@ -40,7 +40,7 @@ https://{域名}/open-api/{接口地址}
 
 | 环境   | 域名/Base URL                    | 备注 |
 | ------ | ------------------------------- | ---- |
-| 生产环境 | `https://sg-al-ai-voice-assistant.mediportal.com.cn/api`      | -    |
+| 生产环境 | `https://sg-al-cwork-web.mediportal.com.cn`      | -    |
 
 ### 2.3 公共请求头
 

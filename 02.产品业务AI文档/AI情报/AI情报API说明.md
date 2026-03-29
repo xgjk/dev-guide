@@ -1,4 +1,4 @@
-# AI情报 Open API 接口文档
+﻿# AI情报 Open API 接口文档
 
 ## 修订记录
 
@@ -45,8 +45,8 @@ https://{鉴权域名}/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
 
 | 环境 | 域名/Base URL | 备注 |
 |------|---------------|------|
-| 生产环境-业务接口 | `https://cwork-api.mediportal.com.cn` | AI情报业务接口 |
-| 生产环境-鉴权接口 | `https://cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
+| 生产环境-业务接口 | `https://sg-al-cwork-web.mediportal.com.cn` | AI情报业务接口 |
+| 生产环境-鉴权接口 | `https://sg-al-cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
 
 ### 2.3 公共请求头
 
@@ -60,7 +60,7 @@ https://{鉴权域名}/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
 所有 AI情报业务接口均使用 `access-token` 鉴权。若当前没有可用 token，可先调用鉴权接口：
 
 ```bash
-curl -X GET 'https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}' \
   -H 'Content-Type: application/json'
 ```
 
@@ -183,7 +183,7 @@ curl -X GET 'https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_g
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/listMobanByPageV2' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/listMobanByPageV2' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -259,7 +259,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/listMobanByPag
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/mobanDetail' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/mobanDetail' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -354,7 +354,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/mobanDetail' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/startTask' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/startTask' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -417,7 +417,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/startTask' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/checkTask' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/checkTask' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -479,7 +479,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/checkTask' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/taskDetailV2' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/taskDetailV2' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -585,7 +585,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/taskDetailV2' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listTaskByPage' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listTaskByPage' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -665,7 +665,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listTaskByPage'
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/updateQuestionResult' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/updateQuestionResult' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -719,7 +719,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/updateQuestionR
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersion' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listResultVersion' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -822,7 +822,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersi
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/createMoban' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/createMoban' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -871,7 +871,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/createMoban' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/updateMoban' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/updateMoban' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -915,7 +915,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/updateMoban' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/deleteMoban' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/deleteMoban' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{

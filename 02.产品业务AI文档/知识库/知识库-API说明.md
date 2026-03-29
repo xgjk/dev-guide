@@ -1,4 +1,4 @@
-# 知识库 Open API 接口文档
+﻿# 知识库 Open API 接口文档
 
 ## 修订记录
 
@@ -139,7 +139,7 @@ https://{域名}/open-api/{接口地址}
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file/getChildFiles?parentId=1000' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getChildFiles?parentId=1000' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -171,7 +171,7 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file/getDownloadInfo?fileId=20001' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo?fileId=20001' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -390,7 +390,7 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file/searchFile?nameKey=测试' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/searchFile?nameKey=测试' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -422,7 +422,7 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/document-database/file/getLevel1Folders?projectId=2009488364113997826' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getLevel1Folders?projectId=2009488364113997826' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
