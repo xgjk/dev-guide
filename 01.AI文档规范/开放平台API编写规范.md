@@ -67,12 +67,12 @@
 
 **示例结构**：
 
-```markdown
+
 | 字段         | 类型    | 说明                          |
 | resultCode   | Integer | 业务状态码，1=成功，其他=失败 |
 | resultMsg    | String  | 提示信息，成功时为 null       |
 | data         | T       | 业务数据，失败时为 null       |
-```
+
 
 #### 2.5 认证与安全（文档级）
 
