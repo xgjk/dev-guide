@@ -11,7 +11,7 @@
 | 1.4 | 2026-03-28 | 新增「新增草稿相关接口，5.23-5.27」 | 成伟   |
 | 1.5 | 2026-03-30 | 补充「将草稿转为正式汇报发出」接口的内部路由实现与文档说明状态同步 | 付光伟 |
 | 1.6 | 2026-03-30 | 修复接口序号错位，并补充汇报/草稿通用参数说明及接口交叉引用 | 付光伟 |
-
+| 1.7 | 2026-03-30 | 汇报提交参数新增节点级填写要求（requirement）字段 | 付光伟 |
 
 
 
@@ -127,6 +127,7 @@ https://{域名}/open-api/{接口地址}
    上述接口均需传入 `main`、`contentHtml`、`reportLevelList`，若有附件则传入 **`fileVOList`**（可选）。**接收人由 `reportLevelList` 决定**。
     - **支持按分组选取人员**：除 `levelUserList`（单人列表）外，还可使用 `groupIdList` 直接指定分组 ID。若使用分组，该分组下的所有成员都将收到汇报。
     - **获取分组 ID**：先调用 **4.3 获取指定用户的所有分组及成员**（`POST /cwork-user/group/queryTargetUserGroups`）获取符合条件的 `groupId`。
+    - **指定节点填写要求 (AI 要求)**：针对每一层级节点，可在 `reportLevelList[].requirement` 传入具体的 AI 引导词或处理要求。
 
    示例一：按单个人员（`levelUserList`）指定接收人：
 
@@ -205,6 +206,31 @@ https://{域名}/open-api/{接口地址}
       "type": "url",
       "url": "https://www.baidu.com"
     }]
+}
+```
+
+示例四：指定节点填写要求 (AI 要求)：
+
+```json
+{
+  "main": "标题",
+  "contentHtml": "汇报正文",
+  "reportLevelList": [
+    {
+      "level": 1,
+      "levelUserList": [{"empId": 10001}],
+      "nodeName": "建议人",
+      "type": "suggest",
+      "requirement": "请建议人根据汇报内容评价风险等级，并给出避险措施。"
+    },
+    {
+      "level": 2,
+      "levelUserList": [{"empId": 10002}],
+      "nodeName": "决策人",
+      "type": "decide",
+      "requirement": "决策人需明确是否同意该避险方案。"
+    }
+  ]
 }
 ```
 
@@ -1724,14 +1750,14 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | `nodeCode`      | String                      | 节点编码（表单权限节点编码，startNode 表示发起节点） |
 | `nodeName`      | String                      | 节点名称                                             |
 | `levelUserList` | List\<ReportLevelUserParam> | 当前层级用户列表（见下表）                           |
-| `groupIdList`   | List\<Long>                 | 分组 ID 列表（通过 **4.03** 接口获取）               |
+| `groupIdList`   | List\<Long>                 | 分组 ID 列表（通过 **4.3** 接口获取）               |
+| `requirement`   | String                      | 节点填写要求：AI会对节点下的员工输入内容做总结评价                  |
 
 `ReportLevelUserParam`：
 
 | 字段名        | 类型   | 说明    |
 | ------------- | ------ | ------- |
 | `empId`       | Long   | 员工 id |
-| `requirement` | String | AI 要求 |
 
 ### 6.2 ReportReplyInnerParam.ReportFileVO
 
