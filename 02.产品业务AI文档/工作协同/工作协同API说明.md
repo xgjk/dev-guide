@@ -8,7 +8,9 @@
 | 1.1  | 2026-03-25 | 新增获取指定用户分组接口 | 付光伟   |
 | 1.2  | 2026-03-26 | 新增个人分组创建与成员管理接口、重构文档结构及序号 | 付光伟 |
 | 1.3  | 2026-03-26 | 在获取分组及管理成员接口中增加按姓名搜索员工 ID 的说明 | 付光伟 |
-| 1.4  | 2026-03-28 | 新增「新增草稿相关接口,5.24-5.28」 | 成伟   |
+| 1.4  | 2026-03-28 | 新增「新增草稿相关接口，5.23-5.27」 | 成伟   |
+| 1.5  | 2026-03-30 | 修复第五章接口序号错位及第六章公共数据结构引用序号错误问题 | 付光伟 |
+| 1.6  | 2026-03-30 | 补充「将草稿转为正式汇报发出」接口的内部路由实现与文档说明状态同步 | 付光伟 |
 
 
 
@@ -43,7 +45,7 @@
 11. **工作任务列表查询** — 分页查询工作任务列表（支持按状态/关键词/标签等筛选）。
 12. **获取用户创建的反馈类型待办列表** — 查询某员工（默认登录用户）创建的反馈待办。
 13. **任务简易信息 VO** — 获取任务简易信息及其关联汇报简易列表。
-14. **发件箱分页查询** — 分页获取当前用户发件箱汇报列表（支持筛选条件）。
+14. **发件箱** — 分页获取当前用户发件箱汇报列表（支持筛选条件）。
 15. **分页获取当前用户的决策/建议/反馈待办列表** — 汇报待办列表（决策/建议/反馈）。
 16. **分页获取当前用户的未读汇报列表** — 汇报未读列表。
 17. **判断员工对指定汇报是否已读** — 根据汇报 ID 与员工 ID 判断已读状态。
@@ -56,7 +58,7 @@
 24. **草稿箱分页查询** — 分页获取当前用户的草稿箱列表。
 25. **草稿汇报详情** — 根据汇报 ID 获取草稿态汇报详情（正文、接收人/抄送、多级节点、附件等）。
 26. **删除草稿** — 按草稿 ID 删除草稿箱中的一条草稿。
-27. **将草稿转为正式汇报发出** — OpenAPI 已声明路径与入参，**当前服务端未实现**；正式发出请使用发送汇报接口。
+27. **将草稿转为正式汇报发出** — 将指定的草稿转为正式发布状态。
 
 
 
@@ -580,7 +582,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
 | ---------------- | ------------------- | ---- | ----------------------------------------------------------- |
 | `reportRecordId` | String              | 是   | 工作汇报 id                                                 |
 | `isMedia`        | Integer             | 否   | 是否带附件：0-没有（默认）、1-有                            |
-| `mediaVOList`    | List\<ReportFileVO> | 否   | 附件集合，结构见 **5.2 ReportReplyInnerParam.ReportFileVO** |
+| `mediaVOList`    | List\<ReportFileVO> | 否   | 附件集合，结构见 **6.2 ReportReplyInnerParam.ReportFileVO** |
 | `contentHtml`    | String              | 是   | 回复内容                                                    |
 | `sendMsg`        | Boolean             | 否   | 是否发送通知到填写汇报人，默认 `true`                       |
 | `addEmpIdList`   | List\<String>       | 否   | 被 @ 的员工 id 集合，会添加到转发到人列表                   |
@@ -882,7 +884,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 ---
 
-### 5.8 获取待办及未读汇报列表【新的待办和汇报】
+### 5.8 获取待办及未读汇报列表（新的待办和汇报）
 
 插件场景：一次返回最新待办列表与未读汇报列表聚合对象。
 
@@ -1085,9 +1087,9 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 `data` 类型为 `PageInfo<ReportTodoListItemVO>`，结构见：
 
-- **5.3 PageInfo**
-- **5.18 ReportTodoListItemVO**
-- **5.19 ReportTodoDetailVO**（列表项 `detail`）
+- **6.3 PageInfo**
+- **6.18 ReportTodoListItemVO**
+- **6.10 ReportTodoDetailVO**（列表项 `detail`）
 
 ---
 
@@ -1111,9 +1113,9 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 
 `data` 类型为 `PageInfo<ReportUnreadListItemVO>`，结构见：
 
-- **5.3 PageInfo**
-- **5.20 ReportUnreadListItemVO**
-- **5.19 ReportTodoDetailVO**（列表项 `detail`）
+- **6.3 PageInfo**
+- **6.19 ReportUnreadListItemVO**
+- **6.10 ReportTodoDetailVO**（列表项 `detail`）
 
 ---
 
@@ -1338,8 +1340,8 @@ Query 参数：
 
 `data` 类型为 `OpenPlatformNewMsgSummaryVO`，结构见：
 
-- **5.22 OpenPlatformNewMsgSummaryVO**
-- **5.23 OpenPlatformNewMsgVO**（列表项 `msgList`）
+- **6.22 OpenPlatformNewMsgSummaryVO**
+- **6.23 OpenPlatformNewMsgVO**（列表项 `msgList`）
 
 **请求示例**
 
@@ -1384,13 +1386,13 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 ---
 
-### 5.24 新增或更新汇报草稿
+### 5.23 新增或更新汇报草稿
 
 保存或更新当前用户的汇报草稿；请求体模型与正式提交相近，但草稿场景下对接收人等字段的约束更宽松。正式发出汇报请使用 **5.1 发送汇报**（`POST /work-report/report/record/submit`）。
 
 > **更新约定（务必遵守）**  
-> - **若是更新草稿，必须在请求体中传入 `id`（汇报 id）**；不传则一律视为**新增**，会生成新的草稿记录。`id` 可与 **5.24** 返回的 `data.id`、**5.25** 列表中 `bizType=report` 时的 `businessId`、或 **5.26** 路径中的 `reportRecordId` 对齐。  
-> - **更新语义为全量更新（覆盖写）**：服务端按本次请求体整体落库，**未传入的字段不会保留旧值**。例如原草稿已填写接收人，本次更新若**不带** `acceptEmpIdList`（或等价地传空列表，以实际联调为准），则**接收人会被清空**；`copyEmpIdList`、`reportLevelList`、`fileVOList` 等集合类字段同理。建议更新前先调用 **5.26 草稿汇报详情** 取回完整数据，在完整对象上修改后再调用本接口保存。
+> - **若是更新草稿，必须在请求体中传入 `id`（汇报 id）**；不传则一律视为**新增**，会生成新的草稿记录。`id` 可与 **5.23** 返回的 `data.id`、**5.24** 列表中 `bizType=report` 时的 `businessId`、或 **5.25** 路径中的 `reportRecordId` 对齐。  
+> - **更新语义为全量更新（覆盖写）**：服务端按本次请求体整体落库，**未传入的字段不会保留旧值**。例如原草稿已填写接收人，本次更新若**不带** `acceptEmpIdList`（或等价地传空列表，以实际联调为准），则**接收人会被清空**；`copyEmpIdList`、`reportLevelList`、`fileVOList` 等集合类字段同理。建议更新前先调用 **5.25 草稿汇报详情** 取回完整数据，在完整对象上修改后再调用本接口保存。
 
 **基本信息**
 
@@ -1477,7 +1479,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
 
 ---
 
-### 5.25 草稿箱分页查询
+### 5.24 草稿箱分页查询
 
 分页查询当前登录用户的草稿箱列表。
 
@@ -1548,13 +1550,13 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/listByPage' \
 
 **数据流向**
 
-- 列表项中的 `id` 为**草稿 ID**（用于后续的删除草稿使用）；`bizType=report` 时 `businessId` 为关联的**汇报 ID**，可与 **5.24** 返回的汇报 id、草稿详情/提交/删除等接口配合使用。
+- 列表项中的 `id` 为**草稿 ID**（用于后续的删除草稿使用）；`bizType=report` 时 `businessId` 为关联的**汇报 ID**，可与 **5.23** 返回的汇报 id、草稿详情/提交/删除等接口配合使用。
 
 ---
 
-### 5.26 草稿汇报详情
+### 5.25 草稿汇报详情
 
-根据**汇报 ID**查询草稿态汇报的完整编辑数据（OpenAPI：`draftBoxDetailUsingGET`，摘要「34、草稿汇报详情」）。路径参数与 **5.25** 列表中的 `businessId`（`bizType=report` 时）或 **5.24** 返回的汇报 id 一致。
+根据**汇报 ID**查询草稿态汇报的完整编辑数据（OpenAPI：`draftBoxDetailUsingGET`，摘要「34、草稿汇报详情」）。路径参数与 **5.24** 列表中的 `businessId`（`bizType=report` 时）或 **5.23** 返回的汇报 id 一致。
 
 **基本信息**
 
@@ -1612,14 +1614,14 @@ curl -X GET 'https://{域名}/open-api/work-report/draftBox/detail/2036325013120
 
 **数据流向**
 
-- 用于在编辑页回显草稿：与 **5.24 新增或更新汇报草稿** 组成「保存—列表—详情—再保存」闭环。
+- 用于在编辑页回显草稿：与 **5.23 新增或更新汇报草稿** 组成「保存—列表—详情—再保存」闭环。
 - `status=2` 表示暂存（草稿），具体枚举以 **6.28** 为准。
 
 ---
 
-### 5.27 删除草稿
+### 5.26 删除草稿
 
-按**草稿 ID**删除当前用户在草稿箱中的对应草稿（OpenAPI：`deleteDraftUsingPOST`，摘要「33、删除草稿」）。路径中的 `id` 为 **草稿 ID**，与 **5.25 草稿箱分页查询** 列表项中的 `id` 一致（不是汇报 `businessId`）。
+按**草稿 ID**删除当前用户在草稿箱中的对应草稿（OpenAPI：`deleteDraftUsingPOST`，摘要「33、删除草稿」）。路径中的 `id` 为 **草稿 ID**，与 **5.24 草稿箱分页查询** 列表项中的 `id` 一致（不是汇报 `businessId`）。
 
 **基本信息**
 
@@ -1660,16 +1662,16 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/delete/203632501312
 
 **数据流向**
 
-- 删除成功后客户端可刷新 **5.25** 列表或关闭详情页；若需同时清理本地编辑态，请以 `resultCode` 与 `data` 为准。
+- 删除成功后客户端可刷新 **5.24** 列表或关闭详情页；若需同时清理本地编辑态，请以 `resultCode` 与 `data` 为准。
 
 ---
 
-### 5.28 将草稿转为正式汇报发出
+### 5.27 将草稿转为正式汇报发出
+
+将指定草稿箱中的汇报转为正式发布状态。
 
 > **实现状态（务必阅读）**  
-> 本接口在 [Swagger / OpenAPI](https://cwork-test-open-api.xgjktech.com.cn/swagger-ui/index.html#/%E5%B7%A5%E4%BD%9C%E5%8D%8F%E5%90%8C%E6%9C%8D%E5%8A%A1/submitDraftBoxUsingPOST) 中**已定义**（摘要「31、将草稿转为正式汇报发出」），但**服务端尚未实现**。请勿在联调、测试验收或生产逻辑中依赖该路径；将草稿内容**正式发出**应使用 **5.1 发送汇报**（`POST /work-report/report/record/submit`），按需先通过 **5.24** / **5.26** 取回草稿再组包提交。
-
-以下仅作契约备案，便于与 OpenAPI 对照；**在实现落地前，调用可能返回未实现、404 或与文档不符的行为**。
+> 本接口在 [Swagger / OpenAPI](https://cwork-test-open-api.xgjktech.com.cn/swagger-ui/index.html#/%E5%B7%A5%E4%BD%9C%E5%8D%8F%E5%90%8C%E6%9C%8D%E5%8A%A1/submitDraftBoxUsingPOST) 中**已定义**（摘要「27、将草稿转为正式汇报发出」）。按需先通过 **5.23** 新增或者更新汇报草稿再操作此接口。
 
 **基本信息**
 
@@ -1681,19 +1683,19 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/delete/203632501312
 
 **请求参数**
 
-路径参数（与 OpenAPI 描述一致）：
+路径参数：
 
 | 参数名 | 类型 | 必填 | 说明    |
 | ------ | ---- | ---- | ------- |
 | `id`   | Long | 是   | 汇报 id |
 
-> 与 **5.25** 的对应关系：`bizType=report` 时列表项的 `businessId` 即为汇报 id，可与本路径 `{id}` 对齐（仍以实际联调为准）。
+> 与 **5.24** 的对应关系：`bizType=report` 时列表项的 `businessId` 即为汇报 id，可与本路径 `{id}` 对齐。
 
-**响应参数（OpenAPI 声明）**
+**响应参数**
 
-`data` 类型为 `Boolean`（`Result«boolean»`），语义上表示是否提交成功——**在未实现阶段无保证**。
+`data` 类型为 `Boolean`，表示是否提交成功。
 
-**请求示例（仅供参考）**
+**请求示例**
 
 ```bash
 curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/2036325013120483330' \
@@ -1760,7 +1762,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | `replyCount`       | Integer       | 回复总数                                                                |
 | `fileCount`        | Long          | 上传附件数                                                              |
 | `userStatus`       | String        | 状态                                                                    |
-| `reportEventVO`    | ReportEventVO | 汇报事件对象（见 **5.21**）                                             |
+| `reportEventVO`    | ReportEventVO | 汇报事件对象（见 **6.20**）                                             |
 
 ### 6.5 TodoTaskDetailVO
 
@@ -1815,7 +1817,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 
 | 字段名                   | 类型                    | 说明                               |
 | ------------------------ | ----------------------- | ---------------------------------- |
-| `recentOperateTemplates` | List\<RecentTemplateVO> | 最近操作过的事项列表（见 **5.8**） |
+| `recentOperateTemplates` | List\<RecentTemplateVO> | 最近操作过的事项列表（见 **6.8**） |
 
 ### 6.8 RecentTemplateVO
 
@@ -1844,8 +1846,8 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 
 | 字段名             | 类型             | 说明                        |
 | ------------------ | ---------------- | --------------------------- |
-| `latestTodoList`   | PluginItemListVO | 最新待办列表（见 **5.12**） |
-| `unreadReportList` | PluginItemListVO | 未读汇报列表（见 **5.12**） |
+| `latestTodoList`   | PluginItemListVO | 最新待办列表（见 **6.12**） |
+| `unreadReportList` | PluginItemListVO | 未读汇报列表（见 **6.12**） |
 
 ### 6.12 PluginItemListVO
 
@@ -1853,7 +1855,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | -------- | ------------------------- | ------------------- |
 | `total`  | Integer                   | 总数                |
 | `hasNew` | Boolean                   | 是否有新数据        |
-| `list`   | List\<PluginItemDetailVO> | 列表（见 **5.13**） |
+| `list`   | List\<PluginItemDetailVO> | 列表（见 **6.13**） |
 
 ### 6.13 PluginItemDetailVO
 
@@ -1894,7 +1896,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | `planLevel`         | Integer                 | 任务级别                             |
 | `parentName`        | String                  | 父任务名称                           |
 | `templateId`        | Long                    | 事项 id                              |
-| `reporterList`      | List\<EmployeeSimpleVO> | 汇报人信息（见 **5.22**）            |
+| `reporterList`      | List\<EmployeeSimpleVO> | 汇报人信息（见 **6.21**）            |
 | `isRead`            | Integer                 | 0-未读、1-已读                       |
 
 ### 6.15 TodoTaskCreatedFeedbackVO
@@ -1931,7 +1933,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | `linkIds`                 | String                    | 关联汇报 id（多个逗号分割）                |
 | `templateId`              | Long                      | 事项 id                                    |
 | `formTemplateId`          | Long                      | 表单模板 id                                |
-| `reportList`              | List\<ReportSimpleInfoVO> | 任务提交的汇报信息（见 **5.17**）          |
+| `reportList`              | List\<ReportSimpleInfoVO> | 任务提交的汇报信息（见 **6.17**）          |
 
 ### 6.17 ReportSimpleInfoVO
 
@@ -1970,7 +1972,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | `createTime`       | Timestamp          | 汇报时间                                           |
 | `todoType`         | String             | 待办类型：decide-决策、suggest-建议、feedback-反馈 |
 | `todoId`           | Long               | 待办 id                                            |
-| `detail`           | ReportTodoDetailVO | 详情对象（见 **5.10**）                            |
+| `detail`           | ReportTodoDetailVO | 详情对象（见 **6.10**）                            |
 
 ### 6.19 ReportUnreadListItemVO
 
@@ -1981,7 +1983,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | `main`             | String             | 汇报主题                |
 | `writeEmpName`     | String             | 汇报员工姓名            |
 | `createTime`       | Timestamp          | 汇报时间                |
-| `detail`           | ReportTodoDetailVO | 详情对象（见 **5.10**） |
+| `detail`           | ReportTodoDetailVO | 详情对象（见 **6.10**） |
 
 ### 6.20 ReportEventVO
 
@@ -2002,7 +2004,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 | 字段名     | 类型                           | 说明         |
 | ---------- | ------------------------------ | ------------ |
 | `total`    | Integer                        | 新消息总数   |
-| `msgList`  | List\<OpenPlatformNewMsgVO>    | 新消息列表（见 **5.23**）   |
+| `msgList`  | List\<OpenPlatformNewMsgVO>    | 新消息列表（见 **6.23**）   |
 
 ### 6.23 OpenPlatformNewMsgVO
 
@@ -2047,7 +2049,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 
 ### 6.27 DraftBoxListVO
 
-草稿箱列表单行数据（**5.25 草稿箱分页查询** 中 `list` 元素类型）。
+草稿箱列表单行数据（**5.24 草稿箱分页查询** 中 `list` 元素类型）。
 
 | 字段名        | 类型      | 说明                                                                 |
 | ------------- | --------- | -------------------------------------------------------------------- |
@@ -2064,7 +2066,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/submit/203632501312
 
 ### 6.28 汇报详情VO
 
-**5.26 草稿汇报详情** 成功时 `data` 的类型（OpenAPI：`汇报详情VO`）。与 **6.1 ReportLevelParam** 不同，本结构用于**详情查询结果**：接收人/抄送为 `EmployeeSimpleVO` 列表，多级节点为 `ReportLevelVO`（内含 `empList`），附件字段名为 `fileList`。
+**5.25 草稿汇报详情** 成功时 `data` 的类型（OpenAPI：`汇报详情VO`）。与 **6.1 ReportLevelParam** 不同，本结构用于**详情查询结果**：接收人/抄送为 `EmployeeSimpleVO` 列表，多级节点为 `ReportLevelVO`（内含 `empList`），附件字段名为 `fileList`。
 
 | 字段名                 | 类型                      | 说明                                                                 |
 | ---------------------- | ------------------------- | -------------------------------------------------------------------- |
