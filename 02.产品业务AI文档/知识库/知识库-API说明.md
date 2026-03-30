@@ -7,7 +7,7 @@
 | 1.0 | 2026-03-25 | 初版创建 | 成伟 |
 | 1.1 | 2026-03-26 | 更新上传切片说明 | 刘艳华 |
 | 1.2 | 2026-03-26 | 下线 getRawFileContent 接口，更新 API 规范与 AI 底层穿透能力文档 | 刘艳华 |
-| 1.3 | 2026-03-30 | 补充 deleteFile、updateFileProperty、batchGetContent 接口说明及参数更新 | AI |
+| 1.3 | 2026-03-30 | 补充 deleteFile、updateFileProperty、batchGetContent 接口说明及参数更新 | 刘艳华 |
 
 ## 一、概述
 
