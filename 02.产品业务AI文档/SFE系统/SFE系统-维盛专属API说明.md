@@ -126,9 +126,9 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `regionName`    | String | 否   | 大区名称，支持模糊查询 |
 | `areaName`      | String | 否   | 地区名称，支持模糊查询 |
 | `territoryName` | String | 否   | 辖区名称，支持模糊查询 |
-| `productName`   | String | 否   | 品种名称               |
-| `hcoName`       | String | 否   | 医院名称               |
-| `hcpName`       | String | 否   | 医生姓名               |
+| `productName`   | String | 否   | 品种名称，支持模糊查询 |
+| `hcoName`       | String | 否   | 医院名称，支持模糊查询 |
+| `hcpName`       | String | 否   | 医生姓名，支持模糊查询 |
 | `year`          | Number | 否   | 年度                   |
 | `quarter`       | Number | 否   | 季度                   |
 
@@ -425,8 +425,8 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `regionName`    | String | 否   | 大区名称，支持模糊查询 |
 | `areaName`      | String | 否   | 地区名称，支持模糊查询 |
 | `territoryName` | String | 否   | 辖区名称，支持模糊查询 |
-| `productName`   | String | 否   | 品种名称               |
-| `hcoName`       | String | 否   | 医院名称               |
+| `productName`   | String | 否   | 品种名称，支持模糊查询 |
+| `hcoName`       | String | 否   | 医院名称，支持模糊查询 |
 | `year`          | String | 否   | 年度                   |
 
 **请求示例**
@@ -661,8 +661,8 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `regionName`    | String | 否   | 大区名称，支持模糊查询 |
 | `areaName`      | String | 否   | 地区名称，支持模糊查询 |
 | `territoryName` | String | 否   | 辖区名称，支持模糊查询 |
-| `productName`   | String | 否   | 品种名称               |
-| `hcoName`       | String | 否   | 医院名称               |
+| `productName`   | String | 否   | 品种名称，支持模糊查询 |
+| `hcoName`       | String | 否   | 医院名称，支持模糊查询 |
 | `year`          | Number | 否   | 年度                   |
 | `quarter`       | Number | 否   | 季度                   |
 
