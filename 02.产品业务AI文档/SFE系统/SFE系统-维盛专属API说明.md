@@ -5,6 +5,7 @@
 | 版本 | 日期       | 修订内容                   | 修订人 |
 | ---- | ---------- | -------------------------- | ------ |
 | V1.0 | 2026-03-29 | 初始版本，开放维盛专属接口 | 王馗   |
+| V1.1 | 2026-03-31 | 查询参数增加品种名称、医院名称、医生姓名 | 王馗   |
 
 ---
 
@@ -119,14 +120,17 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 **请求参数**
 
-| 参数名    | 类型   | 必填 | 说明   |
-| --------- | ------ | ---- | ------ |
-| `zoneId`  | String | 否   | 区划ID |
-| `regionName`    | String  | 否   | 大区名称，支持模糊查询 |
-| `areaName`      | String  | 否   | 地区名称，支持模糊查询 |
-| `territoryName` | String  | 否   | 辖区名称，支持模糊查询 |
-| `year`    | Number | 否   | 年度   |
-| `quarter` | Number | 否   | 季度   |
+| 参数名          | 类型   | 必填 | 说明                   |
+| --------------- | ------ | ---- | ---------------------- |
+| `zoneId`        | String | 否   | 区划ID                 |
+| `regionName`    | String | 否   | 大区名称，支持模糊查询 |
+| `areaName`      | String | 否   | 地区名称，支持模糊查询 |
+| `territoryName` | String | 否   | 辖区名称，支持模糊查询 |
+| `productName`   | String | 否   | 品种名称               |
+| `hcoName`       | String | 否   | 医院名称               |
+| `hcpName`       | String | 否   | 医生姓名               |
+| `year`          | Number | 否   | 年度                   |
+| `quarter`       | Number | 否   | 季度                   |
 
 **请求示例**
 
@@ -415,13 +419,15 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 **请求参数**
 
-| 参数名   | 类型   | 必填 | 说明   |
-| -------- | ------ | ---- | ------ |
-| `zoneId` | String | 否   | 区划ID |
-| `regionName`    | String  | 否   | 大区名称，支持模糊查询 |
-| `areaName`      | String  | 否   | 地区名称，支持模糊查询 |
-| `territoryName` | String  | 否   | 辖区名称，支持模糊查询 |
-| `year`   | String | 否   | 年度   |
+| 参数名          | 类型   | 必填 | 说明                   |
+| --------------- | ------ | ---- | ---------------------- |
+| `zoneId`        | String | 否   | 区划ID                 |
+| `regionName`    | String | 否   | 大区名称，支持模糊查询 |
+| `areaName`      | String | 否   | 地区名称，支持模糊查询 |
+| `territoryName` | String | 否   | 辖区名称，支持模糊查询 |
+| `productName`   | String | 否   | 品种名称               |
+| `hcoName`       | String | 否   | 医院名称               |
+| `year`          | String | 否   | 年度                   |
 
 **请求示例**
 
@@ -649,14 +655,16 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 **请求参数**
 
-| 参数名    | 类型   | 必填 | 说明   |
-| --------- | ------ | ---- | ------ |
-| `zoneId`  | String | 否   | 区划ID |
-| `regionName`    | String  | 否   | 大区名称，支持模糊查询 |
-| `areaName`      | String  | 否   | 地区名称，支持模糊查询 |
-| `territoryName` | String  | 否   | 辖区名称，支持模糊查询 |
-| `year`    | Number | 否   | 年度   |
-| `quarter` | Number | 否   | 季度   |
+| 参数名          | 类型   | 必填 | 说明                   |
+| --------------- | ------ | ---- | ---------------------- |
+| `zoneId`        | String | 否   | 区划ID                 |
+| `regionName`    | String | 否   | 大区名称，支持模糊查询 |
+| `areaName`      | String | 否   | 地区名称，支持模糊查询 |
+| `territoryName` | String | 否   | 辖区名称，支持模糊查询 |
+| `productName`   | String | 否   | 品种名称               |
+| `hcoName`       | String | 否   | 医院名称               |
+| `year`          | Number | 否   | 年度                   |
+| `quarter`       | Number | 否   | 季度                   |
 
 **请求示例**
 
