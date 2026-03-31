@@ -5,6 +5,9 @@
 | 版本 | 日期 | 变更摘要 | 变更人 |
 |------|------|----------|--------|
 | 1.0 | 2026-03-25 | 初版创建 | 成伟 |
+| 1.1 | 2026-03-26 | 更新上传切片说明 | 刘艳华 |
+| 1.2 | 2026-03-26 | 下线 getRawFileContent 接口，更新 API 规范与 AI 底层穿透能力文档 | 刘艳华 |
+| 1.3 | 2026-03-30 | 补充 deleteFile、updateFileProperty、batchGetContent 接口说明及参数更新 | 刘艳华 |
 
 ## 一、概述
 
@@ -62,9 +65,9 @@ https://{域名}/open-api/{接口地址}
 
 > 需求：用户在外部应用中，从零拉取个人知识库面板全盘全景。
 
-1. **获取空间 id**：调用 **4.9 获取个人知识库空间Id**（`GET /document-database/project/personal/getProjectId`），获取到用户的唯一知识库空间 `projectId`。
-2. **拉取首层全景**：调用 **4.13 根据项目ID获取一级目录列表**（`GET /document-database/file/getLevel1Folders`），传入 `projectId`，即可完美拉取绝对顶层（根目录）的所有夹/文件列表。
-3. **分步下钻**：点击展开上层返回的文件夹时，调用 **4.1 根据父ID获取下级目录及文件列表**（`GET /document-database/file/getChildFiles`），传入：`parentId={文件夹ID}`，向下递归剥洋葱式钻取。
+1. **获取空间 id**：调用 **4.8 获取个人知识库空间Id**（`GET /document-database/project/personal/getProjectId`），获取到用户的唯一知识库空间 `projectId`。
+2. **拉取首层全景**：调用 **4.12 根据项目ID获取一级目录列表**（`GET /document-database/file/getLevel1Folders`），传入 `projectId`，即可完美拉取绝对顶层（根目录）的所有夹/文件列表。
+3. **分步下钻**：调用 **4.1 根据父ID获取下级目录及文件列表**（`GET /document-database/file/getChildFiles`），传入：`parentId={文件夹ID}`，向下递归剥洋葱式钻取。
 4. **在线预览文件**：参见 **[场景三](#场景三在线视频文档流式预览)**。
 
 ---
@@ -74,9 +77,9 @@ https://{域名}/open-api/{接口地址}
 > 需求：将第三方资产或离线文件直存到指定知识库逻辑节点。
 
 1. **底层资源初始化（可选）**：
-   - 若上传的是大文件，需按需分段调用 **4.6 预检**、**4.8 分片切片上传** 以及 **4.7 合并生成资源**。
+   - 若上传的是大文件，需按需分段调用 **4.5 预检**、**4.7 分片切片上传** 以及 **4.6 合并生成资源**。
    - 最终从合并接口中拿取底层的统一数据资源锚点：`resourceId`。
-2. **一键存盘绑定**：调用 **4.11 将文件资源保存到个人知识库目录**（`POST /document-database/project/personal/saveFile`），载荷传入：
+2. **一键存盘绑定**：调用 **4.10 将文件资源保存到个人知识库目录**（`POST /document-database/project/personal/saveFile`），载荷传入：
    - `name`: 文件展示名称；
    - `parentId`: 存盘的目标文件夹 ID（若直接存入绝对根目录，传 `0`）；
    - `type`: `2` (文件)；
@@ -101,7 +104,7 @@ https://{域名}/open-api/{接口地址}
 > 需求：根据关键词查询匹配的文件或文件夹（支持时间过滤与路径范围限缩）。
 
 1. **确定搜索维度**：
-   - **全局搜索**：调用 **4.13 搜索文件或目录**（`GET /document-database/file/searchFile`），传入 `nameKey="搜索词"`。
+   - **全局搜索**：调用 **4.11 搜索文件或目录**（`GET /document-database/file/searchFile`），传入 `nameKey="搜索词"`。
    - **限缩目录盘查**：若只需在某个父目录下查找，需额外传入 `rootFileId`（指定根目录）。
 2. **按需分类渲染**：
    - 依照返回体 `SearchFileVO` 中的 `folders`（文件夹列表）和 `files`（文件列表）在前端进行分类，渲染列表后可通过 `id` 进行在线预览（详见场景三）。
@@ -125,12 +128,13 @@ https://{域名}/open-api/{接口地址}
 
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `parentId` | Long | 是 | 父文件夹 id |
-| `type` | Integer | 否 | 类型：空为所有，1 为文件夹，2 为文件 |
-| `label` | String | 否 | 标签：空为全部，可选：初始化、待处理、放行 |
-| `order` | Integer | 否 | 排序：1 倒序更新；2 顺序更新；3 倒序创建；4 顺序创建 等 |
-| `excludeFileTypes` | String | 否 | 排除的文件类型，逗号分隔 |
-| `excludeFolderNames` | String | 否 | 排除的文件夹名称，逗号分隔 |
+| `parentId` | Long | 是 | 要展开的父文件夹id(根目录传0或查出的项目级id) |
+| `type` | Integer | 否 | 过滤资源类型(空为所有，1只查文件夹，2只查文件) |
+| `label` | String | 否 | 标签:空或者[原始]都是全部,初始化,待处理,放行 |
+| `order` | Integer | 否 | 排序规则：1倒序更新 2顺序更新 3倒序创建 4顺序创建 5倒序名字 6顺序名字(AI常用1或3) |
+| `excludeFileTypes` | String | 否 | 需要排除的文件业务分类，多个用逗号分隔(例如: work_report,work_plan,huiji) |
+| `excludeFolderNames` | String | 否 | 需要排除的文件夹名称，多个用逗号分隔(例如: 临时文件,测试文件夹) |
+| `returnFileDesc` | Boolean | 否 | 强制带回文件描述摘要(建议AI传true) |
 
 **响应参数**
 
@@ -177,9 +181,9 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
-### 4.3 【获取】根据文件ID和页码获取内容
+### 4.3 【获取】UI阅读模式：根据文件ID和页码分页获取内容
 
-按页码分页获取文件内容（如文档某一页的文本）。
+主要供 UI 界面提供对文件进行分段、分页的分批流式展示。
 
 **基本信息**
 
@@ -197,13 +201,13 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 **响应参数**
 
-`data` 类型为 `String`。
+`data` 类型为 `String`，为该页的排版文本。
 
 ---
 
-### 4.4 【获取】根据文件ID获取完整内容
+### 4.4 【获取】AI摘要模式：根据业务资源自适应获取全局提纯文本
 
-根据文件 ID 获取完整文件内容（不分页）。
+面向 AI Agent 设计的智能全文提取引擎。会自动根据传入的业务类型路由至对应微服务获取实况，若不传则降级反查内部物理文件的 RAG 知识库脱水版本。返回经过高度清洗和提纯的全局 Markdown 文本。
 
 **基本信息**
 
@@ -216,39 +220,17 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `fileId` | Long | 是 | 文件 id |
+| `fileId` | Long | 否 | 文件id（推荐仅传此参数，后端自动补全其余字段） |
+| `relationId` | String | 否 | 业务关联id（可选，后端可根据fileId自动补全） |
+| `fileType` | String | 否 | 业务类型（可选，后端可根据fileId自动补全）。枚举：doc(富文本), file(普通文件), work_report(工作汇报), work_plan(工作任务), url(链接), huiji(慧记), ai-report(AI情报) |
 
 **响应参数**
 
-`data` 类型为 `String`。
+`data` 类型为 `String`，格式为全局提纯的纯文本或 Markdown 面向解析器的文本格式。
 
 ---
 
-### 4.5 【获取】获取原文件解析后的大文本内容
-
-获取原文件解析后的大文本内容（如 Markdown 等），可按需解析图片。
-
-**基本信息**
-
-| 项目 | 说明 |
-| :--- | :--- |
-| 接口地址 | `/document-database/file/getRawFileContent` |
-| 请求方式 | `GET` |
-
-**请求参数**
-
-| 参数名 | 类型 | 必填 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `resourceId` | Long | 是 | 资源 id |
-| `parseImage` | Boolean | 否 | 是否解析图片 |
-
-**响应参数**
-
-`data` 类型为 `FileContentTaskVO`，字段详见 **[5.3 FileContentTaskVO](#53-filecontenttaskvo)**。
-
----
-
-### 4.6 【上传】预检文件MD5信息（支持秒传）
+### 4.5 【上传】预检文件MD5信息（支持秒传）
 
 上传前根据文件 MD5 预检，若服务器已存在该文件可秒传，无需重复上传。
 
@@ -269,9 +251,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 `data` 类型为 `SliceCheckVO`，字段详见 **[5.4 SliceCheckVO](#54-slicecheckvo)**。
 
+
 ---
 
-### 4.7 【上传】合并文件分片生成底层资源
+### 4.6 【上传】合并文件分片生成底层资源
 
 所有分片上传完成后，合并分片并生成底层资源。
 
@@ -289,9 +272,9 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
-### 4.8 【上传】上传文件分片数据
+### 4.7 【上传】注册文件分片数据
 
-上传单个文件分片数据体。
+当 MD5 预检未命中秒传时，将已物理上传到 MinIO (通过 PUT `uploadUrl`) 的文件分片在服务端进行注册。
 
 **基本信息**
 
@@ -305,9 +288,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 请求体为 `UploadFileSliceParam` (见 5.6)。
 
+
 ---
  
-### 4.9 【基础】获取个人知识库空间ID
+### 4.8 【基础】获取个人知识库空间ID
 
 获取当前用户个人知识库的空间 ID（projectId），用于对应知识库目录。
 
@@ -320,7 +304,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
  
-### 4.10 【检索】获取我最新上传的文件
+### 4.9 【检索】获取我最新上传的文件
 
 获取当前用户最新上传的文件列表（支持 limit 限制）。
 
@@ -340,7 +324,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
  
-### 4.11 【上传】将文件资源保存到个人知识库目录
+### 4.10 【上传】将文件资源保存到个人知识库目录
 
 将已有资源或新建内容保存到个人知识库目录。
 
@@ -358,7 +342,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
  
-### 4.12 【检索】搜索文件或目录
+### 4.11 【检索】搜索文件或目录
 
 根据关键词、时间范围等条件，在指定项目/空间或全局范围内搜索文件和文件夹。
 
@@ -396,7 +380,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
  
-### 4.13 【检索】根据项目ID获取一级目录列表
+### 4.12 【检索】根据项目ID获取一级目录列表
 
 拉取指定项目空间（如个人知识库空间）的绝对顶层（根目录）下的所有文件夹及文件。
 
@@ -425,6 +409,104 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getLevel1Folders?projectId=2009488364113997826' \
   -H 'appKey: YOUR_API_KEY'
 ```
+
+---
+
+### 4.13 【写操作】删除文件（逻辑删除或物理彻底删除）
+
+当 `isPhysical` 为 `true` 时，将执行物理彻底删除（逻辑删除后再彻底从回收站抹除）。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/deleteFile` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+请求体为 `FileDeleteParam`，主要字段如下：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 文件 ID |
+| `isPhysical` | Boolean | 否 | 是否物理彻底删除 (true=彻底销毁, false/null=移入回收站) |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，表示操作成功与否。
+
+---
+
+### 4.14 【写操作】更新文件属性（重命名/移动/覆盖）
+
+【Agent 提示】支持重命名和跨目录移动。同名冲突策略（三选一）：cover=true 静默覆盖 -> autoRename=true 自动追加后缀 -> 二者均不传则抛异常。请 Agent 依据人类用户的意向选择。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/updateFileProperty` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+请求体为 `FileModifyParam`，主要字段如下：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 文件ID |
+| `newName` | String | 否 | 新文件名（为空即可仅做移动） |
+| `targetParentId` | Long | 否 | 目标父目录ID（为空即可仅做重命名） |
+| `cover` | Boolean | 否 | 同名冲突时是否覆盖（cover 与 autoRename 互斥，cover 优先级更高） |
+| `autoRename` | Boolean | 否 | 同名冲突时是否自动追加数字后缀重命名（cover=true 时本字段被忽略） |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，表示操作成功与否。
+
+---
+
+### 4.15 【获取】批量获取多个文件的 RAG 全文内容
+
+批量获取多个文件的全文本资料，减少交互往返次数，提升数据处理效率。走 Adapter 穿透引擎。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/ai/batchGetContent` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+请求体为 `BatchGetContentParam`：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `files` | List<FileIdentifyDTO> | 是 | 文件解析标识对象列表 |
+
+其中 `FileIdentifyDTO` 结构说明：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 文件ID |
+| `relationId` | String | 否 | 业务关联ID（可选，后端可根据fileId自动补全。仅在需要强制覆盖元数据时传入） |
+| `fileType` | String | 否 | 关联的业务类型（可选，后端可根据fileId自动补全）。枚举：doc(富文本), file(普通文件), work_report(工作汇报), work_plan(工作任务), url(链接), huiji(慧记), ai-report(AI情报) |
+
+**响应参数**
+
+`data` 类型为 `List<FileContentVO>`：
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `fileId` | Long | 文件ID |
+| `content` | String | 文件内容体 |
+| `status` | String | 状态 (success/empty/error) |
+| `message` | String | 附带消息 |
 
 ---
 
@@ -473,13 +555,16 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
+
+
 ### 5.4 SliceCheckVO
 分片预查结果（秒传必备）。
 
 | 字段 | 类型 | 说明 |
 | :--- | :--- | :--- |
 | `sliceId` | Long | 切片 ID（若直接命中说明已秒传成功） |
-| `uploadUrl` | String | 上传目标/签名链接地址 |
+| `uploadUrl` | String | MinIO 预签名上传链接（未命中秒传时返回，需先使用 PUT 方式物理上传分片） |
+| `fullPath` | String | 服务端目标存储路径（未命中秒传时返回，供 `uploadFileSliceV2` 注册使用） |
 
 ---
 
@@ -495,11 +580,14 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
+
+
 ### 5.6 UploadFileSliceParam
-切片上传。
+切片注册参数。
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
+| `filePath` | String | 是 | 服务端存储路径（由预检接口返回的 `fullPath`） |
 | `md5` | String | 是 | 文件 MD5 |
 | `size` | Long | 是 | 当前上传大小 |
 | `storageType` | String | 是 | 填入 `document-database` |
@@ -582,6 +670,6 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
-**文档版本**：v1.4  
-**更新日期**：2026-03-17  
+**文档版本**：v1.6  
+**更新日期**：2026-03-30  
 **维护人/团队**：知识库服务团队

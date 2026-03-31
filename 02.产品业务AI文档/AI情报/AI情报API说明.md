@@ -1,9 +1,11 @@
-﻿# AI情报 Open API 接口文档
+# AI情报 Open API 接口文档
 
 ## 修订记录
 
 | 版本 | 日期 | 变更摘要 | 变更人 |
 |------|------|----------|--------|
+| 1.3 | 2026-03-31 | 增加模版发布/下架接口（changeMobanState）说明 | 杨宵 |
+| 1.2 | 2026-03-31 | 对齐模版接口为 saveMoban/delMoban，移除删除二次确认约束并更新模版参数结构 | 杨宵 |
 | 1.1 | 2026-03-27 | 增加模版新建/编辑/删除接口，删除前二次确认约束 | 杨宵 |
 | 1.0 | 2026-03-26 | 初版创建，仅覆盖 AI情报助手已定义的报告场景 API | 杨宵 |
 
@@ -15,13 +17,14 @@
 2. **获取模版详情** — 查看模版的章节、子章节与提示词结构，判断是否适合当前报告任务
 3. **新建模版** — 创建新模版并定义章节/子章节结构与提示词
 4. **编辑模版** — 更新已有模版的结构与提示词
-5. **删除模版（二次确认）** — 删除指定模版，删除动作需二次确认
-6. **发起报告生成任务** — 基于指定模版和上下文创建异步报告任务
-7. **查询任务状态** — 查询报告任务当前状态与进度，用于轮询任务结果
-8. **获取报告详情** — 查看报告全文、章节结构及子章节内容
-9. **分页查询报告列表** — 按关键词、状态、目录等条件定位历史报告
-10. **直接编辑报告章节** — 覆盖指定子章节内容，适用于人工修改不满意章节
-11. **查询章节历史版本** — 查看章节直接编辑后的历史版本记录
+5. **模版发布/下架** — 切换模版发布状态（`0` 下架、`1` 上架）
+6. **删除模版** — 删除指定模版（仅创建者和管理员可操作）
+7. **发起报告生成任务** — 基于指定模版和上下文创建异步报告任务
+8. **查询任务状态** — 查询报告任务当前状态与进度，用于轮询任务结果
+9. **获取报告详情** — 查看报告全文、章节结构及子章节内容
+10. **分页查询报告列表** — 按关键词、状态、目录等条件定位历史报告
+11. **直接编辑报告章节** — 覆盖指定子章节内容，适用于人工修改不满意章节
+12. **查询章节历史版本** — 查看章节直接编辑后的历史版本记录
 
 ---
 
@@ -45,8 +48,8 @@ https://{鉴权域名}/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
 
 | 环境 | 域名/Base URL | 备注 |
 |------|---------------|------|
-| 生产环境-业务接口 | `https://sg-al-cwork-web.mediportal.com.cn` | AI情报业务接口 |
-| 生产环境-鉴权接口 | `https://sg-al-cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
+| 生产环境-业务接口 | `https://cwork-api.mediportal.com.cn` | AI情报业务接口 |
+| 生产环境-鉴权接口 | `https://cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
 
 ### 2.3 公共请求头
 
@@ -60,7 +63,7 @@ https://{鉴权域名}/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
 所有 AI情报业务接口均使用 `access-token` 鉴权。若当前没有可用 token，可先调用鉴权接口：
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}' \
+curl -X GET 'https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}' \
   -H 'Content-Type: application/json'
 ```
 
@@ -130,7 +133,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode
 
 > 需求：用户在现有模版不满足业务场景时，创建一份新模版用于后续报告生成。
 
-1. 调用 **4.9 新建模版**（`POST /ai-report/moban/createMoban`），提交模版名称、章节结构和提示词
+1. 调用 **4.9 新建模版**（`POST /ai-report/moban/saveMoban`），提交模版名称、章节结构和提示词
 2. 从返回结果获取新模版标识，后续可用于 **4.2 获取模版详情** 或 **4.3 发起报告生成任务**
 
 ### 场景五：编辑模版
@@ -138,16 +141,24 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode
 > 需求：用户需要优化已有模版的章节结构或提示词内容。
 
 1. 先调用 **4.2 获取模版详情** 确认当前模版结构
-2. 调用 **4.10 编辑模版**（`POST /ai-report/moban/updateMoban`），提交 `mobanId` 与更新内容
+2. 调用 **4.10 编辑模版**（`POST /ai-report/moban/updateMoban`），提交 `mobanId` 与更新内容（下游统一调用 `saveMoban`）
 3. 编辑完成后可再次调用 **4.2 获取模版详情** 校验变更
 
-### 场景六：删除模版（二次确认）
+### 场景六：删除模版
 
-> 需求：用户确认模版已废弃，需要安全删除，避免误删。
+> 需求：用户确认模版已废弃并具备操作权限，需要删除该模版。
 
 1. 先确认目标模版标识（`mobanId`）
-2. 调用 **4.11 删除模版**（`POST /ai-report/moban/deleteMoban`），并传入 `confirmDelete=true`
-3. 若未传 `confirmDelete=true`，接口应拒绝执行删除
+2. 调用 **4.11 删除模版**（`POST /ai-report/moban/delMoban`）执行删除
+3. 若无权限（非创建者且非管理员），接口应拒绝执行删除
+
+### 场景七：模版发布/下架
+
+> 需求：用户需要控制模版是否可被使用，支持一键上架或下架。
+
+1. 先确认目标模版标识（`mobanId`）
+2. 调用 **4.11 模版发布/下架**（`POST /ai-report/moban/changeMobanState`）切换状态
+3. 其中 `state=1` 表示上架发布，`state=0` 表示下架未发布
 
 ---
 
@@ -183,7 +194,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/user/login/appkey?appCode
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/listMobanByPageV2' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/listMobanByPageV2' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -259,7 +270,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/listMoba
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/mobanDetail' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/mobanDetail' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -354,7 +365,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/mobanDet
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/startTask' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/startTask' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -417,7 +428,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/startTask
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/checkTask' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/checkTask' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -479,7 +490,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/checkTask
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/taskDetailV2' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/taskDetailV2' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -585,7 +596,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/taskDetai
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listTaskByPage' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listTaskByPage' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -665,7 +676,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listTaskB
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/updateQuestionResult' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/updateQuestionResult' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -719,7 +730,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/updateQue
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listResultVersion' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersion' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -774,7 +785,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listResul
 
 | 项目 | 说明 |
 |------|------|
-| 接口地址 | `/ai-report/moban/createMoban` |
+| 接口地址 | `/ai-report/moban/saveMoban` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
 
@@ -782,47 +793,60 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/task/listResul
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| `name` | String | 是 | 模版名称 |
+| `name` | String | 否 | 模版名称 |
 | `desc` | String | 否 | 模版描述 |
 | `dirId` | String | 否 | 目录 ID |
-| `mobanTypeId` | String | 否 | 模版类型 ID |
+| `mobanTypeId` | String | 否 | 模版类型 ID（已废弃） |
 | `prompt` | String | 否 | 任务级提示词 |
-| `doSummary` | Number | 否 | 是否生成总结：`0` 否，`1` 是 |
-| `enableImageGeneration` | Number | 否 | 是否开启图片生成：`0` 否，`1` 是 |
+| `editNote` | String | 否 | 改动日志 |
+| `public` | Number | 否 | 公开状态：`0` 不公开，`1` 公开 |
+| `thirdSystem` | String | 否 | 第三方系统标识（例如 `MediBase`） |
+| `doSummary` | Number | 否 | 是否总结：`0` 不总结，`1` 最后一章总结，`2` 第一章总结 |
+| `summaryPrompt` | String | 否 | 总结提示词 |
 | `aiType` | String | 否 | AI 类型 |
-| `requireContext` | List\<ContextFieldVO> | 否 | 上下文字段定义 |
-| `sectionList` | List\<MobanSectionVO> | 是 | 章节结构（至少 1 个章节） |
+| `requireContext` | List\<String> | 否 | 上下文字段 |
+| `sectionList` | List\<MspSectionVO> | 否 | 章节列表 |
 
-`ContextFieldVO` 字段：
-
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| `key` | String | 字段 key |
-| `name` | String | 字段名称 |
-| `desc` | String | 字段描述 |
-| `type` | String | 字段类型 |
-| `required` | Boolean | 是否必填 |
-
-`MobanSectionVO` 字段：
+`MspSectionVO` 字段：
 
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
-| `name` | String | 章节名称（必填） |
+| `name` | String | 章节名称 |
 | `prompt` | String | 章节提示词 |
-| `questionList` | List\<MobanQuestionVO> | 子章节列表（必填） |
+| `questionList` | List\<MspQuestionVO> | 问题列表 |
 
-`MobanQuestionVO` 字段：
+`MspQuestionVO` 字段：
 
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
-| `title` | String | 子章节标题（必填） |
-| `content` | String | 子章节问题内容 |
-| `prompt` | String | 子章节提示词 |
+| `title` | String | 问题标题 |
+| `content` | String | 问题内容 |
+| `prompt` | String | 问题提示词 |
+| `withNet` | Boolean | 是否联网 |
+| `dataSrc` | DataSrcVO | 问题数据源配置 |
+
+`DataSrcVO` 字段：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `srcType` | String | 数据源类型：知识库/定制源/mcp/深度搜索 |
+| `docList` | List\<DocSrcVO> | 文档源列表 |
+| `customSrcId` | String | 定制源 ID |
+| `mcpServerIdList` | String | MCP 服务 ID 列表 |
+| `originDoc` | Boolean | 是否使用知识库文档全文 |
+
+`DocSrcVO` 字段：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `name` | String | 名称 |
+| `fileId` | String | 文件 ID |
+| `docType` | Number | 文档类型：`1` 文件夹，`2` 普通文件，`3` 工作汇报，`4` 工作任务 |
 
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/createMoban' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/saveMoban' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -871,7 +895,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/createMo
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/updateMoban' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/updateMoban' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -893,15 +917,48 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/updateMo
 
 ---
 
-### 4.11 删除模版（二次确认）
+### 4.11 模版发布/下架
 
-删除指定模版。该操作为高风险动作，必须传入二次确认参数。
+切换指定模版的发布状态。
 
 **基本信息**
 
 | 项目 | 说明 |
 |------|------|
-| 接口地址 | `/ai-report/moban/deleteMoban` |
+| 接口地址 | `/ai-report/moban/changeMobanState` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `mobanId` | String | 是 | 模版 ID |
+| `state` | Number | 是 | 状态：`0` 未发布（下架），`1` 已发布（上架） |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/changeMobanState' \
+  -H 'access-token: {access-token}' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "mobanId": "moban_1001",
+    "state": 1
+  }'
+```
+
+---
+
+### 4.12 删除模版
+
+删除指定模版。仅模版创建者和管理员可操作。
+
+**基本信息**
+
+| 项目 | 说明 |
+|------|------|
+| 接口地址 | `/ai-report/moban/delMoban` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
 
@@ -910,17 +967,15 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/updateMo
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | `mobanId` | String | 是 | 目标模版 ID |
-| `confirmDelete` | Boolean | 是 | 删除二次确认，必须为 `true` |
 
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/deleteMoban' \
+curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/delMoban' \
   -H 'access-token: {access-token}' \
   -H 'Content-Type: application/json' \
   -d '{
-    "mobanId": "moban_1001",
-    "confirmDelete": true
+    "mobanId": "moban_1001"
   }'
 ```
 
@@ -1038,26 +1093,25 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/ai-report/moban/deleteMo
 | `createTime` | String | 创建时间 |
 | `personId` | String | 操作人标识 |
 
-### 5.14 ContextFieldVO
-
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| `key` | String | 上下文字段 key |
-| `name` | String | 上下文字段名称 |
-| `desc` | String | 字段描述 |
-| `type` | String | 字段类型 |
-| `required` | Boolean | 是否必填 |
-
-### 5.15 Create/Update Moban Request（关键结构）
+### 5.14 Create/Update Moban Request（关键结构）
 
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
 | `mobanId` | String | 编辑模版时必填，新建时不传 |
-| `name` | String | 模版名称，必填 |
-| `sectionList` | List\<MobanSectionVO> | 章节列表，必填 |
-| `sectionList[].questionList` | List\<MobanQuestionVO> | 子章节列表，必填 |
-| `sectionList[].questionList[].title` | String | 子章节标题，必填 |
-| `confirmDelete` | Boolean | 删除模版时必填，且必须为 `true` |
+| `name` | String | 模版名称 |
+| `public` | Number | 公开状态：`0` 不公开，`1` 公开 |
+| `requireContext` | List\<String> | 上下文字段 |
+| `sectionList` | List\<MspSectionVO> | 章节列表 |
+| `sectionList[].questionList` | List\<MspQuestionVO> | 问题列表 |
+| `sectionList[].questionList[].dataSrc` | DataSrcVO | 数据源配置 |
+| `sectionList[].questionList[].withNet` | Boolean | 是否联网 |
+
+### 5.15 ChangeMobanState Request
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `mobanId` | String | 模版 ID |
+| `state` | Number | 状态：`0` 未发布（下架），`1` 已发布（上架） |
 
 ---
 
