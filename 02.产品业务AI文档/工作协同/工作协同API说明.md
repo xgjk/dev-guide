@@ -2,17 +2,18 @@
 
 ## 修订记录
 
-| 版本  | 日期       | 变更摘要 | 变更人 |
-|-----| ---------- | -------- | ------ |
-| 1.0 | 2026-03-25 | 初版创建 | 成伟   |
-| 1.1 | 2026-03-25 | 新增获取指定用户分组接口 | 付光伟   |
-| 1.2 | 2026-03-26 | 新增个人分组创建与成员管理接口、重构文档结构及序号 | 付光伟 |
-| 1.3 | 2026-03-26 | 在获取分组及管理成员接口中增加按姓名搜索员工 ID 的说明 | 付光伟 |
-| 1.4 | 2026-03-28 | 新增「新增草稿相关接口，5.23-5.27」 | 成伟   |
-| 1.5 | 2026-03-30 | 补充「将草稿转为正式汇报发出」接口的内部路由实现与文档说明状态同步 | 付光伟 |
-| 1.6 | 2026-03-30 | 修复接口序号错位，并补充汇报/草稿通用参数说明及接口交叉引用 | 付光伟 |
-| 1.7 | 2026-03-30 | 汇报提交参数新增节点级填写要求（requirement）字段 | 付光伟 |
-| 1.8 | 2026-03-30 | 新增「批量删除草稿」接口（5.28） | 付光伟 |
+| 版本  | 日期       | 变更摘要                                         | 变更人 |
+|-----| ---------- |----------------------------------------------| ------ |
+| 1.0 | 2026-03-25 | 初版创建                                         | 成伟   |
+| 1.1 | 2026-03-25 | 新增获取指定用户分组接口                                 | 付光伟   |
+| 1.2 | 2026-03-26 | 新增个人分组创建与成员管理接口、重构文档结构及序号                    | 付光伟 |
+| 1.3 | 2026-03-26 | 在获取分组及管理成员接口中增加按姓名搜索员工 ID 的说明                | 付光伟 |
+| 1.4 | 2026-03-28 | 新增「新增草稿相关接口，5.23-5.27」                       | 成伟   |
+| 1.5 | 2026-03-30 | 补充「将草稿转为正式汇报发出」接口的内部路由实现与文档说明状态同步            | 付光伟 |
+| 1.6 | 2026-03-30 | 修复接口序号错位，并补充汇报/草稿通用参数说明及接口交叉引用               | 付光伟 |
+| 1.7 | 2026-03-30 | 汇报提交参数新增节点级填写要求（requirement）字段               | 付光伟 |
+| 1.8 | 2026-03-30 | 新增「批量删除草稿」接口（5.28）                           | 付光伟 |
+| 1.9 | 2026-03-31 | 业务单元管理专题：开放保存/更新、分页查询、删除及详情获取接口，持动态覆盖默认汇报流程 (5.29-5.32) | 付光伟 |
 
 
 
@@ -62,6 +63,10 @@
 26. [**删除草稿**](#526-删除草稿) — 按草稿 ID 删除草稿箱中的一条草稿。
 27. [**将草稿转为正式汇报发出**](#527-将草稿转为正式汇报发出) — 将指定的草稿转为正式发布状态。
 28. [**批量删除草稿**](#528-批量删除草稿) — 按时间范围或草稿 ID 列表批量删除草稿。
+29. [**保存/更新业务单元汇报方案**](#529-保存更新业务单元汇报方案) — 创建或修改业务单元（小组）的汇报流配置方案。
+30. [**分页查询我的业务单元方案列表**](#530-分页查询我的业务单元方案列表) — 分页获取当前用户归属的汇报方案列表（默认 PageSize 为 50）。
+31. [**获取业务单元方案详情**](#531-获取业务单元方案详情) — 获取单个方案及其配置节点的完整信息。
+32. [**删除业务单元方案**](#532-删除业务单元方案) — 物理删除指定的业务单元汇报配置方案。
 
 
 
@@ -211,7 +216,20 @@ https://{域名}/open-api/{接口地址}
 }
 ```
 
-示例四：指定节点填写要求 (AI 要求)：
+示例四：使用业务单元 ID（`businessUnitId`）动态指定流程：
+
+> **提示**：当传入 `businessUnitId` 时，接口将自动使用该业务单元预设的审批、传阅节点，**忽略**请求中手动传入的 `reportLevelList`、`acceptEmpIdList` 等配置。这适用于已经在系统后台配置好固定流程的业务场景。
+
+```json
+{
+  "main": "标题",
+  "contentHtml": "本次汇报将按照指定业务单元(ID:1001)的预设流程进行流转",
+  "businessUnitId": 1001,
+  "reportLevelList":[]
+}
+```
+
+示例五：指定节点填写要求 (AI 要求)：
 
 ```json
 {
@@ -247,6 +265,29 @@ https://{域名}/open-api/{接口地址}
 1. 调用 **5.15 分页获取决策/建议/反馈待办列表**（`POST /work-report/reportInfoOpenQuery/todoList`）获取待办列表项（含 `todoId`、`todoType` 等）。
 2. 查看待办详情对象（AI 摘要/进展/是否需要当前处理人操作）在列表项的 `detail` 字段中（见 **6.10 ReportTodoDetailVO**）。
 3. 完成待办时，调用 **5.18 完成待办（建议/决策）**（`POST /work-report/open-platform/todo/completeTodo`），传入 `todoId` 与 `content`；当 `todoType` 为决策类时需额外传 `operate=agree/disagree`。
+
+---
+
+### 场景三：用户想要通过 业务单元 进行汇报
+
+> **AI 智能意图匹配指引**：当用户在自然语言/上下文中表达“我要按照某个特定的业务组/汇报链规则交这份报告”（如提示了业务组名称信息）时，大模型应该主动接管以下分析编排。
+
+**核心链路设计（AI Agent 执行建议）：**
+
+1. **智能探查与匹配（核心**）：
+    - **Step 1**：大模型主动调用 **5.30 全量查询我的业务单元方案列表(含节点)**，拉取当前用户预设好的所有方案及相关节点上下文配置。
+    - **Step 2**：**大模型自主推理**——将用户上下文中提及的“业务单元名称、职责提示”与查到的列表项 `name`、`description` 等信息进行**语义/模糊匹配**。
+    - **Step 3**：**确定性校验机制**——
+        - **极具确定性**：若语义高度匹配且唯一（如原文提到了绝对一致或强相关的名称），直接提取该方案对应的唯一 `id`，进入下一步自动填充。
+        - **存在歧义/不确定**：若匹配度较低，或同时命中多个相似候选，**绝不可盲目自动填充**，必须将候选项展示给用户，由用户做出最终选择。
+2. **引用发送**：
+    - 在发起提交逻辑时，调用 **5.1 发送汇报** 或 **5.23 新增或者更新汇报草稿**。
+    - 将获取或确认的 `businessUnitId` 传入参数，后端服务将自动按方案规则接管流程。
+3. **（扩展）未命中时的自动创建询问**：
+    - 若经过排查，列表中**没有任何方案吻合用户的意图**，且用户在上下文中仅给出了新的人员指派关系：
+    - 大模型**必须先主动询问用户**是否需要将此次的流转规则永久保存为新的业务单元方案。
+    - 在获得用户明确同意后，大模型先调用 **4.1 按姓名搜索全部员工** 置换出人员 `empId`。
+    - 随后通过 **5.29 保存/更新业务单元汇报方案** 创建新方案并获取新 `id`，最后再回退完成执行第 2 步的发送环节。
 
 ---
 
@@ -503,6 +544,8 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 用于创建并提交一条汇报记录，支持关联任务/事项、接收人/抄送人、多级节点（指引/签批/决策/建议链路）。
 
 > **业务流程说明**：关于如何按层级/分组指定接收人以及如何上传并关联附件，请阅读 **[场景一：发送汇报 或 新增/更新草稿 通用参数说明](#场景一发送汇报-或-新增更新草稿-通用参数说明)**。
+> 
+> **业务单元智能流转指引**：若用户要求按特定的业务组/方案发送汇报（涉及推断或使用 `businessUnitId`），大模型请务必优先阅读并遵循 **[场景三：用户想要通过 业务单元 进行汇报](#场景三用户想要通过-业务单元-进行汇报)** 中的匹配拦截规则。
 
 **基本信息**
 
@@ -516,21 +559,22 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 
 请求体为 JSON，字段如下（见 `SubmitReportParam`）：
 
-| 参数名            | 类型                    | 必填 | 说明                                                                                                                |
-| ----------------- | ----------------------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
-| `id`          | Long                    | 否   | 汇报的id，只用于将草稿状态的汇报发出的场景，非草稿的汇报不要传此参数                                                                                                         |
-| `planId`          | Long                    | 否   | 工作任务 id                                                                                                         |
-| `templateId`      | Long                    | 否   | 事项 id                                                                                                             |
-| `typeId`          | Long                    | 否   | 业务类型 id，默认 `9999`（代表其他汇报）                                                                            |
-| `main`            | String                  | 是   | 汇报标题                                                                                                            |
-| `grade`           | String                  | 否   | 优先级：一般/紧急，默认“一般”                                                                                       |
-| `privacyLevel`    | String                  | 否   | 密级：非涉密/涉密（涉密下载文件需要申请），默认“非涉密”                                                             |
-| `contentType`     | String                  | 否   | 正文类型：`html`/`markdown`，默认 `html`                                                                            |
-| `contentHtml`     | String                  | 是   | 汇报内容（富文本/字符串）                                                                                           |
-| `acceptEmpIdList` | List\<Long>             | 否   | 接收人员 id 列表；仅在 `reportLevelList` 为空时作为兜底：系统会用该列表自动生成 1 级“read 接收人”节点               |
-| `copyEmpIdList`   | List\<Long>             | 否   | 抄送人员 id 列表                                                                                                    |
-| `reportLevelList` | List\<ReportLevelParam> | 否   | 多级用户列表（read-传阅、suggest-建议、decide-决策等节点）；**接收人以该字段为准**；结构见 **6.1 ReportLevelParam** |
-| `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件列表；结构见 **6.24 OpenPlatformFileVO** |
+| 参数名            | 类型                    | 必填 | 说明                                                                                     |
+| ----------------- | ----------------------- | ---- |----------------------------------------------------------------------------------------|
+| `id`          | Long                    | 否   | 汇报的id，只用于将草稿状态的汇报发出的场景，非草稿的汇报不要传此参数                                                    |
+| `planId`          | Long                    | 否   | 工作任务 id                                                                                |
+| `templateId`      | Long                    | 否   | 事项 id                                                                                  |
+| `typeId`          | Long                    | 否   | 业务类型 id，默认 `9999`（代表其他汇报）                                                              |
+| `main`            | String                  | 是   | 汇报标题                                                                                   |
+| `grade`           | String                  | 否   | 优先级：一般/紧急，默认“一般”                                                                       |
+| `privacyLevel`    | String                  | 否   | 密级：非涉密/涉密（涉密下载文件需要申请），默认“非涉密”                                                          |
+| `contentType`     | String                  | 否   | 正文类型：`html`/`markdown`，默认 `html`                                                       |
+| `contentHtml`     | String                  | 是   | 汇报内容（富文本/字符串）                                                                          |
+| `acceptEmpIdList` | List\<Long>             | 否   | 接收人员 id 列表；仅在 `reportLevelList` 为空时作为兜底：系统会用该列表自动生成 1 级“read 接收人”节点                    |
+| `copyEmpIdList`   | List\<Long>             | 否   | 抄送人员 id 列表                                                                             |
+| `reportLevelList` | List\<ReportLevelParam> | 否   | 流程配置，多级用户列表（read-传阅、suggest-建议、decide-决策等节点）；**接收人以该字段为准**；结构见 **6.1 ReportLevelParam** |
+| `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件列表；结构见 **6.24 OpenPlatformFileVO**                                                 |
+| `businessUnitId`  | Long                    | 否   | 业务单元 ID。**传入此 ID 后，汇报流程将强制按照该方案定义的节点流转，并忽略请求中的流程配置(`reportLevelList` )**               |
 
 > 注意：服务端会将 `contentHtml` 去除 HTML 标签生成 `content`（纯文本）后提交；调用方无需传 `content`。
 
@@ -551,6 +595,8 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 ```
 
 **请求示例**
+
+示例一：常规发送（手动指定接收人）
 
 ```bash
 curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
@@ -590,6 +636,19 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
         "url": "https://www.baidu.com"
       }
     ]
+  }'
+```
+
+示例二：通过业务单元 ID 发送（由系统预设流转方案决定汇报流程）
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "main": "项目日报-自动化流程",
+    "contentHtml": "汇报正文内容",
+    "businessUnitId": 1001
   }'
 ```
 
@@ -1427,6 +1486,8 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 保存或更新当前用户的汇报草稿；请求体模型与正式提交相近。**详细业务逻辑与通用参数配置请阅读 [场景一：发送汇报 或 新增/更新草稿 通用参数说明](#场景一发送汇报-或-新增更新草稿-通用参数说明)**。正式发出汇报请使用 **5.1 发送汇报**（`POST /work-report/report/record/submit`）。
 
+> **业务单元智能流转指引**：若用户要求草稿绑定某一业务流转方案（涉及推断或使用 `businessUnitId`），大模型请务必优先阅读并遵循 **[场景三：用户想要通过 业务单元 进行汇报](#场景三用户想要通过-业务单元-进行汇报)** 中的匹配拦截规则。
+
 > **更新约定（务必遵守）**  
 > - **若是更新草稿，必须在请求体中传入 `id`（汇报 id）**；不传则一律视为**新增**，会生成新的草稿记录。`id` 可与 **5.23** 返回的 `data.id`、**5.24** 列表中 `bizType=report` 时的 `businessId`、或 **5.25** 路径中的 `reportRecordId` 对齐。  
 > - **更新语义为全量更新（覆盖写）**：服务端按本次请求体整体落库，**未传入的字段不会保留旧值**。例如原草稿已填写接收人，本次更新若**不带** `acceptEmpIdList`（或等价地传空列表，以实际联调为准），则**接收人会被清空**；`copyEmpIdList`、`reportLevelList`、`fileVOList` 等集合类字段同理。建议更新前先调用 **5.25 草稿汇报详情** 取回完整数据，在完整对象上修改后再调用本接口保存。
@@ -1456,8 +1517,9 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `contentHtml`     | String                    | 是   | 汇报内容（富文本或 Markdown 字符串）                                                       |
 | `acceptEmpIdList` | List\<Long>               | 否   | 接收人员 id 列表；新增时可为空。**更新时若省略且按空处理，会清空原接收人**（全量更新，见上文）。 |
 | `copyEmpIdList`   | List\<Long>               | 否   | 抄送人员 id 列表；**更新时省略可能导致原抄送被清空**。                                     |
-| `reportLevelList` | List\<ReportLevelParam>   | 否   | 多级节点；结构见 **6.1**。**更新时须带齐须保留的节点，省略可能导致原节点被清空**。          |
+| `reportLevelList` | List\<ReportLevelParam>   | 否   | 流程配置，多级用户列表（read-传阅、suggest-建议、decide-决策等节点） **6.1**。**更新时须带齐须保留的节点，省略可能导致原节点被清空**。          |
 | `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件，见 **6.24**。**更新时省略可能导致原附件关联被清空**。                            |
+| `businessUnitId`  | Long                      | 否   | **业务单元 ID**：传入后，草稿发布时将强制按照该方案定义的节点流转，并忽略请求中的 `reportLevelList`。               |
 
 > 说明：服务端对正文的处理与 **5.1** 相同，会将 `contentHtml` 去标签生成纯文本 `content` 落库；调用方无需传 `content`。
 
@@ -1479,21 +1541,49 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 **请求示例**
 
-新增草稿（不传 `id`）：
+示例一：常规新增草稿（手动指定接收人/流程节点，不传 `id`）
 
 ```bash
 curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
   -H 'Content-Type: application/json' \
   -H 'appKey: {appKey}' \
   -d '{
-    "main": "草稿标题",
+    "main": "草稿标题-常规流程",
     "contentHtml": "## 尚未填完的正文",
     "contentType": "markdown",
-    "typeId": 9999
+    "typeId": 9999,
+    "reportLevelList": [
+      {
+        "level": 1,
+        "levelUserList": [
+          {
+            "empId": 10001
+          }
+        ],
+        "nodeName": "接收人",
+        "type": "read"
+      }
+    ]
   }'
 ```
 
-更新草稿（**必须带 `id`**，且建议带齐需保留的接收人/抄送/节点/附件等，避免被全量清空）：
+示例二：通过业务单元 ID 新增草稿（由系统预设流转方案决定汇报流程，不传 `id`）
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "main": "草稿标题-预设流程",
+    "contentHtml": "## 尚未填完的正文",
+    "contentType": "markdown",
+    "typeId": 9999,
+    "businessUnitId": 1001,
+    "reportLevelList": []
+  }'
+```
+
+示例三：更新草稿（**必须带 `id`**，且须带齐需保留的接收人/方案等参数，避免其被全量清空）：
 
 ```bash
 curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
@@ -1505,8 +1595,18 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
     "contentHtml": "## 已补充正文",
     "contentType": "markdown",
     "typeId": 9999,
-    "acceptEmpIdList": [1512393035869810690],
-    "reportLevelList": []
+    "reportLevelList": [
+      {
+        "level": 1,
+        "levelUserList": [
+          {
+            "empId": 10001
+          }
+        ],
+        "nodeName": "接收人",
+        "type": "read"
+      }
+    ]
   }'
 ```
 
@@ -1802,6 +1902,127 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/batchDelete' \
   "data": 5
 }
 ```
+
+
+### 5.29 保存/更新业务单元汇报方案
+
+创建或修改业务单元（小组）的汇报流配置方案，支持快速复用于多种汇报场景。
+
+**基本信息**
+
+| 项目         | 说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/work-report/businessUnit/save` |
+| 请求方式     | `POST`                              |
+| Content-Type | `application/json`                  |
+
+**请求参数**
+
+| 参数名           | 类型                    | 必填 | 说明                                                                                                                |
+| ---------------- | ----------------------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `id`             | Long                    | 否   | 方案 ID；新增时不传，更新时必传                                                                                     |
+| `name`           | String                  | 是   | 方案名称/小组名称                                                                                                   |
+| `description`    | String                  | 否   | 方案/小组说明（提供给模型的意图匹配上下文）                                                                          |
+| `nodeList`       | List\<NodeConfig>       | 是   | 节点配置列表                                                                                                        |
+
+**NodeConfig 节点配置结构**
+
+| 参数名           | 类型        | 必填 | 说明                                                                                                                |
+| ---------------- | ----------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `nodeName`       | String      | 是   | 节点名称（如：建议人、决策人、传阅人）                                                                              |
+| `nodeDescription`| String      | 否   | 节点职责描述                                                                                                        |
+| `nodeType`       | String      | 是   | 节点类型：`read` (传阅)、`suggest` (建议)、`decide` (决策)                                                          |
+| `empList` | List\<BaseInfo> | 是 | **参与人员列表**。内容需包含 `id`。参见 **6.29** 结构说明。 |
+
+**响应参数**
+
+`data` 类型为 `Long`，返回保存成功的方案 ID。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/businessUnit/save' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "name": "核心研发汇报项目组",
+    "description": "遇到核心研发相关的技术难题和架构重构汇报走此业务线",
+    "nodeList": [
+      {
+        "nodeName": "首席架构师",
+        "nodeDescription": "负责技术方案终审",
+        "nodeType": "decide",
+        "empList": [{"id": 10001, "name": "张三"}, {"id": 10002, "name": "李四"}]
+      },
+      {
+        "nodeName": "项目管理组",
+        "nodeType": "read",
+        "empList": [{"id": 10003, "name": "王五"}]
+      }
+    ]
+  }'
+```
+
+
+### 5.30 全量查询我的业务单元方案列表(含节点)
+
+直接返回当前用户创建的所有业务单元，并包含底下的完整配置节点信息（`nodeList`）。**AI 意图匹配（如推断用户需要流转的节点关联方案时）强烈推荐作为前置探测接口调用**。
+
+**基本信息**
+
+| 项目         | 说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/work-report/businessUnit/listAll` |
+| 请求方式     | `GET`                               |
+
+**请求参数**
+
+无额外查询请求体参数，只需通过 `GET` 或常规 URL 参数即可，依赖 `appKey` 或当前 `token` 推断用户身份。
+
+**响应参数**
+
+`data` 类型为 `List<ReportBusinessUnitDetailVO>`，包含 `id`、`name`、`description` 等详尽字段与完整的 `nodeList`。（见 **6.29 ReportBusinessUnitDetailVO**）
+
+### 5.31 获取业务单元方案详情
+
+获取指定方案的完整配置，包含所有审批节点及其成员详情。
+
+**基本信息**
+
+| 项目         | 说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/work-report/businessUnit/detail` |
+| 请求方式     | `GET`                              |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明     |
+| ------ | ---- | ---- | -------- |
+| `id`   | Long | 是   | 方案 ID |
+
+`data` 类型为 `ReportBusinessUnitDetailVO` 方案详情（见 **6.29 ReportBusinessUnitDetailVO**）。
+
+
+### 5.32 物理删除业务单元方案
+
+彻底删除指定的业务单元（小组）汇报配置方案。
+
+**基本信息**
+
+| 项目         | 说明                                |
+| ------------ | ----------------------------------- |
+| 接口地址     | `/work-report/businessUnit/delete` |
+| 请求方式     | `POST`                              |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明     |
+| ------ | ---- | ---- | -------- |
+| `id`   | Long | 是   | 方案 ID |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，表示是否删除成功。
 
 ---
 
@@ -2205,6 +2426,26 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/batchDelete' \
 | `empId`       | Long   | 员工 id |
 | `name`        | String | 姓名    |
 | `requirement` | String | AI 要求 |
+
+### 6.29 ReportBusinessUnitDetailVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 方案 ID |
+| `name` | String | 方案名称 |
+| `description` | String | 方案说明 |
+| `nodeList` | List\<ReportBusinessUnitConfigVO> | 节点配置列表 |
+
+**ReportBusinessUnitConfigVO**
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `nodeName` | String | 节点名称 |
+| `nodeDescription` | String | 职责说明 |
+| `nodeType` | String | 节点类型：read/suggest/decide |
+| `level` | Integer | 节点层级 |
+| `empList` | List\<BaseInfo> | 人员列表（含 id/name） |
+
 
 ---
 
