@@ -2,10 +2,11 @@
 
 ## 修订记录
 
-| 版本 | 日期       | 修订内容                       | 修订人 |
-| ---- | ---------- | ------------------------------ | ------ |
-| V1.0 | 2026-03-27 | 初始版本，开放德镁专属接口     | 王馗   |
+| 版本 | 日期       | 修订内容                                              | 修订人 |
+| ---- | ---------- | ----------------------------------------------------- | ------ |
+| V1.0 | 2026-03-27 | 初始版本，开放德镁专属接口                            | 王馗   |
 | V1.1 | 2026-03-27 | 新增百卢妥日采集按大区统计接口 | 王馗   |
+| V1.2 | 2026-04-01 | "百卢妥日采集"更名为"益路取&芦可替尼地区经理日报"，所有采集字段重命名 | 王馗   |
 
 ---
 
@@ -100,11 +101,11 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 ## 三、关键业务流程说明
 
-### 场景：查询百卢妥日采集反馈数据
+### 场景：查询益路取&芦可替尼地区经理日报数据
 
-> 需求：获取百卢妥日采集反馈数据。
+> 需求：获取益路取&芦可替尼地区经理日报数据。
 
-1. 调用 **4.1 百卢妥日采集反馈**，传入 `periodStart` 和 `periodEnd` 等筛选条件，获取反馈数据列表
+1. 调用 **4.1 益路取&芦可替尼地区经理日报**，传入 `periodStart` 和 `periodEnd` 等筛选条件，获取反馈数据列表
 2. 根据返回的 `regionName`（大区）和 `areaName`（地区）进行数据分析
 
 ---
@@ -113,9 +114,9 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 ---
 
-### 4.1 百卢妥日采集反馈
+### 4.1 益路取&芦可替尼地区经理日报
 
-查询百卢妥日采集反馈数据。
+查询益路取&芦可替尼地区经理日报数据。
 
 **基本信息**
 
@@ -154,17 +155,20 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 `data` 为数组，数组元素字段如下：
 
-| 字段名                         | 类型   | 说明                     |
-| ------------------------------ | ------ | ------------------------ |
-| `regionName`                   | String | 大区                     |
-| `areaName`                     | String | 地区                     |
-| `date`                         | Date   | 日期                     |
-| `newPatientReservesProCount`   | Number | 新增患者储备PRO拉新人数  |
-| `newPatientReservesWeComCount` | Number | 新增患者储备企微拉新人数 |
-| `newPatientReservesTotal`      | Number | 新增患者储备总数         |
-| `onlinePrescriptionCount`      | Number | 线上处方支数             |
-| `offlinePrescriptionCount`     | Number | 线下处方支数             |
-| `prescriptionTotal`            | Number | 处方支数总数             |
+| 字段名                                    | 类型   | 说明                     |
+| ----------------------------------------- | ------ | ------------------------ |
+| `regionName`                              | String | 大区                     |
+| `areaName`                                | String | 地区                     |
+| `date`                                    | String | 日期                     |
+| `ilumertiNPCount`                         | Number | 益路取NP人数             |
+| `ilumertiPrescriptionCount`               | Number | 益路取处方支数           |
+| `ruxolitinibNewPatientReservesProCount`   | Number | 芦可替尼PRO拉新人数      |
+| `ruxolitinibNewPatientReservesWeComCount` | Number | 芦可替尼企微拉新人数     |
+| `ruxolitinibNewPatientReservesTotal`      | Number | 芦可替尼新增患者储备总数 |
+| `ruxolitinibNPCount`                      | Number | 芦可替尼NP人数           |
+| `ruxolitinibOnlinePrescriptionCount`      | Number | 芦可替尼线上处方支数     |
+| `ruxolitinibOfflinePrescriptionCount`     | Number | 芦可替尼线下处方支数     |
+| `ruxolitinibPrescriptionTotal`            | Number | 芦可替尼处方总数         |
 
 **响应示例**
 
@@ -177,12 +181,15 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
       "regionName": "华东大区",
       "areaName": "上海地区",
       "date": "2025-01-15",
-      "newPatientReservesProCount": 10,
-      "newPatientReservesWeComCount": 8,
-      "newPatientReservesTotal": 18,
-      "onlinePrescriptionCount": 20,
-      "offlinePrescriptionCount": 12,
-      "prescriptionTotal": 32
+      "ilumertiNPCount": 15,
+      "ilumertiPrescriptionCount": 30,
+      "ruxolitinibNewPatientReservesProCount": 10,
+      "ruxolitinibNewPatientReservesWeComCount": 8,
+      "ruxolitinibNewPatientReservesTotal": 18,
+      "ruxolitinibNPCount": 12,
+      "ruxolitinibOnlinePrescriptionCount": 20,
+      "ruxolitinibOfflinePrescriptionCount": 12,
+      "ruxolitinibPrescriptionTotal": 32
     }
   ],
   "timestamp": 1774003758844,
@@ -192,9 +199,9 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 ---
 
-### 4.2 百卢妥日采集按大区统计
+### 4.2 益路取&芦可替尼日报按大区统计
 
-查询百卢妥日采集按大区统计数据。
+查询益路取&芦可替尼日报按大区统计数据。
 
 **基本信息**
 
@@ -231,16 +238,19 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 
 `data` 为数组，数组元素字段如下：
 
-| 字段名                         | 类型   | 说明                     |
-| ------------------------------ | ------ | ------------------------ |
-| `regionName`                   | String | 大区                     |
-| `date`                         | Date   | 日期                     |
-| `newPatientReservesProCount`   | Number | 新增患者储备PRO拉新人数  |
-| `newPatientReservesWeComCount` | Number | 新增患者储备企微拉新人数 |
-| `newPatientReservesTotal`      | Number | 新增患者储备总数         |
-| `onlinePrescriptionCount`      | Number | 线上处方支数             |
-| `offlinePrescriptionCount`     | Number | 线下处方支数             |
-| `prescriptionTotal`            | Number | 处方支数总数             |
+| 字段名                                    | 类型   | 说明                     |
+| ----------------------------------------- | ------ | ------------------------ |
+| `regionName`                              | String | 大区                     |
+| `date`                                    | String | 日期                     |
+| `ilumertiNPCount`                         | Number | 益路取NP人数             |
+| `ilumertiPrescriptionCount`               | Number | 益路取处方支数           |
+| `ruxolitinibNewPatientReservesProCount`   | Number | 芦可替尼PRO拉新人数      |
+| `ruxolitinibNewPatientReservesWeComCount` | Number | 芦可替尼企微拉新人数     |
+| `ruxolitinibNewPatientReservesTotal`      | Number | 芦可替尼新增患者储备总数 |
+| `ruxolitinibNPCount`                      | Number | 芦可替尼NP人数           |
+| `ruxolitinibOnlinePrescriptionCount`      | Number | 芦可替尼线上处方支数     |
+| `ruxolitinibOfflinePrescriptionCount`     | Number | 芦可替尼线下处方支数     |
+| `ruxolitinibPrescriptionTotal`            | Number | 芦可替尼处方总数         |
 
 **响应示例**
 
@@ -252,12 +262,15 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
     {
       "regionName": "华东大区",
       "date": "2025-01-15",
-      "newPatientReservesProCount": 10,
-      "newPatientReservesWeComCount": 8,
-      "newPatientReservesTotal": 18,
-      "onlinePrescriptionCount": 20,
-      "offlinePrescriptionCount": 12,
-      "prescriptionTotal": 32
+      "ilumertiNPCount": 15,
+      "ilumertiPrescriptionCount": 30,
+      "ruxolitinibNewPatientReservesProCount": 10,
+      "ruxolitinibNewPatientReservesWeComCount": 8,
+      "ruxolitinibNewPatientReservesTotal": 18,
+      "ruxolitinibNPCount": 12,
+      "ruxolitinibOnlinePrescriptionCount": 20,
+      "ruxolitinibOfflinePrescriptionCount": 12,
+      "ruxolitinibPrescriptionTotal": 32
     }
   ],
   "timestamp": 1774003758844,
