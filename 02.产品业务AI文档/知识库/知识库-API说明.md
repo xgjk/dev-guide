@@ -1,4 +1,4 @@
-﻿# 知识库 Open API 接口文档
+# 知识库 Open API 接口文档
 
 ## 修订记录
 
@@ -8,6 +8,11 @@
 | 1.1 | 2026-03-26 | 更新上传切片说明 | 刘艳华 |
 | 1.2 | 2026-03-26 | 下线 getRawFileContent 接口，更新 API 规范与 AI 底层穿透能力文档 | 刘艳华 |
 | 1.3 | 2026-03-30 | 补充 deleteFile、updateFileProperty、batchGetContent 接口说明及参数更新 | 刘艳华 |
+| 1.4 | 2026-04-01 | 新增 saveFileByParentId/saveFileByPath 路径聚合接口、uploadContentToPersonalProject 一键入库；更新 FileVO/DownloadInfoVO/PersonalFileVO/SavePersonalFileParam 数据结构 | 刘艳华 |
+| 1.5 | 2026-04-01 | 新增项目/空间发现接口 (list/uploadableList)，支持 Agent 自主识别可写空间 | 刘艳华 |
+| 1.6 | 2026-04-01 | 补全 bizCode 业务线过滤参数，新增 ProjectVO.rawEnabled 属性支持 | 刘艳华 |
+| 1.7 | 2026-04-01 | 细节打磨：增加全量接口的 JSON 出入参示例样本，校对字段非空约束 | 刘艳华 |
+| 1.8 | 2026-04-01 | 补全 4.11-4.20 全量子节（基本信息/行为约定/curl示例/响应示例/数据流向）；统一全文档请求/响应示例格式；修复 4.9 curl 方法错误；补全 5.12 字段 | 刘艳华 |
 
 ## 一、概述
 
@@ -16,7 +21,9 @@
 1. **文件与目录检索** — 支持通过父 ID 下钻、项目 ID 获取一级目录，或全局关键词模糊搜索等多维手段，灵活检索出层级的目录及文件列表。
 2. **文件获取与在线预览** — 支持获取在线预览凭据、下载 url、及针对解析后的文本提取。
 3. **大文件分片上传** — 覆盖预检秒传、多段切片提交、分布式资源后置合并流程。
-4. **个人知识库维护** — 获取个人专属空间 `projectId`，支持在云端存取自身文档。
+4. **空间发现与个人知识库维护** — 获取用户有权限的空间列表（含可写空间筛选），支持个人专属空间 `projectId` 的获取。
+5. **项目知识库文件保存** — 支持按父 ID 或逻辑路径自动解析目录结构，将物理资源或富文本内容聚合入库到任意有权限的项目空间。
+6. **AI 内容一键入库** — 支持将 AI 生成的文本内容（如对话摘要、Markdown 报告）保存到用户有权限的知识库空间或个人专属文件夹。
 
 ---
 
@@ -57,33 +64,62 @@ https://{域名}/open-api/{接口地址}
 | `resultMsg`  | String  | 提示信息，成功时为 `null`，失败时为错误描述 |
 | `data`       | T       | 业务数据，根据各接口不同，失败时通常为 `null` |
 
+### 2.5 认证与安全（文档级约定）
+
+| 项 | 说明 |
+| --- | --- |
+| 认证方式 | 所有接口统一在请求头中携带 `appKey` |
+| Header 约定 | Header 名称固定为 `appKey`，是否必填、示例值格式与特殊说明见 **2.3 公共请求头** |
+| 获取方式 | `appKey` 的申请、开通、分发、轮换流程不在本文档范围内 |
+| 鉴权机制 | 默认按应用级鉴权；所有接口均需携带合法 `appKey`，网关层统一校验 |
+| 审计日志 | 所有写操作（POST 接口）均记录操作者、时间、资源 ID、动作类型 |
+| 行级 / 字段级权限（原则） | 默认按当前 appKey 映射的用户身份过滤数据范围；各接口特例见 4.x |
+| 敏感数据（原则） | 文件下载 URL 为临时签名链接，有时效性；文件内容不做脱敏处理，由调用方按业务需要自行控制 |
+
+### 2.6 面向 AI 消费的数据设计
+
+| 项 | 说明 |
+| --- | --- |
+| 最小必要返回 | `FileVO` 仅返回文件元数据（名称/类型/大小/后缀等），不返回正文内容；正文需通过 4.3/4.4/4.15 独立获取 |
+| 去重原则 | `FileVO` 中的 `ancestorNames` 已包含完整路径信息，不再逐级重复返回父级属性 |
+| 层级控制 | 文件列表（`getChildFiles`/`getLevel1Folders`）默认 1 层，需下钻时通过 `parentId` 递归调用；`PersonalFileVO.children` 为嵌套树但仅在 `getRecentFiles` 中使用 |
+| 文本控制 | `getFullFileContent` 返回全局提纯文本（Markdown），大文件建议通过 `getFileContent` 分页读取；单页文本量由后端控制 |
+| 富文本规则 | 在线文档（`fileType=doc`）的原始富文本不直接返回列表接口；需通过 `getFileContent` 或 `getFullFileContent` 获取结构化文本 |
+| 格式保留原则 | `getFullFileContent` 返回 Markdown 格式，保留标题/列表/表格等结构语义 |
+| 列表控制 | 文件列表接口无分页（单次返回全部子项）；若目录文件过多，建议通过 `searchFile` 按关键词检索 |
+| 裁剪能力 | `getChildFiles` 支持 `type`（仅文件/仅文件夹）、`excludeFileTypes`、`excludeFolderNames`、`returnFileDesc` 等裁剪参数 |
+| token 控制 | 建议 AI Agent 优先使用 `batchGetContent` 批量获取全文（单次建议不超过 10 个文件）；单个大文件使用 `getFileContent` 分页读取 |
+
 ---
 
 ## 三、关键业务流程说明
 
-### 场景一：从个人知识库获取目录或文件 [新增]
+### 场景一：发现空间并浏览目录文件
 
-> 需求：用户在外部应用中，从零拉取个人知识库面板全盘全景。
+> 需求：用户在外部应用中，需要先发现有权限的空间，再从零拉取空间内的目录文件全景。
 
-1. **获取空间 id**：调用 **4.8 获取个人知识库空间Id**（`GET /document-database/project/personal/getProjectId`），获取到用户的唯一知识库空间 `projectId`。
-2. **拉取首层全景**：调用 **4.12 根据项目ID获取一级目录列表**（`GET /document-database/file/getLevel1Folders`），传入 `projectId`，即可完美拉取绝对顶层（根目录）的所有夹/文件列表。
-3. **分步下钻**：调用 **4.1 根据父ID获取下级目录及文件列表**（`GET /document-database/file/getChildFiles`），传入：`parentId={文件夹ID}`，向下递归剥洋葱式钻取。
+1. **发现可用空间**：调用 **4.19 获取有权限访问的空间列表**（`GET /document-database/project/list`），获取用户有权访问的所有空间。若仅需个人专属空间，也可调用 **4.8 获取个人知识库空间Id** 直接获取 `projectId`。
+2. **拉取首层全景**：调用 **4.12 根据项目ID获取一级目录列表**（`GET /document-database/file/getLevel1Folders`），传入目标 `projectId`，即可拉取绝对顶层（根目录）的所有文件夹/文件列表。
+3. **分步下钻**：调用 **4.1 根据父ID获取下级目录及文件列表**（`GET /document-database/file/getChildFiles`），传入 `parentId={文件夹ID}`，向下递归剥洋葱式钻取。
 4. **在线预览文件**：参见 **[场景三](#场景三在线视频文档流式预览)**。
 
 ---
 
-### 场景二：上传文件到个人知识库指定目录 [新增]
+### 场景二：上传文件到个人知识库指定目录
 
-> 需求：将第三方资产或离线文件直存到指定知识库逻辑节点。
+> 需求：将第三方资产或离线文件直存到个人知识库的指定目录节点。
 
-1. **底层资源初始化（可选）**：
-   - 若上传的是大文件，需按需分段调用 **4.5 预检**、**4.7 分片切片上传** 以及 **4.6 合并生成资源**。
-   - 最终从合并接口中拿取底层的统一数据资源锚点：`resourceId`。
-2. **一键存盘绑定**：调用 **4.10 将文件资源保存到个人知识库目录**（`POST /document-database/project/personal/saveFile`），载荷传入：
+1. **获取个人空间 ID**：调用 **4.8 获取个人知识库空间Id**（`GET /document-database/project/personal/getProjectId`），拿到 `projectId`。
+2. **底层资源初始化（物理文件必需）**：
+   - 若保存的是物理文件，需按需分段调用 **4.5 预检**、**4.7 分片切片上传** 以及 **4.6 合并生成资源**，最终拿到 `resourceId`。
+   - 若保存的是富文本/在线文档，可直接传 `fileContent`，无需此步骤。
+3. **存盘绑定**：调用 **4.10 将文件资源保存到个人知识库目录**（`POST /document-database/project/personal/saveFile`），载荷传入：
    - `name`: 文件展示名称；
    - `parentId`: 存盘的目标文件夹 ID（若直接存入绝对根目录，传 `0`）；
    - `type`: `2` (文件)；
-   - `resourceId`: 前置生成的资源关联 key。
+   - `fileType`: `file`（物理文件）或 `doc`（富文本）；
+   - 场景 A（物理文件）传步骤 2 中获取的 `resourceId`；
+   - 场景 B（富文本）传 `fileContent`。
 
 ---
 
@@ -99,7 +135,7 @@ https://{域名}/open-api/{接口地址}
 
 ---
 
-### 场景四：全局或指定目录模糊搜索 [新增]
+### 场景四：全局或指定目录模糊搜索
 
 > 需求：根据关键词查询匹配的文件或文件夹（支持时间过滤与路径范围限缩）。
 
@@ -108,6 +144,44 @@ https://{域名}/open-api/{接口地址}
    - **限缩目录盘查**：若只需在某个父目录下查找，需额外传入 `rootFileId`（指定根目录）。
 2. **按需分类渲染**：
    - 依照返回体 `SearchFileVO` 中的 `folders`（文件夹列表）和 `files`（文件列表）在前端进行分类，渲染列表后可通过 `id` 进行在线预览（详见场景三）。
+
+---
+
+### 场景五：发现可写空间并按路径保存文件 [新增]
+
+> 需求：Agent 需要自主识别用户有权限的空间，并将文件保存到指定逻辑目录路径下（路径不存在时自动递归创建）。
+
+1. **发现可写空间**：调用 **4.20 获取有上传/编辑权限的空间列表**（`GET /document-database/project/uploadableList`），获取用户可写入的空间列表。根据返回的 `ProjectVO.name` 和 `ProjectVO.id` 确定目标空间。
+2. **底层资源初始化（物理文件场景必需）**：
+   - 若保存的是物理文件，需按需分段调用 **4.5 预检**、**4.7 分片切片上传** 以及 **4.6 合并生成资源**，最终拿到 `resourceId`。
+   - 若保存的是富文本/在线文档（`fileType=doc`），可直接传 `fileContent`，无需此步骤。
+3. **按路径存入文件**：调用 **4.17 根据路径保存文件到项目目录**（`POST /document-database/file/saveFileByPath`），传入：
+   - `projectId`: 步骤 1 中确定的目标空间 ID；
+   - `path`: 逻辑目录路径（如 `"工程档案/设计图纸"`），后端自动解析并创建不存在的文件夹；
+   - `name`: 文件名；
+   - `fileType`: `file`（物理文件）或 `doc`（富文本）；
+   - 场景 A（物理文件）传步骤 2 中获取的 `resourceId`；
+   - 场景 B（富文本）传 `fileContent`。
+
+> 补充：若已知目标文件夹 ID，也可直接调用 **4.16 根据父ID保存文件到项目目录** 跳过路径解析。
+
+---
+
+### 场景六：AI 生成内容一键入库到知识库空间 [新增]
+
+> 需求：将 AI 对话、摘要或 Markdown 报告等文本内容快速保存到用户有权限的知识库空间。
+
+**方式一：通过空间列表自主选择目标空间**
+1. 调用 **4.20 获取有上传/编辑权限的空间列表** 获取可写空间。
+2. 调用 **4.16 或 4.17** 将富文本内容（`fileType=doc`，`fileContent=内容`）保存到选定空间。
+
+**方式二：一键入库到个人专属空间**
+1. 调用 **4.18 上传内容到个人知识库**（`POST /ai-huiji/uploadContentToPersonalProject`），传入：
+   - `content`: 文件内容（支持纯文本/Markdown/HTML）；
+   - `fileName`: 文件名称；
+   - `fileSuffix`: 文件后缀（默认 `md`）；
+   - `folderName`: 目标文件夹名称（默认 `和cms智汇的对话`，不存在自动创建）。
+2. 返回中包含 `projectId`、`folderId`、`fileId`、`downloadUrl` 等完整入库信息。
 
 ---
 
@@ -123,6 +197,11 @@ https://{域名}/open-api/{接口地址}
 | :--- | :--- |
 | 接口地址 | `/document-database/file/getChildFiles` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | Agent 遍历目录树、文件浏览 |
 
 **请求参数**
 
@@ -140,12 +219,39 @@ https://{域名}/open-api/{接口地址}
 
 `data` 类型为 `List<FileVO>`，字段详见 **[5.1 FileVO](#51-filevo)**。
 
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 支持 `type`/`excludeFileTypes`/`excludeFolderNames`/`returnFileDesc` 过滤 |
+
 **请求示例**
 
 ```bash
 curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getChildFiles?parentId=1000' \
   -H 'appKey: YOUR_API_KEY'
 ```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {"id": 1001, "name": "技术方案", "type": 1, "parentId": 0, "hasChild": true},
+    {"id": 1002, "name": "需求文档.pdf", "type": 2, "parentId": 0, "suffix": "pdf", "size": 204800, "hasChild": false}
+  ]
+}
+```
+
+**数据流向**
+
+- 返回的 `id`（文件夹类型）可作为本接口 `parentId` 继续下钻；`id`（文件类型）用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参。
 
 ---
 
@@ -159,18 +265,38 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/file/getDownloadInfo` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 文件下载与在线预览 |
 
 **请求参数**
 
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `fileId` | Long | 是 | 文件 id |
+| `path` | String | 否 | 基于文件id的相对路径 |
+| `fileName` | String | 否 | 文件名 |
 | `forceDownload` | Boolean | 否 | 是否强制下载（true 下载，false 在线预览） |
+| `seeOriginal` | Boolean | 否 | 预览是否查看原文 |
+| `source` | String | 否 | 来源 |
+| `versionNumber` | Integer | 否 | 版本号 |
 | `bypassRisk` | Boolean | 否 | 是否绕过风险检查 |
 
 **响应参数**
 
 `data` 类型为 `DownloadInfoVO`，字段详见 **[5.2 DownloadInfoVO](#52-downloadinfovo)**。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回全部字段 |
 
 **请求示例**
 
@@ -178,6 +304,28 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo?fileId=20001' \
   -H 'appKey: YOUR_API_KEY'
 ```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "downloadUrl": "https://oss.example.com/signed-urlxxx",
+    "fileId": 20001,
+    "openWith": 2,
+    "lazyLoad": true,
+    "fileName": "需求文档.pdf",
+    "suffix": "pdf",
+    "size": 204800
+  }
+}
+```
+
+**数据流向**
+
+- 返回的 `downloadUrl` 直接用于前端下载/预览；`openWith` 用于决策渲染方式。
 
 ---
 
@@ -191,6 +339,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/file/getFileContent` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | UI 分页展示文件内容 |
 
 **请求参数**
 
@@ -202,6 +355,37 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **响应参数**
 
 `data` 类型为 `String`，为该页的排版文本。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 是（通过 `pageNumber` 参数） |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 按页码返回单页内容 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getFileContent?fileId=30001&pageNumber=1' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": "# 第一章 概述\n\n本文档描述了..."
+}
+```
+
+**数据流向**
+
+- 无下游接口依赖。
 
 ---
 
@@ -215,6 +399,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/file/getFullFileContent` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | AI Agent 提取文件全文（RAG 入口） |
 
 **请求参数**
 
@@ -228,6 +417,37 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 `data` 类型为 `String`，格式为全局提纯的纯文本或 Markdown 面向解析器的文本格式。
 
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回提纯全文，建议大文件使用 4.3 分页 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getFullFileContent?fileId=30001' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": "# 全文提纯内容\n\n## 摘要\n\n本文档主要..."
+}
+```
+
+**数据流向**
+
+- 无下游接口依赖。
+
 ---
 
 ### 4.5 【上传】预检文件MD5信息（支持秒传）
@@ -240,6 +460,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/file/getSliceIdByMd5V2` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 校验 |
+| 推荐调用场景 | 大文件上传前预检与秒传 |
 
 **请求参数**
 
@@ -251,6 +476,41 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 `data` 类型为 `SliceCheckVO`，字段详见 **[5.4 SliceCheckVO](#54-slicecheckvo)**。
 
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（MD5 相同结果不变） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getSliceIdByMd5V2?md5=d41d8cd98f00b204e9800998ecf8427e' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+秒传命中时：
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "sliceId": 5001
+  }
+}
+```
+
+未命中时返回 `uploadUrl` 和 `fullPath`，用于物理上传后传入 4.7。
+
+**数据流向**
+
+- 返回的 `sliceId` 用于 **4.6 saveResource** 的 `sliceIds` 入参；返回的 `uploadUrl`/`fullPath` 用于物理上传后传入 **4.7 uploadFileSliceV2**。
 
 ---
 
@@ -265,10 +525,48 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 接口地址 | `/document-database/file/saveResource` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | 分片上传完成后合并资源 |
 
 **请求参数**
 
 请求体为 `SaveResourceParam` (见 5.5)。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否-重复调用会生成多个资源 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveResource' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"报告.pdf","size":1048576,"sliceIds":[1001,1002],"suffix":"pdf"}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 987654321
+}
+```
+
+**数据流向**
+
+- 返回的 `resourceId` 用于 **4.10 saveFile** / **4.16 saveFileByParentId** / **4.17 saveFileByPath** 的 `resourceId` 入参。
 
 ---
 
@@ -283,11 +581,48 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 接口地址 | `/document-database/file/uploadFileSliceV2` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | 注册已物理上传的分片数据 |
 
 **请求参数**
 
 请求体为 `UploadFileSliceParam` (见 5.6)。
 
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/uploadFileSliceV2' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"filePath":"/data/upload/xxx.part","md5":"d41d8cd98f00b204e9800998ecf8427e","size":524288,"storageType":"document-database"}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 5001
+}
+```
+
+**数据流向**
+
+- 返回的 `sliceId` 用于 **4.6 saveResource** 的 `sliceIds` 入参。
 
 ---
  
@@ -301,9 +636,51 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/project/personal/getProjectId` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 获取个人知识库空间标识 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `appCode` | String | 否 | 应用编码 |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回单个 Long 值 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/getProjectId' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 2009488364113997826
+}
+```
+
+**数据流向**
+
+- 返回的 `projectId` 用于 **4.12 getLevel1Folders** / **4.11 searchFile** / **4.17 saveFileByPath** 的 `projectId` 入参。
 
 ---
- 
+
 ### 4.9 【检索】获取我最新上传的文件
 
 获取当前用户最新上传的文件列表（支持 limit 限制）。
@@ -314,6 +691,12 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/project/personal/getRecentFiles` |
 | 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 获取最近上传文件列表 |
 
 **请求参数**
 
@@ -321,6 +704,41 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- | :--- | :--- |
 | `limit` | Integer | 否 | 限制数量 |
 | `searchKey` | String | 否 | 搜索关键字 |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否（通过 `limit` 控制数量） |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 支持 `limit` 限制返回数量 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/getRecentFiles' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"limit":10,"searchKey":"报告"}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {"id": 3001, "name": "周报.pdf", "type": 2, "parentId": 1001, "resourceId": 987654321, "size": 102400, "suffix": "pdf"}
+  ]
+}
+```
+
+**数据流向**
+
+- 返回的 `id` 用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参。
 
 ---
  
@@ -335,10 +753,48 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 接口地址 | `/document-database/project/personal/saveFile` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | 将资源绑定到个人知识库目录 |
 
 **请求参数**
 
 请求体为 `SavePersonalFileParam` (见 5.8)。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回单个 Long 值 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/saveFile' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"parentId":0,"name":"测试文件.pdf","type":2,"resourceId":987654321,"fileType":"file"}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 30001
+}
+```
+
+**数据流向**
+
+- 返回的 `fileId` 可用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** / **4.13 deleteFile** / **4.14 updateFileProperty** 的入参。
 
 ---
  
@@ -352,6 +808,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/file/searchFile` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | Agent 按关键词检索文件或目录 |
 
 **请求参数**
 
@@ -360,16 +821,22 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `projectId` | Long | 否 | 项目/空间 id |
 | `nameKey` | String | 否 | 名称关键词 |
 | `rootFileId` | Long | 否 | 指定根目录 id（在此目录下搜索） |
-| `startTime` | Long | 否 | 创建时间-开始时间戳 |
-| `endTime` | Long | 否 | 创建时间-结束时间戳 |
+| `startTime` | Long | 否 | 创建时间-开始时间戳（毫秒） |
+| `endTime` | Long | 否 | 创建时间-结束时间戳（毫秒） |
 | `isFileStorage` | Boolean | 否 | 是否为文件存储范围（默认 false） |
 | `permissionQuery` | String | 否 | 权限查询条件 |
-| `excludeFileTypes` | String | 否 | 排除的文件类型，逗号分隔 |
-| `excludeFolderNames` | String | 否 | 排除的文件夹名称，逗号分隔 |
+| `excludeFileTypes` | String | 否 | 排除的文件类型，逗号分隔（如 `work_report,huiji`） |
+| `excludeFolderNames` | String | 否 | 排除的文件夹名称，逗号分隔（如 `临时文件,测试文件夹`） |
 
-**响应参数**
+**请求与行为约定**
 
-`data` 类型为 `SearchFileVO`，字段详见 **[5.9 SearchFileVO](#59-searchfilevo)**。
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 支持 `excludeFileTypes`/`excludeFolderNames` 过滤 |
 
 **请求示例**
 
@@ -378,11 +845,36 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
   -H 'appKey: YOUR_API_KEY'
 ```
 
+**响应参数**
+
+`data` 类型为 `SearchFileVO`，字段详见 **[5.9 SearchFileVO](#59-searchfilevo)**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "folders": [
+      {"id": 1001, "name": "测试文件夹", "type": 1, "parentId": 0, "hasChild": true}
+    ],
+    "files": [
+      {"id": 2001, "name": "测试报告.pdf", "type": 2, "parentId": 1001, "suffix": "pdf", "size": 102400, "hasChild": false}
+    ]
+  }
+}
+```
+
+**数据流向**
+
+- 返回的 `id`（文件类型）用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参；`id`（文件夹类型）用于 **4.1 getChildFiles** 的 `parentId` 入参。
+
 ---
  
 ### 4.12 【检索】根据项目ID获取一级目录列表
 
-拉取指定项目空间（如个人知识库空间）的绝对顶层（根目录）下的所有文件夹及文件。
+拉取指定项目空间的绝对顶层（根目录）下的所有文件夹及文件。
 
 **基本信息**
 
@@ -390,18 +882,29 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- |
 | 接口地址 | `/document-database/file/getLevel1Folders` |
 | 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | Agent 浏览空间根目录全景 |
 
 **请求参数**
 
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `projectId` | Long | 是 | 项目/空间 id |
+| `projectId` | Long | 是 | 项目/空间 id（来自 4.8 或 4.19 返回的 id） |
 | `order` | Integer | 否 | 排序规则：1(更新倒序), 2(更新顺序), 5(名字倒序), 6(名字顺序) |
 | `permissionQuery` | String | 否 | 权限查询条件 |
 
-**响应参数**
+**请求与行为约定**
 
-`data` 类型为 `List<[FileVO](#51-filevo)>`。
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回全部一级子项 |
 
 **请求示例**
 
@@ -409,6 +912,27 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getLevel1Folders?projectId=2009488364113997826' \
   -H 'appKey: YOUR_API_KEY'
 ```
+
+**响应参数**
+
+`data` 类型为 `List<FileVO>`，字段详见 **[5.1 FileVO](#51-filevo)**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {"id": 1001, "name": "技术方案", "type": 1, "parentId": 0, "hasChild": true},
+    {"id": 1002, "name": "需求文档.pdf", "type": 2, "parentId": 0, "suffix": "pdf", "size": 204800, "hasChild": false}
+  ]
+}
+```
+
+**数据流向**
+
+- 返回的 `id`（文件夹类型）用于 **4.1 getChildFiles** 的 `parentId` 入参继续下钻；`id`（文件类型）用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参。
 
 ---
 
@@ -423,6 +947,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 接口地址 | `/document-database/file/deleteFile` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | Agent 删除指定文件 |
 
 **请求参数**
 
@@ -433,9 +962,42 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `fileId` | Long | 是 | 文件 ID |
 | `isPhysical` | Boolean | 否 | 是否物理彻底删除 (true=彻底销毁, false/null=移入回收站) |
 
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-重复删除已删除文件不会报错 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/deleteFile' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"fileId":30001}'
+```
+
 **响应参数**
 
 `data` 类型为 `Boolean`，表示操作成功与否。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": true
+}
+```
+
+**数据流向**
+
+- 无下游接口依赖。删除后的 `fileId` 不可再用于 **4.2** / **4.3** / **4.4** 等查询接口。
 
 ---
 
@@ -450,6 +1012,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 接口地址 | `/document-database/file/updateFileProperty` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | Agent 重命名或移动文件 |
 
 **请求参数**
 
@@ -463,9 +1030,42 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `cover` | Boolean | 否 | 同名冲突时是否覆盖（cover 与 autoRename 互斥，cover 优先级更高） |
 | `autoRename` | Boolean | 否 | 同名冲突时是否自动追加数字后缀重命名（cover=true 时本字段被忽略） |
 
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否-重复移动可能因覆盖策略产生不同结果 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/updateFileProperty' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"fileId":30001,"newName":"新版报告.pdf","autoRename":true}'
+```
+
 **响应参数**
 
 `data` 类型为 `Boolean`，表示操作成功与否。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": true
+}
+```
+
+**数据流向**
+
+- 无下游接口依赖。操作后文件 `id` 不变，可通过 **4.1 getChildFiles** 重新浏览变更后的目录结构。
 
 ---
 
@@ -480,6 +1080,11 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 接口地址 | `/document-database/ai/batchGetContent` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | AI Agent 批量提取文件全文（建议单次不超过 10 个文件） |
 
 **请求参数**
 
@@ -487,7 +1092,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `files` | List<FileIdentifyDTO> | 是 | 文件解析标识对象列表 |
+| `files` | List\<FileIdentifyDTO\> | 是 | 文件解析标识对象列表 |
 
 其中 `FileIdentifyDTO` 结构说明：
 
@@ -496,6 +1101,25 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `fileId` | Long | 是 | 文件ID |
 | `relationId` | String | 否 | 业务关联ID（可选，后端可根据fileId自动补全。仅在需要强制覆盖元数据时传入） |
 | `fileType` | String | 否 | 关联的业务类型（可选，后端可根据fileId自动补全）。枚举：doc(富文本), file(普通文件), work_report(工作汇报), work_plan(工作任务), url(链接), huiji(慧记), ai-report(AI情报) |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 是（建议单次不超过 10 个文件；部分文件失败不影响其他文件返回） |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 每个文件独立返回 status 字段标识成功/空/错误 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/ai/batchGetContent' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"files":[{"fileId":30001},{"fileId":30002,"fileType":"doc"}]}'
+```
 
 **响应参数**
 
@@ -507,6 +1131,387 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `content` | String | 文件内容体 |
 | `status` | String | 状态 (success/empty/error) |
 | `message` | String | 附带消息 |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {"fileId": 30001, "content": "# 全文提纯内容\n\n本文档主要...", "status": "success", "message": null},
+    {"fileId": 30002, "content": null, "status": "empty", "message": "文件内容为空"}
+  ]
+}
+```
+
+**数据流向**
+
+- 无下游接口依赖。返回的 `content` 可直接供 AI 模型消费。
+
+---
+
+### 4.16 【上传】根据父ID保存文件到项目目录 [新增]
+
+已知目标文件夹 ID 时，通过 `parentId` 直接将物理资源或富文本内容保存到项目知识库的指定目录。支持双模式入库：
+- **场景 A**：绑定已上传的物理文件（传 `resourceId`）；
+- **场景 B**：创建在线文档（传 `fileContent`，`fileType` 为 `doc`）。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/saveFileByParentId` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | Agent 将文件保存到已知目录下 |
+
+**请求参数**
+
+请求体为 `SaveFileToProjectParam`，字段详见 **[5.10 SaveFileToProjectParam](#510-savefiletoprojectparam)**。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否-重复调用会创建多个文件 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+场景 A — 绑定物理文件：
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"projectId":2025001,"parentId":10086,"name":"技术方案.pdf","fileType":"file","resourceId":987654321}'
+```
+
+场景 B — 创建在线文档：
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"projectId":2025001,"parentId":10086,"name":"总结.doc","fileType":"doc","fileContent":"<h2>内容...</h2>"}'
+```
+
+**响应参数**
+
+`data` 类型为 `Long`，返回新建/更新的文件 ID。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 12345678
+}
+```
+
+**数据流向**
+
+- 返回的 `fileId` 可用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** / **4.13 deleteFile** / **4.14 updateFileProperty** 的入参。
+
+---
+
+### 4.17 【上传】根据路径保存文件到项目目录 [新增]
+
+通过 `path` 参数指定逻辑目录路径（如 `FolderA/FolderB`），后端将自动递归解析并创建不存在的文件夹，将文件保存到最终目录下。同样支持物理资源与富文本双模式入库。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/saveFileByPath` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | Agent 按逻辑路径自动归档文件 |
+
+**请求参数**
+
+请求体为 `SaveFileToProjectParam`，字段详见 **[5.10 SaveFileToProjectParam](#510-savefiletoprojectparam)**。其中 `path` 字段为逻辑目录路径（如 `"工程档案/设计图纸"`），不传则存入项目根目录。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否-重复调用会创建多个文件 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+场景 A — 按路径绑定物理文件：
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByPath' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"projectId":2025001,"path":"工程档案/设计图纸","name":"方案.pdf","fileType":"file","resourceId":987654321}'
+```
+
+场景 B — 按路径创建富文本文档：
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByPath' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"projectId":2025001,"path":"AI建议/周报总结","name":"周报.md","fileType":"doc","fileContent":"<h2>报告内容</h2>..."}'
+```
+
+**响应参数**
+
+`data` 类型为 `Long`，返回新建/更新的文件 ID。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 12345678
+}
+```
+
+**数据流向**
+
+- 返回的 `fileId` 可用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** / **4.13 deleteFile** / **4.14 updateFileProperty** 的入参。
+
+---
+
+### 4.18 【上传】上传内容到个人知识库 [新增]
+
+将 AI 生成的文本内容（如对话摘要、Markdown 报告等）直接保存到用户个人知识库的指定文件夹。若目标文件夹不存在将自动创建。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/ai-huiji/uploadContentToPersonalProject` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | AI 一键入库生成内容到个人知识库 |
+
+**请求参数**
+
+请求体为 `UploadContentToPersonalProjectParam`，字段详见 **[5.11 UploadContentToPersonalProjectParam](#511-uploadcontenttopersonalprojectparam)**。
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否-重复调用会创建多个文件 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/ai-huiji/uploadContentToPersonalProject' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"# 会议纪要\n\n## 讨论要点\n\n1. 项目进度同步\n2. 技术方案评审","fileName":"2026年4月项目会议纪要","fileSuffix":"md","folderName":"AI会议纪要"}'
+```
+
+**响应参数**
+
+`data` 类型为 `UploadContentToPersonalProjectResult`，字段详见 **[5.12 UploadContentToPersonalProjectResult](#512-uploadcontenttopersonalprojectresult)**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "projectId": 2025001,
+    "projectName": "个人知识库",
+    "folderId": 30001,
+    "folderName": "AI会议纪要",
+    "fileId": 40001,
+    "fileName": "2026年4月项目会议纪要",
+    "downloadUrl": "https://..."
+  }
+}
+```
+
+**数据流向**
+
+- 返回的 `fileId` 可用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参。`downloadUrl` 可直接用于下载/预览。
+
+---
+
+### 4.19 【基础】获取该账号有权限访问的空间列表 [新增]
+
+拉取当前账号有权访问（含只读）的所有空间列表，用于 Agent 进行前置的空间发现与导航。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/project/list` |
+| 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | Agent 发现可用空间、浏览空间列表 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `appCode` | String | 否 | 应用编码（默认 `kz_doc`） |
+| `nameKey` | String | 否 | 空间名称模糊搜索关键词 |
+| `bizCode` | String | 否 | 业务线编码过滤（如 `pmo`） |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 支持 `nameKey`/`bizCode` 过滤 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/list' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应参数**
+
+`data` 类型为 `List<ProjectVO>`，字段详见 **[5.13 ProjectVO](#513-projectvo)**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {
+      "id": 2025001,
+      "name": "AI 研发中心",
+      "remark": "存放 AI 相关的技术蓝图",
+      "type": "common",
+      "role": 1,
+      "canCreateAtRoot": true,
+      "rawEnabled": true
+    },
+    {
+      "id": 2025002,
+      "name": "产品周报空间",
+      "type": "common",
+      "role": 0,
+      "canCreateAtRoot": false,
+      "rawEnabled": false
+    }
+  ]
+}
+```
+
+**数据流向**
+
+- 返回的 `id`（即 `projectId`）用于 **4.12 getLevel1Folders** / **4.1 getChildFiles** / **4.11 searchFile** / **4.16 saveFileByParentId** / **4.17 saveFileByPath** 的 `projectId` 入参。
+
+---
+
+### 4.20 【基础】获取该账号有上传/编辑权限的空间列表 [新增]
+
+**存盘必备接口**。仅返回当前账号拥有写入权限的空间。Agent 在执行”保存”、”归档”等动作前，应调用此接口展示目标空间。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/project/uploadableList` |
+| 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | Agent 保存文件前确定目标空间 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `appCode` | String | 否 | 应用编码（默认 `kz_doc`） |
+| `nameKey` | String | 否 | 空间名称模糊搜索关键词 |
+| `bizCode` | String | 否 | 业务线编码过滤（如 `pmo`） |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 支持 `nameKey`/`bizCode` 过滤；仅返回有写入权限的空间 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/uploadableList?bizCode=pmo' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应参数**
+
+`data` 类型为 `List<ProjectVO>`，字段详见 **[5.13 ProjectVO](#513-projectvo)**。
+
+**响应示例**
+
+```json
+{
+  “resultCode”: 1,
+  “resultMsg”: null,
+  “data”: [
+    {
+      “id”: 2025001,
+      “name”: “AI 研发中心”,
+      “remark”: “存放 AI 相关的技术蓝图”,
+      “type”: “common”,
+      “role”: 1,
+      “canCreateAtRoot”: true,
+      “rawEnabled”: true
+    }
+  ]
+}
+```
+
+**数据流向**
+
+- 返回的 `id`（即 `projectId`）用于 **4.16 saveFileByParentId** / **4.17 saveFileByPath** 的 `projectId` 入参。
+
+---
 
 ---
 
@@ -520,15 +1525,17 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `id` | Long | 主键 id |
 | `name` | String | 文件名 |
 | `type` | Integer | 资源类型：1 文件夹，2 文件 |
-| `parentId` | Long | 所属文件夹 ID |
-| `projectId` | Long | 项目 id |
-| `resourceId` | Long | 关联资源 id |
+| `parentId` | Long | 父目录 id |
 | `ancestorNames` | String | 祖先名字，斜杠 / 分隔 |
 | `fileDescription` | String | 文件描述 |
-| `fileType` | String | 文件类型：doc 富文本 / file 离线文件 |
+| `fileType` | String | 关联的业务类型。枚举：doc(富文本), file(普通文件), work_report(工作汇报), work_plan(工作任务), url(链接), huiji(慧记), ai-report(AI情报)。注:如果为文件夹则为 NULL。AI 拉取全文时强依赖此标识 |
+| `relationId` | String | 关联的对象 id（拉取全文必需参数） |
 | `hasChild` | Boolean | 是否有子目录或文件 |
 | `size` | Long | 文件大小（字节） |
 | `suffix` | String | 后缀名 |
+| `createTime` | Long | 创建时间戳 |
+| `createTimeStr` | String | 创建时间（精确到分钟，供 AI 识别语境，格式：yyyy-MM-dd HH:mm） |
+| `breadcrumb` | String | 前端决策卡片路径透传导航（与 ancestorNames 一致） |
 
 ---
 
@@ -538,9 +1545,19 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 字段 | 类型 | 说明 |
 | :--- | :--- | :--- |
 | `downloadUrl` | String | 下载 url / 临时签名 |
-| `fileContent` | String | 文件内载体 |
+| `thumbnailUrl` | String | 图片缩略图 url |
+| `fileName` | String | 文件名 |
+| `versionNumber` | Integer | 版本号 |
 | `fileId` | Long | 文件 id |
-| `openWith` | Integer | 打开方式：1 wps / 2 pdf / 4 html |
+| `suffix` | String | 文件后缀 |
+| `size` | Long | 文件大小（字节） |
+| `fileType` | String | 关联的业务类型。枚举：doc(富文本), file(普通文件), work_report(工作汇报), work_plan(工作任务), url(链接), huiji(慧记), ai-report(AI情报) |
+| `fileContent` | String | 文件内容 |
+| `resourceId` | Long | 资源 id |
+| `openWith` | Integer | 打开方式：0 默认或下载 / 1 wps / 2 pdf / 3 畅写 / 4 html / 5 工作协同 / 6 pdf-v5 |
+| `lazyLoad` | Boolean | 是否按需加载（目前用于 pdf.js 加载 pdf 文件） |
+| `lastVersion` | Boolean | 是否最新版本 |
+| `projectId` | Long | 文件空间 Id |
 
 ---
 
@@ -603,6 +1620,16 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `name` | String | 文件名 |
 | `type` | Integer | 类型：1 文件夹，2 文件 |
 | `parentId` | Long | 父 id |
+| `projectId` | Long | 项目 id |
+| `resourceId` | Long | 资源 id |
+| `size` | Long | 文件大小（字节） |
+| `suffix` | String | 文件后缀 |
+| `createTime` | Long | 创建时间 |
+| `creator` | String | 创建人 |
+| `updateTime` | Long | 修改时间 |
+| `updater` | String | 修改人 |
+| `ancestorIds` | String | 祖先 id 列表 |
+| `sortNumber` | Double | 排序字段 |
 | `children` | List<PersonalFileVO> | 嵌套下级文件树列表 |
 
 ---
@@ -612,11 +1639,17 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `name` | String | 是 | 文件名 |
+| `id` | Long | 否 | 主键 id（为空则新增，有值则更新） |
 | `parentId` | Long | 是 | 父文件夹 id（主层传 0） |
+| `name` | String | 是 | 文件名 |
 | `type` | Integer | 是 | 1 文件夹，2 文件 |
+| `suffix` | String | 否 | 文件后缀 |
+| `size` | Long | 否 | 文件大小（字节） |
 | `resourceId` | Long | 否 | 引用底层的资源 ID |
-| `fileType` | String | 否 | doc 小作文 / file 普通文件 |
+| `fileType` | String | 否 | doc 富文本 / file 普通文件 |
+| `fileContent` | String | 否 | 文件内容（fileType 为 doc 时的富文本内容） |
+| `directory` | List\<String\> | 否 | 文件目录路径列表 |
+| `isSensitive` | Integer | 否 | 是否跨境敏感文件（0 非敏感，1 敏感） |
 
 ---
 
@@ -627,6 +1660,67 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- | :--- |
 | `folders` | List<[FileVO](#51-filevo)> | 匹配到的文件夹列表 |
 | `files` | List<[FileVO](#51-filevo)> | 匹配到的文件列表 |
+
+---
+
+### 5.10 SaveFileToProjectParam [新增]
+保存文件到项目空间请求（支持按父 ID 和按路径两种模式）。
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `projectId` | Long | 是 | 项目空间 id |
+| `parentId` | Long | 否 | 父文件夹 ID（已知目标文件夹时传入；若基于路径则传 `path`） |
+| `name` | String | 是 | 保存的文件名 |
+| `fileType` | String | 是 | 文件类型：doc(富文本/在线文档), file(普通物理文件) |
+| `resourceId` | Long | 否 | 资源 id（场景 A 必填：对应已上传的物理文件资源。`fileType` 为 `file` 时有效） |
+| `fileContent` | String | 否 | 文件内容（场景 B 必填：对应在线文档内容。仅在 `fileType` 为 `doc` 时有效） |
+| `path` | String | 否 | 逻辑目录路径（不传则存入项目根目录）。示例：`"AI生成/日报总结"`，后端自动递归创建不存在的目录 |
+
+---
+
+### 5.11 UploadContentToPersonalProjectParam [新增]
+上传内容到个人知识库参数。
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `content` | String | 是 | 文件内容（支持纯文本/Markdown/HTML） |
+| `fileName` | String | 是 | 文件名称，最大长度 500 字符，超出将自动截取 |
+| `fileSuffix` | String | 否 | 文件后缀，默认为 `md` |
+| `folderName` | String | 否 | 文件夹名称，默认为 `和cms智汇的对话`（不存在自动创建） |
+
+---
+
+### 5.12 UploadContentToPersonalProjectResult [新增]
+上传内容到个人知识库返回结果。
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `projectId` | Long | 空间 ID（项目 ID） |
+| `projectName` | String | 空间名称（项目名称） |
+| `folderId` | Long | 文件夹 ID |
+| `folderName` | String | 文件夹名称 |
+| `fileId` | Long | 文件 ID |
+| `fileName` | String | 文件名称 |
+| `downloadUrl` | String | 文件下载地址 |
+
+---
+
+### 5.13 ProjectVO [新增]
+空间/项目元数据模型。
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | Long | 空间 ID (projectId) |
+| `name` | String | 空间名称 |
+| `remark` | String | 备注/描述 |
+| `type` | String | 空间类型: common(普通), personal(个人) |
+| `role` | Integer | 用户在空间的角色: 1(管理员), 0(普通成员) |
+| `bizCode` | String | 业务线编码 |
+| `canCreateAtRoot` | Boolean | 是否允许在根目录直接创建文件夹/上传 |
+| `rawEnabled` | Boolean | 是否开启 Raw 原文展示功能 |
+| `hasTopping` | Boolean | 是否已置顶 |
+| `creator` | String | 创建人姓名 |
+| `createTime` | Long | 创建时间戳 |
 
 ---
 
@@ -667,9 +1761,30 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 2. **ID 精度防御**：所有 ID 类型在后端使用 64位 Long 整数（如 `id`, `parentId`, `projectId`），前端展示或外部对接时请务必使用 **String 字符串** 类型接收，避免 JavaScript 等弱类型语言发生精度丢失。
 3. **鉴权与防重放**：所有接口均需在 Header 携带合法的 `appKey`；若接口需要计算签名，请确保 `timestamp` 与服务端时间差在 5 分钟内。
 4. **频率限制（QPS 控制）**：开放平台配有流控保护，收到 `610012` 错误时推荐使用指数级退避算法进行降频重试。
+5. **路径自动解析**：使用 `saveFileByPath` 时，`path` 中的路径分隔符为 `/`，后端会自动递归创建不存在的目录层级。
+6. **AI 无关字段过滤**：列表接口仅返回文件元数据（名称/类型/大小/后缀等），不内嵌正文内容；正文需通过 4.3/4.4/4.15 独立获取，避免单次返回 token 过大。
+7. **避免父子重复**：`FileVO` 中的 `ancestorNames` 已包含完整路径，不再逐级重复返回父级属性；`breadcrumb` 与 `ancestorNames` 为同义词，优先使用 `ancestorNames`。
+8. **层级与长度控制**：文件列表默认 1 层，需下钻时通过 `parentId` 递归调用；大文件全文建议通过 `getFileContent`（4.3）分页读取，避免单次返回超长文本。
+9. **富文本原文规则**：在线文档（`fileType=doc`）的原始富文本不在列表接口返回；需通过 `getFileContent` 或 `getFullFileContent` 获取结构化 Markdown 文本。`getFullFileContent` 保留标题/列表/表格等结构语义，不会简单压平为纯文本。
+10. **列表裁剪能力**：`getChildFiles` 支持 `type`（仅文件/仅文件夹）、`excludeFileTypes`、`excludeFolderNames`、`returnFileDesc` 等裁剪参数，AI Agent 应善用这些参数减少无关数据。
+11. **空值约定**：全文档统一使用 `null` 表示无数据；`null`、空串 `""`、空数组 `[]` 语义相同，调用方无需区分。
 
 ---
 
-**文档版本**：v1.6  
-**更新日期**：2026-03-30  
+## 八、变更管理
+
+| 项 | 说明 |
+| --- | --- |
+| 向后兼容要求 | 返回体新增字段不得破坏旧调用方解析；字段类型变更必须经过废弃过渡期 |
+| 废弃通知周期 | 废弃接口至少提前 2 周通知，旧版并行保留至下一个发布周期 |
+| 字段新增规则 | 新增字段默认为可选（允许 `null`），枚举值允许后端扩展，调用方不应假设枚举值固定 |
+| 字段删除规则 | 先标注「已废弃」并保留至少一个发布周期，再在下个大版本中移除 |
+| 空值兼容规则 | `null` 与字段缺失等价，调用方应兼容两种情况；空数组与 `null` 均表示无数据 |
+| 顺序与分页稳定性 | 文件列表顺序由 `order` 参数控制，默认按更新时间倒序；无游标分页，列表内容可能因并发操作变化 |
+| 变更通知人 | 知识库服务团队、对接方技术负责人、开放平台运维群 |
+
+---
+
+**文档版本**：v1.8
+**更新日期**：2026-04-01
 **维护人/团队**：知识库服务团队
