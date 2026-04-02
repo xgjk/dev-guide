@@ -5,6 +5,7 @@
 | 版本 | 日期 | 变更摘要 | 变更人 |
 |------|------|----------|--------|
 | 1.0 | 2026-04-01 | 初版创建 | 刘艳华 |
+| 1.1 | 2026-04-02 | 新增用户/模型/产品使用明细接口 | 刘艳华 |
 
 ---
 
@@ -19,6 +20,7 @@
 5. **联动排行榜** — 查询Model/Product/Person三维度排行榜，支持二级交叉过滤
 6. **产品用户分析** — 查询指定产品的用户费用统计，含人均费用、中位数、分位数等指标
 7. **实体列表查询** — 获取所有AI模型、产品、人员的基础信息列表
+8. **使用明细查询** — 查询指定用户/模型/产品的详细使用数据，包含费用、Token、调用次数及其关联维度分布
 
 ---
 
@@ -116,6 +118,14 @@ https://{域名}/open-api/llm-cost/{接口地址}
 > 需求：了解某产品近7天的用户数、人均费用、费用中位数等
 
 1. 调用 **4.10 产品用户费用统计**（`GET /llm-cost/product-user-stats`），传入 `product={产品bizCode}&days=7`，获取每日用户数、人均费用、P50/P10、最大费用
+
+### 场景五：查询指定模型/产品/用户的使用明细
+
+> 需求：了解某用户在某段时间内使用了哪些产品、哪些模型，各自的费用和Token用量
+
+1. 调用 **4.14 用户使用明细**（`GET /llm-cost/user-usage`），传入 `personId=11628&startTime=2026-03-25&endTime=2026-03-31`，获取该用户的总费用、总Token、按产品（含嵌套模型）的明细数据
+2. 若需从模型视角查看，调用 **4.15 模型使用明细**（`GET /llm-cost/model-usage`），传入 `aiType=gpt-4o&startTime=2026-03-25&endTime=2026-03-31`，获取该模型被哪些产品使用、被哪些用户使用
+3. 若需从产品视角查看，调用 **4.16 产品使用明细**（`GET /llm-cost/product-usage`），传入 `bizCode=llm-inference&startTime=2026-03-25&endTime=2026-03-31`，获取该产品使用了哪些模型、被哪些用户使用
 
 ---
 
@@ -1665,6 +1675,448 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 
 ---
 
+### 4.14 用户使用明细
+
+查询指定用户在指定日期范围内的AI使用明细，包含总费用、总Token用量、按产品（含嵌套模型）的费用明细。
+
+**基本信息**
+
+| 项目 | 说明 |
+| --- | --- |
+| 接口地址 | `/llm-cost/user-usage` |
+| 请求方式 | `GET` |
+| Content-Type | 不适用（GET 请求无 Body） |
+| 接口负责人 | liuyanhua |
+| 所属模块 | AI费用查询服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 用户维度使用明细、个人费用分析 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `personId` | Long | 否 | 用户ID（数值型），不传则自动使用当前登录用户 |
+| `startTime` | String | 否 | 开始日期，格式 `YYYY-MM-DD`，默认当天 |
+| `endTime` | String | 否 | 结束日期，格式 `YYYY-MM-DD`，默认当天 |
+| `limit` | Integer | 否 | 每个维度返回数量，默认 10，最大 100 |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否，通过 `limit` 控制返回数量 |
+| 幂等性要求 | 幂等 |
+| 日期范围限制 | 最大 90 天 |
+| 是否支持批量 | 否 |
+| 额外字段策略 | 不适用（无请求体） |
+| 返回裁剪策略 | 通过 `limit` 控制产品和模型返回条数 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage?personId=11628&startTime=2026-03-25&endTime=2026-03-31' \
+  -H 'appKey: XXXXXXXX'
+```
+
+**响应参数**
+
+`data` 类型为 `Object`，字段如下：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `query` | UserUsageQuery | 查询条件，含 `personId`、`personName`、`startTime`、`endTime`、`currency` |
+| `summary` | UserUsageSummary | 汇总数据，含 `personId`、`personName`、`inputTokens`、`outputTokens`、`callCount`、`cost`、`currency` |
+| `products` | Array\<ProductUsageItem\> | 按产品分组的明细列表，每个产品内嵌套 `models` 列表 |
+
+**ProductUsageItem** 结构：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `productId` | String | 产品 bizCode |
+| `productName` | String | 产品名称 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位，如 `USD` |
+| `models` | Array\<ModelUsageItem\> | 该产品下各模型的使用明细 |
+
+**ModelUsageItem** 结构：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `modelCode` | String | 模型代码（aiType） |
+| `modelName` | String | 模型名称 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位 |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "query": {
+      "personId": "11628",
+      "personName": "张三",
+      "startTime": "2026-03-25",
+      "endTime": "2026-03-31",
+      "currency": "USD"
+    },
+    "summary": {
+      "personId": "11628",
+      "personName": "张三",
+      "inputTokens": 950000,
+      "outputTokens": 520000,
+      "callCount": 15000,
+      "cost": 125.6,
+      "currency": "USD"
+    },
+    "products": [
+      {
+        "productId": "llm-inference",
+        "productName": "LLM推理服务",
+        "inputTokens": 800000,
+        "outputTokens": 450000,
+        "callCount": 12000,
+        "cost": 100.3,
+        "currency": "USD",
+        "models": [
+          {
+            "modelCode": "gpt-4o",
+            "modelName": "GPT-4o",
+            "inputTokens": 600000,
+            "outputTokens": 350000,
+            "callCount": 8000,
+            "cost": 65.2,
+            "currency": "USD"
+          },
+          {
+            "modelCode": "claude-3.5",
+            "modelName": "Claude 3.5",
+            "inputTokens": 200000,
+            "outputTokens": 100000,
+            "callCount": 4000,
+            "cost": 35.1,
+            "currency": "USD"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**数据流向**
+
+- `personId` 参数可从 **4.13 获取所有人员列表** 返回的 `id` 字段获取
+- 返回的 `productId` 可用于 **4.16 产品使用明细** 的 `bizCode` 参数
+- 返回的 `modelCode` 可用于 **4.15 模型使用明细** 的 `aiType` 参数
+
+**权限与安全（本接口）**
+
+同 2.5，无额外约束。
+
+**性能与稳定性（本接口）**
+
+| 项 | 说明 |
+| --- | --- |
+| 目标 SLA | 遵循平台默认策略 |
+| 超时阈值 | 建议客户端 5s |
+| 限流策略 | 遵循平台默认策略 |
+| 重试策略 | 可重试，退避 1s |
+| 熔断策略 | 无 |
+| 缓存策略 | 建议缓存 1～5 分钟 |
+| token 控制策略 | 默认返回 10 个产品×嵌套模型；单次响应约 2～5KB |
+
+---
+
+### 4.15 模型使用明细
+
+查询指定模型在指定日期范围内的使用明细，包含总费用、总Token用量、被哪些产品使用、被哪些用户使用。
+
+**基本信息**
+
+| 项目 | 说明 |
+| --- | --- |
+| 接口地址 | `/llm-cost/model-usage` |
+| 请求方式 | `GET` |
+| Content-Type | 不适用（GET 请求无 Body） |
+| 接口负责人 | liuyanhua |
+| 所属模块 | AI费用查询服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 模型维度使用明细、模型成本分析 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `aiType` | String | 是 | 模型代码（aiType），来自 **4.11 获取所有AI模型列表** 的 `id` |
+| `startTime` | String | 否 | 开始日期，格式 `YYYY-MM-DD`，默认当天 |
+| `endTime` | String | 否 | 结束日期，格式 `YYYY-MM-DD`，默认当天 |
+| `limit` | Integer | 否 | 每个维度返回数量，默认 10，最大 100 |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否，通过 `limit` 控制返回数量 |
+| 幂等性要求 | 幂等 |
+| 日期范围限制 | 最大 90 天 |
+| 是否支持批量 | 否 |
+| 额外字段策略 | 不适用（无请求体） |
+| 返回裁剪策略 | 通过 `limit` 控制产品和用户返回条数 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usage?aiType=gpt-4o&startTime=2026-03-25&endTime=2026-03-31' \
+  -H 'appKey: XXXXXXXX'
+```
+
+**响应参数**
+
+`data` 类型为 `Object`，字段如下：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `query` | Object | 查询条件，含 `aiType`、`modelName`、`startTime`、`endTime`、`currency` |
+| `summary` | Object | 汇总数据，含 `aiType`、`modelName`、`inputTokens`、`outputTokens`、`callCount`、`cost`、`currency` |
+| `products` | Array\<ProductFlatItem\> | 使用该模型的产品列表（平铺，不含嵌套） |
+| `users` | Array\<UserUsageItem\> | 使用该模型的用户列表 |
+
+**ProductFlatItem** 结构：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `productId` | String | 产品 bizCode |
+| `productName` | String | 产品名称 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位 |
+
+**UserUsageItem** 结构：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `personId` | String | 用户 ID |
+| `personName` | String | 用户姓名 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位 |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "query": {
+      "aiType": "gpt-4o",
+      "modelName": "GPT-4o",
+      "startTime": "2026-03-25",
+      "endTime": "2026-03-31",
+      "currency": "USD"
+    },
+    "summary": {
+      "aiType": "gpt-4o",
+      "modelName": "GPT-4o",
+      "inputTokens": 950000,
+      "outputTokens": 520000,
+      "callCount": 15000,
+      "cost": 125.6,
+      "currency": "USD"
+    },
+    "products": [
+      {
+        "productId": "llm-inference",
+        "productName": "LLM推理服务",
+        "inputTokens": 800000,
+        "outputTokens": 450000,
+        "callCount": 12000,
+        "cost": 100.3,
+        "currency": "USD"
+      }
+    ],
+    "users": [
+      {
+        "personId": "11628",
+        "personName": "张三",
+        "inputTokens": 600000,
+        "outputTokens": 350000,
+        "callCount": 8000,
+        "cost": 65.2,
+        "currency": "USD"
+      }
+    ]
+  }
+}
+```
+
+**数据流向**
+
+- `aiType` 参数来自 **4.11 获取所有AI模型列表** 返回的 `id` 字段
+- 返回的 `productId` 可用于 **4.16 产品使用明细** 的 `bizCode` 参数
+- 返回的 `personId` 可用于 **4.14 用户使用明细** 的 `personId` 参数
+
+**权限与安全（本接口）**
+
+同 2.5，无额外约束。
+
+**性能与稳定性（本接口）**
+
+| 项 | 说明 |
+| --- | --- |
+| 目标 SLA | 遵循平台默认策略 |
+| 超时阈值 | 建议客户端 5s |
+| 限流策略 | 遵循平台默认策略 |
+| 重试策略 | 可重试，退避 1s |
+| 熔断策略 | 无 |
+| 缓存策略 | 建议缓存 1～5 分钟 |
+| token 控制策略 | 默认返回 10 条产品和 10 条用户；单次响应约 2～5KB |
+
+---
+
+### 4.16 产品使用明细
+
+查询指定产品在指定日期范围内的使用明细，包含总费用、总Token用量、使用了哪些模型、被哪些用户使用。
+
+**基本信息**
+
+| 项目 | 说明 |
+| --- | --- |
+| 接口地址 | `/llm-cost/product-usage` |
+| 请求方式 | `GET` |
+| Content-Type | 不适用（GET 请求无 Body） |
+| 接口负责人 | liuyanhua |
+| 所属模块 | AI费用查询服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 产品维度使用明细、产品成本分析 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `bizCode` | String | 是 | 产品代码（bizCode），来自 **4.12 获取所有产品列表** 的 `id`。注意：部分 bizCode 包含斜杠，如 `/meetingChat/splitSummary` |
+| `startTime` | String | 否 | 开始日期，格式 `YYYY-MM-DD`，默认当天 |
+| `endTime` | String | 否 | 结束日期，格式 `YYYY-MM-DD`，默认当天 |
+| `limit` | Integer | 否 | 每个维度返回数量，默认 10，最大 100 |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否，通过 `limit` 控制返回数量 |
+| 幂等性要求 | 幂等 |
+| 日期范围限制 | 最大 90 天 |
+| 是否支持批量 | 否 |
+| 额外字段策略 | 不适用（无请求体） |
+| 返回裁剪策略 | 通过 `limit` 控制模型和用户返回条数 |
+| bizCode 含斜杠 | bizCode 作为查询参数传递，斜杠不影响路由（URL 编码为 `%2F`） |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-usage?bizCode=llm-inference&startTime=2026-03-25&endTime=2026-03-31' \
+  -H 'appKey: XXXXXXXX'
+```
+
+**响应参数**
+
+`data` 类型为 `Object`，字段如下：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `query` | Object | 查询条件，含 `bizCode`、`productName`、`startTime`、`endTime`、`currency` |
+| `summary` | Object | 汇总数据，含 `bizCode`、`productName`、`inputTokens`、`outputTokens`、`callCount`、`cost`、`currency` |
+| `models` | Array\<ModelUsageItem\> | 该产品使用的各模型明细，结构见 4.14 ModelUsageItem |
+| `users` | Array\<UserUsageItem\> | 使用该产品的各用户明细，结构见 4.15 UserUsageItem |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "query": {
+      "bizCode": "llm-inference",
+      "productName": "LLM推理服务",
+      "startTime": "2026-03-25",
+      "endTime": "2026-03-31",
+      "currency": "USD"
+    },
+    "summary": {
+      "bizCode": "llm-inference",
+      "productName": "LLM推理服务",
+      "inputTokens": 950000,
+      "outputTokens": 520000,
+      "callCount": 15000,
+      "cost": 125.6,
+      "currency": "USD"
+    },
+    "models": [
+      {
+        "modelCode": "gpt-4o",
+        "modelName": "GPT-4o",
+        "inputTokens": 600000,
+        "outputTokens": 350000,
+        "callCount": 8000,
+        "cost": 65.2,
+        "currency": "USD"
+      }
+    ],
+    "users": [
+      {
+        "personId": "11628",
+        "personName": "张三",
+        "inputTokens": 600000,
+        "outputTokens": 350000,
+        "callCount": 8000,
+        "cost": 65.2,
+        "currency": "USD"
+      }
+    ]
+  }
+}
+```
+
+**数据流向**
+
+- `bizCode` 参数来自 **4.12 获取所有产品列表** 返回的 `id` 字段
+- 返回的 `modelCode` 可用于 **4.15 模型使用明细** 的 `aiType` 参数
+- 返回的 `personId` 可用于 **4.14 用户使用明细** 的 `personId` 参数
+
+**权限与安全（本接口）**
+
+同 2.5，无额外约束。
+
+**性能与稳定性（本接口）**
+
+| 项 | 说明 |
+| --- | --- |
+| 目标 SLA | 遵循平台默认策略 |
+| 超时阈值 | 建议客户端 5s |
+| 限流策略 | 遵循平台默认策略 |
+| 重试策略 | 可重试，退避 1s |
+| 熔断策略 | 无 |
+| 缓存策略 | 建议缓存 1～5 分钟 |
+| token 控制策略 | 默认返回 10 条模型和 10 条用户；单次响应约 2～5KB |
+
+---
+
 ## 五、公共数据结构
 
 ### 5.1 TrendItem
@@ -1755,6 +2207,55 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 | `id` | String | 人员 ID，如 `zhang.san` |
 | `name` | String | 人员姓名，如 `张三` |
 
+### 5.11 ProductUsageItem
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `productId` | String | 产品 bizCode |
+| `productName` | String | 产品名称 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位，如 `USD` |
+| `models` | Array\<ModelUsageItem\> | 该产品下各模型明细，ModelUsageItem 见 5.13 |
+
+### 5.12 ProductFlatItem
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `productId` | String | 产品 bizCode |
+| `productName` | String | 产品名称 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位 |
+
+### 5.13 ModelUsageItem
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `modelCode` | String | 模型代码（aiType），如 `gpt-4o` |
+| `modelName` | String | 模型名称，如 `GPT-4o` |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位 |
+
+### 5.14 UserUsageItem
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `personId` | String | 用户 ID |
+| `personName` | String | 用户姓名 |
+| `inputTokens` | Long | 输入 Token 总量 |
+| `outputTokens` | Long | 输出 Token 总量 |
+| `callCount` | Long | 调用次数 |
+| `cost` | Number | 费用（$） |
+| `currency` | String | 货币单位 |
+
 ---
 
 ## 六、错误码说明
@@ -1776,6 +2277,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 5. **钻取关系**：维度间钻取关系为 model ↔ product ↔ person，不支持 company 维度的下钻。
 6. **数据延迟**：费用数据可能有数分钟至数小时的延迟，不建议用于实时计费场景。
 7. **AI 消费建议**：本组接口主要供 AI Agent / Skill 直接消费使用，数据直接以 JSON 返回，不需要作为其他接口的前置接口。若返回数据量较大，建议通过 `limit`、`days`、`start_date`/`end_date` 参数控制查询范围。
+8. **使用明细三接口关系**：`user-usage`（4.14）、`model-usage`（4.15）、`product-usage`（4.16）分别从用户/模型/产品三个视角查询使用明细，各自返回其他两个维度的平铺分布，可互相跳转。
 
 ---
 
