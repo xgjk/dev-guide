@@ -569,11 +569,11 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId'
 | `recordState`   | Integer                | 录音状态：`0` 录制中，`1` 结束，`3` 处理出错。 |
 | `createTime`    | Long                   | 创建时间（毫秒时间戳）。 |
 | `finishTime`    | Long                   | 完成时间（毫秒时间戳）。 |
-| `meetingLength` | Long                   | 会议时长（毫秒）。 |
-| `tidyText`      | String                 | 整理后正文摘要。 |
-| `simpleSummary` | String                 | 简单摘要（`tidyText` 为空时兜底）。 |
-| `keywordList`   | List\<KeywordItem\>    | 关键词列表。 |
-| `personId`      | String                 | 拥有者标识（内部用）。 |
+| `meetingLength` | Long                   | 会议时长（毫秒）。 可能为空，例如：慧记为结束|
+| `tidyText`      | String                 | 整理后正文摘要。 可能为空，整理失败或者未生成 |
+| `simpleSummary` | String                 | 简单摘要（`tidyText` 为空时兜底）。 可能为空，失败或者未生成|
+| `keywordList`   | List\<KeywordItem\>    | 关键词列表。 可能为空，失败或者未生成 |
+| `personId`      | String                 | 拥有者标识（内部用）。 可能为空，没有拥有者|
 
 `keywordList` 元素 `KeywordItem`：`keyword`（String）。
 
