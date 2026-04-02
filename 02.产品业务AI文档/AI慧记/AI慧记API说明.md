@@ -20,7 +20,7 @@
 | 1 | 查询我的AI慧记列表（本人名下） | 4.1 | `/ai-huiji/meetingChat/chatListByPage` |
 | 2 | 查询指定慧记的改写的原文 | 4.2 | `/ai-huiji/meetingChat/checkSecondSttV2` |
 | 3 | 增量查询指定慧记的分片录音转写列表 | 4.3 | `/ai-huiji/meetingChat/splitRecordListV2` |
-| 4 | 按视频会议号查询慧记列表（参与关系，含他人录制本人参会） | 4.4 | `/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber` |
+| 4 | 按视频会议号查询慧记列表（参与关系，含他人录制本人参会） | 4.4 | `/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumberV2` |
 | 5 | 根据慧记Id创建慧记分享信息 | 4.5 | `/ai-huiji/meetingChat/createShareV2` |
 | 6 | 根据慧记分享ID查询慧记信息 | 4.6 | `/ai-huiji/meetingChat/getChatFromShareId` |
 
@@ -114,7 +114,7 @@ https://{域名}/open-api/{接口地址}
 
 **1. 定位视频会议对应的慧记（我参与的会议）**
 
-- **按视频会议 + 我是否参与（推荐，概述表第 4 项）**：调用 **4.4 按视频会议号查询慧记列表**（`POST /ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber`），请求体传入 **`meetingNumber`**（视频会议号，与会议域一致），可选 **`lastTs`** 做增量同步。返回的 **`data`** 为 `List<FindChatVO>`；每一项的 **`_id`** 即后续 **4.2 / 4.3** 等接口所需的 **`meetingChatId`**。可结合 **`recordState`**、`createTime`、`finishTime`、`meetingLength` 等做展示与粗判。需 **当前登录用户上下文** + **`appKey`**，详见 **4.4**。
+- **按视频会议 + 我是否参与（推荐，概述表第 4 项）**：调用 **4.4 按视频会议号查询慧记列表**（`POST /ai-huiji/meetingChat/listHuiJiIdsByMeetingNumberV2`），请求体传入 **`meetingNumber`**（视频会议号，与会议域一致），可选 **`lastTs`** 做增量同步。返回的 **`data`** 为 `List<FindChatVO>`；每一项的 **`_id`** 即后续 **4.2 / 4.3** 等接口所需的 **`meetingChatId`**。可结合 **`recordState`**、`createTime`、`finishTime`、`meetingLength` 等做展示与粗判。需 **当前登录用户上下文** + **`appKey`**，详见 **4.4**。
 
 
 1. **视频会议（含他人录制、本人参会）**：用 **4.4**（`meetingNumber`）→ 列表项 **`_id`** 即 `meetingChatId`；**仅查本人名下**请用 **4.1**，不按会议号从会议域反查时用 **4.1**。 
@@ -366,7 +366,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/splitRecordListV2' 
 
 | 项目         | 说明                                               |
 | ------------ | -------------------------------------------------- |
-| 接口地址     | `/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber` |
+| 接口地址     | `/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumberV2` |
 | 请求方式     | `POST`                                             |
 | Content-Type | `application/json`                                 |
 
@@ -382,7 +382,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/splitRecordListV2' 
 **请求示例**
 
 ```bash
-curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber' \
+curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumberV2' \
   -H 'appKey: XXXXXXXX' \
   -H 'Content-Type: application/json' \
   -d '{
