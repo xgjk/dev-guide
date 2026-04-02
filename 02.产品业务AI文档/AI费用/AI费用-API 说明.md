@@ -36,8 +36,7 @@ https://{域名}/open-api/llm-cost/{接口地址}
 
 | 环境 | 域名/Base URL | 备注 |
 | --- | --- | --- |
-| 测试环境 | `https://cwork-api-test.xgjktech.com.cn` | - |
-| 生产环境 | `https://cwork-api.mediportal.com.cn` | - |
+| 生产环境 | `https://sg-al-cwork-web.mediportal.com.cn` | - |
 
 ### 2.3 公共请求头
 
