@@ -167,12 +167,12 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/overview' 
 
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
-| `today` | Number | 今日费用（元） |
-| `yesterday` | Number | 昨日费用（元） |
-| `week` | Number | 本周费用（元） |
-| `last_week` | Number | 上周费用（元） |
-| `month` | Number | 本月费用（元） |
-| `last_month` | Number | 上月费用（元） |
+| `today` | Number | 今日费用（$） |
+| `yesterday` | Number | 昨日费用（$） |
+| `week` | Number | 本周费用（$） |
+| `last_week` | Number | 上周费用（$） |
+| `month` | Number | 本月费用（$） |
+| `last_month` | Number | 上月费用（$） |
 | `today_growth` | Number | 今日环比增长率（%），相比昨日 |
 | `week_growth` | Number | 本周环比增长率（%），相比上周 |
 | `month_growth` | Number | 本月环比增长率（%），相比上月 |
@@ -232,7 +232,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/overview' 
 
 | 项 | 说明 |
 | --- | --- |
-| 费用单位 | 人民币（元），保留小数点后1～2位 |
+| 费用单位 | 美元（$），保留小数点后1～2位 |
 | 时间口径 | 自然日（UTC+8），"今日"为当天0点至今 |
 | "本周"定义 | 本周一至今天 |
 | "本月"定义 | 本月1日至今天 |
@@ -315,7 +315,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/trend?days
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `date` | String | 日期，格式 `YYYY-MM-DD` |
-| `cost` | Number | 当日费用（元） |
+| `cost` | Number | 当日费用（$） |
 
 **响应示例**
 
@@ -416,10 +416,10 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/compare?pe
 | --- | --- | --- |
 | `id` | String | 维度实体 ID |
 | `name` | String | 维度实体名称 |
-| `primary_cost` | Number | 主周期费用（元） |
-| `compare_cost` | Number | 对比周期费用（元） |
+| `primary_cost` | Number | 主周期费用（$） |
+| `compare_cost` | Number | 对比周期费用（$） |
 | `growth_rate` | Number | 增长率（%），可能为 `null` 表示无对比数据 |
-| `cost_delta` | Number | 费用差额（元） |
+| `cost_delta` | Number | 费用差额（$） |
 | `vendor` | String | 厂商名称（仅 model 维度） |
 | `alert_level` | String | 告警级别，可能为 `null` |
 
@@ -533,7 +533,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 | --- | --- | --- |
 | `id` | String | 维度实体 ID |
 | `name` | String | 维度实体名称 |
-| `cost` | Number | 费用（元） |
+| `cost` | Number | 费用（$） |
 | `vendor` | String | 厂商名称（仅 model 维度） |
 | `total_in_token` | Long | 输入 Token 总量 |
 | `total_out_token` | Long | 输出 Token 总量 |
@@ -655,7 +655,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `total` | Array\<TrendItem\> | 每日总费用趋势，TrendItem 结构见 4.2 |
-| `total_cost` | Number | 时间段内总费用（元） |
+| `total_cost` | Number | 时间段内总费用（$） |
 | `companies` | Array\<CompanyTrend\> | 按厂商分组的每日费用趋势 |
 
 **CompanyTrend** 结构：
@@ -1334,11 +1334,11 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | --- | --- | --- |
 | `date` | String | 日期，格式 `YYYY-MM-DD` |
 | `user_count` | Integer | 当日活跃用户数 |
-| `total_cost` | Number | 当日总费用（元） |
-| `avg_cost_per_user` | Number | 当日人均费用（元） |
-| `median_cost` | Number | 当日费用中位数 P50（元） |
-| `p10_cost` | Number | 当日费用 P10 分位数（元） |
-| `max_user_cost` | Number | 当日单用户最大费用（元） |
+| `total_cost` | Number | 当日总费用（$） |
+| `avg_cost_per_user` | Number | 当日人均费用（$） |
+| `median_cost` | Number | 当日费用中位数 P50（$） |
+| `p10_cost` | Number | 当日费用 P10 分位数（$） |
+| `max_user_cost` | Number | 当日单用户最大费用（$） |
 
 **响应示例**
 
@@ -1672,7 +1672,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `date` | String | 日期，格式 `YYYY-MM-DD` |
-| `cost` | Number | 费用（元） |
+| `cost` | Number | 费用（$） |
 
 ### 5.2 RangeItem
 
@@ -1680,7 +1680,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 | --- | --- | --- |
 | `id` | String | 维度实体 ID |
 | `name` | String | 维度实体名称 |
-| `cost` | Number | 费用（元） |
+| `cost` | Number | 费用（$） |
 | `vendor` | String | 厂商名称（仅 model 维度） |
 | `total_in_token` | Long | 输入 Token 总量 |
 | `total_out_token` | Long | 输出 Token 总量 |
@@ -1692,10 +1692,10 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 | --- | --- | --- |
 | `id` | String | 维度实体 ID |
 | `name` | String | 维度实体名称 |
-| `primary_cost` | Number | 主周期费用（元） |
-| `compare_cost` | Number | 对比周期费用（元） |
+| `primary_cost` | Number | 主周期费用（$） |
+| `compare_cost` | Number | 对比周期费用（$） |
 | `growth_rate` | Number | 增长率（%） |
-| `cost_delta` | Number | 费用差额（元） |
+| `cost_delta` | Number | 费用差额（$） |
 | `vendor` | String | 厂商名称（仅 model 维度） |
 | `alert_level` | String | 告警级别 |
 
@@ -1727,11 +1727,11 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 | --- | --- | --- |
 | `date` | String | 日期，格式 `YYYY-MM-DD` |
 | `user_count` | Integer | 当日活跃用户数 |
-| `total_cost` | Number | 当日总费用（元） |
-| `avg_cost_per_user` | Number | 当日人均费用（元） |
-| `median_cost` | Number | 当日费用中位数 P50（元） |
-| `p10_cost` | Number | 当日费用 P10 分位数（元） |
-| `max_user_cost` | Number | 当日单用户最大费用（元） |
+| `total_cost` | Number | 当日总费用（$） |
+| `avg_cost_per_user` | Number | 当日人均费用（$） |
+| `median_cost` | Number | 当日费用中位数 P50（$） |
+| `p10_cost` | Number | 当日费用 P10 分位数（$） |
+| `max_user_cost` | Number | 当日单用户最大费用（$） |
 
 ### 5.8 ModelItem
 
@@ -1770,7 +1770,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 ## 七、注意事项
 
 1. **日期格式统一**：所有日期参数统一使用 `YYYY-MM-DD` 格式，如 `2026-03-31`。
-2. **费用单位**：所有费用字段单位均为人民币（元），保留小数点后 1～2 位。
+2. **费用单位**：所有费用字段单位均为美元（$），保留小数点后 1～2 位。
 3. **Token 统计口径**：Token 数量为原始计费 Token 数，不做二次换算。
 4. **维度枚举值**：`dimension` 参数的可选值为 `company` / `model` / `product` / `person`，不同接口支持的子集可能有差异，请参照各接口说明。
 5. **钻取关系**：维度间钻取关系为 model ↔ product ↔ person，不支持 company 维度的下钻。
