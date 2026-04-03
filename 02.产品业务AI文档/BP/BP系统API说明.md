@@ -683,18 +683,12 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/action/201463
     "total": 25,
     "list": [
       {
-        "type": "manual",
-        "main": "Q1业绩周报",
-        "content": "本周完成客户拜访12家，签约2家。",
-        "contentType": "html",
-        "writeEmpName": "张三"
+        "bizId": "2014631829004375100",
+        "typeDesc": "手动汇报"
       },
       {
-        "type": "ai",
-        "main": "AI周报总结",
-        "content": "根据本周数据分析，客户拜访进度良好。",
-        "contentType": "html",
-        "writeEmpName": "AI助手"
+        "bizId": "2014631829004375200",
+        "typeDesc": "AI汇报"
       }
     ],
     "pageNum": 1,
@@ -1488,6 +1482,71 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/action/list?k
 
 ---
 
+### 2.21 获取任务子树骨架（listTaskChildren）
+
+传入目标 ID 或关键成果 ID，返回其下级子树的 **id** 和 **名称**，用于 AI 了解 BP 的层级结构骨架（不含衡量标准、参与人、汇报周期等详细信息）。
+
+**规范命名**：`listTaskChildren`（规划 G6）。
+
+**基本信息**
+
+| 项目     | 说明                |
+| -------- | ------------------- |
+| 接口地址 | `/bp/task/children` |
+| 请求方式 | `GET`               |
+
+**请求参数**
+
+| 参数       | 类型 | 必填 | 说明                                                                    |
+| ---------- | ---- | ---- | ----------------------------------------------------------------------- |
+| `parentId` | Long | 是   | 目标 ID 或关键成果 ID（来自 **2.4** / **2.18** / **2.19** 等返回的 `id`） |
+
+**响应参数**
+
+`data`：`List<TaskSkeletonVO>`，元素见 **三、3.17 TaskSkeletonVO**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {
+      "id": "2014631829004374018",
+      "name": "客户拜访量达到50家",
+      "type": "关键成果",
+      "children": [
+        { "id": "2014631829004374019", "name": "每周拜访5家客户", "type": "关键举措", "children": null },
+        { "id": "2014631829004374020", "name": "建立拜访记录系统", "type": "关键举措", "children": null }
+      ]
+    },
+    {
+      "id": "2014631829004374021",
+      "name": "签约客户数达到20家",
+      "type": "关键成果",
+      "children": [
+        { "id": "2014631829004374022", "name": "重点客户专项跟进", "type": "关键举措", "children": null }
+      ]
+    }
+  ]
+}
+```
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children?parentId=2014631829004374017' \
+  -H 'appKey: XXXXXXXX'
+```
+
+**数据流向**
+
+- 返回的子节点 `id` → 可用于 **2.5 / 2.6 / 2.7** 获取详情，或 **2.8** 查询汇报
+- 本接口有数据权限校验（PMS 端 `withPermission=true`），无权限时返回空列表
+
+---
+
 ## 三、公共数据结构
 
 以下为多个接口共用的数据结构定义。**第二章「接口详细说明」的响应参数**一般只写出 `data` 的类型；字段与嵌套类型以**本章**及**第一章 1.4**为准，不在接口处重复展开。
@@ -1624,13 +1683,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/action/list?k
 
 ### 3.12 TaskReportUnionVO（汇报联合项 — 二、2.8 分页 `list` 元素）
 
-| 字段           | 类型   | 说明                                          |
-| -------------- | ------ | --------------------------------------------- |
-| `type`         | String | 汇报类型：`manual` = 手动汇报，`ai` = AI 汇报 |
-| `main`         | String | 汇报标题                                      |
-| `content`      | String | 汇报正文（纯文本）                            |
-| `contentType`  | String | 正文类型：`html`（默认）、`markdown`          |
-| `writeEmpName` | String | 写汇报人姓名                                  |
+| 字段       | 类型   | 说明                                      |
+| ---------- | ------ | ----------------------------------------- |
+| `bizId`    | Long   | 汇报ID                                   |
+| `typeDesc` | String | 汇报类型（中文）：`手动汇报` / `AI汇报`  |
 
 ---
 
@@ -1718,6 +1774,19 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/action/list?k
 | `name`   | String     | 成果名称                                         |
 | `status` | Integer    | 成果状态（0-草稿、1-待发布、2-进行中、3-已关闭） |
 | `weight` | BigDecimal | 成果权重（0-100）                                |
+
+---
+
+### 3.17 TaskSkeletonVO（任务骨架节点 — 二、2.21）
+
+用于 **二、2.21 获取任务子树骨架** 返回的递归树节点；仅包含 `id` 和 `name`，供 AI 了解 BP 层级结构。
+
+| 字段       | 类型                    | 说明                                        |
+| ---------- | ----------------------- | ------------------------------------------- |
+| `id`       | Long                    | 任务 ID                                     |
+| `name`     | String                  | 任务名称                                    |
+| `type`     | String                  | 类型：`目标` / `关键成果` / `关键举措`      |
+| `children` | List\<TaskSkeletonVO\>  | 子节点（叶节点为 `null`）                   |
 
 ---
 
