@@ -13,6 +13,8 @@
 | 1.6 | 2026-04-01 | 补全 bizCode 业务线过滤参数，新增 ProjectVO.rawEnabled 属性支持 | 刘艳华 |
 | 1.7 | 2026-04-01 | 细节打磨：增加全量接口的 JSON 出入参示例样本，校对字段非空约束 | 刘艳华 |
 | 1.8 | 2026-04-01 | 补全 4.11-4.20 全量子节（基本信息/行为约定/curl示例/响应示例/数据流向）；统一全文档请求/响应示例格式；修复 4.9 curl 方法错误；补全 5.12 字段 | 刘艳华 |
+| 1.9 | 2026-04-02 | SaveFileToProjectParam 新增 suffix 字段；更新 saveFileByParentId/saveFileByPath 请求示例 | 刘艳华 |
+| 1.10 | 2026-04-03 | 全量校对上传链路字段准确性：预检接口补充 size/sensitive/suffix 参数；UploadFileSliceParam storageType 修正为 MINIO；SaveResourceParam 修正 suffix/size 为非必填；SaveFileToProjectParam 新增 isSensitive 字段、修正 suffix 描述；全量 curl 示例补全 suffix/size/isSensitive | 刘艳华 |
 
 ## 一、概述
 
@@ -470,7 +472,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `md5` | String | 是 | 文件 MD5 |
+| `md5` | String | 是 | 文件分片的 MD5 |
+| `size` | Long | 否 | 文件总大小（单位：字节），用于配额检查与存储路由 |
+| `sensitive` | Boolean | 否 | 是否为敏感文件（默认 false） |
+| `suffix` | String | 否 | 文件后缀（如 `pdf`、`docx`） |
 
 **响应参数**
 
@@ -489,7 +494,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getSliceIdByMd5V2?md5=d41d8cd98f00b204e9800998ecf8427e' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getSliceIdByMd5V2?md5=d41d8cd98f00b204e9800998ecf8427e&size=1048576&suffix=pdf' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -551,7 +556,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveResource' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"name":"报告.pdf","size":1048576,"sliceIds":[1001,1002],"suffix":"pdf"}'
+  -d '{"name":"报告.pdf","size":1048576,"sliceIds":[1001,1002],"suffix":"pdf","mimeType":"application/pdf"}'
 ```
 
 **响应示例**
@@ -607,7 +612,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/uploadFileSliceV2' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"filePath":"/data/upload/xxx.part","md5":"d41d8cd98f00b204e9800998ecf8427e","size":524288,"storageType":"document-database"}'
+  -d '{"filePath":"/data/upload/xxx.part","md5":"d41d8cd98f00b204e9800998ecf8427e","size":524288,"storageType":"MINIO"}'
 ```
 
 **响应示例**
@@ -779,7 +784,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/saveFile' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"parentId":0,"name":"测试文件.pdf","type":2,"resourceId":987654321,"fileType":"file"}'
+  -d '{"parentId":0,"name":"测试文件.pdf","type":2,"resourceId":987654321,"fileType":"file","suffix":"pdf","size":102400,"isSensitive":0}'
 ```
 
 **响应示例**
@@ -1154,8 +1159,8 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 ### 4.16 【上传】根据父ID保存文件到项目目录 [新增]
 
 已知目标文件夹 ID 时，通过 `parentId` 直接将物理资源或富文本内容保存到项目知识库的指定目录。支持双模式入库：
-- **场景 A**：绑定已上传的物理文件（传 `resourceId`）；
-- **场景 B**：创建在线文档（传 `fileContent`，`fileType` 为 `doc`）。
+- **场景 A**：绑定已上传的物理文件（传 `resourceId`，建议同时传 `suffix`、`size`）；
+- **场景 B**：创建在线文档（传 `fileContent`，`fileType` 为 `doc`；`suffix` 可传 `md`、`html`、`txt` 等，不传则后端兜底为 `md`）。
 
 **基本信息**
 
@@ -1192,7 +1197,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"projectId":2025001,"parentId":10086,"name":"技术方案.pdf","fileType":"file","resourceId":987654321}'
+  -d '{"projectId":2025001,"parentId":10086,"name":"技术方案.pdf","fileType":"file","suffix":"pdf","size":204800,"resourceId":987654321,"isSensitive":0}'
 ```
 
 场景 B — 创建在线文档：
@@ -1201,7 +1206,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"projectId":2025001,"parentId":10086,"name":"总结.doc","fileType":"doc","fileContent":"<h2>内容...</h2>"}'
+  -d '{"projectId":2025001,"parentId":10086,"name":"总结.doc","fileType":"doc","fileContent":"<h2>内容...</h2>","isSensitive":0}'
 ```
 
 **响应参数**
@@ -1226,7 +1231,9 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 
 ### 4.17 【上传】根据路径保存文件到项目目录 [新增]
 
-通过 `path` 参数指定逻辑目录路径（如 `FolderA/FolderB`），后端将自动递归解析并创建不存在的文件夹，将文件保存到最终目录下。同样支持物理资源与富文本双模式入库。
+通过 `path` 参数指定逻辑目录路径（如 `FolderA/FolderB`），后端将自动递归解析并创建不存在的文件夹，将文件保存到最终目录下。支持双模式入库：
+- **场景 A**：绑定已上传的物理文件（传 `resourceId`，建议同时传 `suffix`、`size`）；
+- **场景 B**：创建在线文档（传 `fileContent`，`fileType` 为 `doc`；`suffix` 可传 `md`、`html`、`txt` 等，不传则后端兜底为 `md`）。
 
 **基本信息**
 
@@ -1263,7 +1270,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByPath' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"projectId":2025001,"path":"工程档案/设计图纸","name":"方案.pdf","fileType":"file","resourceId":987654321}'
+  -d '{"projectId":2025001,"path":"工程档案/设计图纸","name":"方案.pdf","fileType":"file","suffix":"pdf","size":204800,"resourceId":987654321,"isSensitive":0}'
 ```
 
 场景 B — 按路径创建富文本文档：
@@ -1272,7 +1279,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByPath' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"projectId":2025001,"path":"AI建议/周报总结","name":"周报.md","fileType":"doc","fileContent":"<h2>报告内容</h2>..."}'
+  -d '{"projectId":2025001,"path":"AI建议/周报总结","name":"周报.doc","fileType":"doc","fileContent":"<h2>报告内容</h2>...","isSensitive":0}'
 ```
 
 **响应参数**
@@ -1581,7 +1588,8 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | :--- | :--- | :--- |
 | `sliceId` | Long | 切片 ID（若直接命中说明已秒传成功） |
 | `uploadUrl` | String | MinIO 预签名上传链接（未命中秒传时返回，需先使用 PUT 方式物理上传分片） |
-| `fullPath` | String | 服务端目标存储路径（未命中秒传时返回，供 `uploadFileSliceV2` 注册使用） |
+| `fullPath` | String | 服务端目标存储路径（未命中秒传时返回，供 `uploadFileSliceV2` 的 `filePath` 使用） |
+| `storageType` | String | 存储类型（如 `MINIO`、`MINIO_SZ`），未命中秒传时返回，供 `uploadFileSliceV2` 的 `storageType` 使用 |
 
 ---
 
@@ -1590,10 +1598,12 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `name` | String | 是 | 文件名称 |
-| `size` | Long | 是 | 文件总大小 |
-| `sliceIds` | array[Long] | 是 | 分片 ID 列表 |
-| `suffix` | String | 是 | 后缀。例如 `pdf` |
+| `name` | String | 是 | 文件名称（含后缀） |
+| `sliceIds` | array[Long] | 是 | §4.5 秒传和 §4.7 注册分片返回的所有 `sliceId` 列表 |
+| `suffix` | String | 否 | 文件后缀（如 `pdf`、`docx`）。建议传入，不传则后端从文件名提取 |
+| `size` | Long | 否 | 文件总大小（单位：字节）。建议传入，不传则后端默认 0 |
+| `mimeType` | String | 否 | 文件 MIME 类型（如 `application/pdf`） |
+| `time` | Long | 否 | 源站总耗时（毫秒） |
 
 ---
 
@@ -1604,10 +1614,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `filePath` | String | 是 | 服务端存储路径（由预检接口返回的 `fullPath`） |
-| `md5` | String | 是 | 文件 MD5 |
-| `size` | Long | 是 | 当前上传大小 |
-| `storageType` | String | 是 | 填入 `document-database` |
+| `filePath` | String | 是 | 预检接口返回的 `fullPath`（分片物理存储路径） |
+| `md5` | String | 是 | 分片的 MD5 值 |
+| `size` | Long | 是 | 分片大小（单位：字节），注意是单个分片的大小而非文件总大小 |
+| `storageType` | String | 是 | 存储类型：`FTP`、`MINIO`、`MINIO_SZ`、`MINIO_SG`、`QINIU`，默认 `MINIO` |
 
 ---
 
@@ -1672,9 +1682,12 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `parentId` | Long | 否 | 父文件夹 ID（已知目标文件夹时传入；若基于路径则传 `path`） |
 | `name` | String | 是 | 保存的文件名 |
 | `fileType` | String | 是 | 文件类型：doc(富文本/在线文档), file(普通物理文件) |
+| `suffix` | String | 否 | 文件后缀。`fileType=file` 时建议传入（不传则后端从资源反查）；`fileType=doc` 时可传 `md`、`html`、`txt` 等，不传则后端兜底为 `md` |
+| `size` | Long | 否 | 文件大小（字节）。`fileType=file` 时建议传入（不传则后端从资源反查）；`fileType=doc` 时后端自动计算 |
 | `resourceId` | Long | 否 | 资源 id（场景 A 必填：对应已上传的物理文件资源。`fileType` 为 `file` 时有效） |
 | `fileContent` | String | 否 | 文件内容（场景 B 必填：对应在线文档内容。仅在 `fileType` 为 `doc` 时有效） |
 | `path` | String | 否 | 逻辑目录路径（不传则存入项目根目录）。示例：`"AI生成/日报总结"`，后端自动递归创建不存在的目录 |
+| `isSensitive` | Integer | 否 | 是否跨境敏感文件（0 非敏感，默认；1 敏感） |
 
 ---
 
@@ -1785,6 +1798,6 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
-**文档版本**：v1.8
-**更新日期**：2026-04-01
+**文档版本**：v1.10
+**更新日期**：2026-04-03
 **维护人/团队**：知识库服务团队
