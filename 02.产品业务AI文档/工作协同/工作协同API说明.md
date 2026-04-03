@@ -14,6 +14,7 @@
 | 1.7 | 2026-03-30 | 汇报提交参数新增节点级填写要求（requirement）字段               | 付光伟 |
 | 1.8 | 2026-03-30 | 新增「批量删除草稿」接口（5.28）                           | 付光伟 |
 | 1.9 | 2026-03-31 | 业务单元管理专题：开放保存/更新、分页查询、删除及详情获取接口 (5.29-5.32) | 付光伟 |
+| 2.0 | 2026-04-03 | 新增获取汇报详情（含节点与处理意见）接口 (5.33) | 付光伟 |
 
 
 
@@ -67,6 +68,7 @@
 30. [**分页查询我的业务单元方案列表**](#530-分页查询我的业务单元方案列表) — 分页获取当前用户归属的汇报方案列表（默认 PageSize 为 50）。
 31. [**获取业务单元方案详情**](#531-获取业务单元方案详情) — 获取单个方案及其配置节点的完整信息。
 32. [**删除业务单元方案**](#532-删除业务单元方案) — 物理删除指定的业务单元汇报配置方案。
+33. [**获取汇报信息（包含节点与处理意见）**](#533-获取汇报信息包含节点与处理意见) — 获取汇报完整详情、节点流转状态及处理人意见。
 
 
 
@@ -2026,6 +2028,73 @@ curl -X POST 'https://{域名}/open-api/work-report/businessUnit/save' \
 
 ---
 
+### 5.33 获取汇报信息（包含节点与处理意见）
+
+获取指定汇报的详细信息，包括正文、多级审批/传阅节点的状态、处理意见以及参与人员详情。
+
+**基本信息**
+
+| 项目 | 说明 |
+| --- | --- |
+| 接口地址 | `/work-report/report/getReportNodeDetail` |
+| 请求方式 | `GET` |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `reportId` | Long | 是 | 汇报 ID |
+
+**响应参数**
+
+`data` 类型为 `ReportNodeDetailVO`（见 **6.30**）。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://{域名}/open-api/work-report/report/getReportNodeDetail?reportId=1234567890' \
+  -H 'appKey: {appKey}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "id": 1234567890,
+    "main": "项目周报",
+    "content": "本周已完成接口开发...",
+    "writeEmpId": 10001,
+    "writeEmpName": "张三",
+    "createTime": "2026-04-03 10:00:00",
+    "nodeList": [
+      {
+        "nodeName": "建议人",
+        "type": "建议",
+        "status": "已完成",
+        "level": 1,
+        "userList": [
+          {
+            "empId": 10002,
+            "name": "李四",
+            "status": "已处理",
+            "operate": "建议",
+            "content": "方案可行，建议增加异常处理",
+            "finishTime": "2026-04-03 11:00:00"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+---
+
 ## 六、公共数据结构
 
 ### 6.1 ReportLevelParam
@@ -2446,6 +2515,38 @@ curl -X POST 'https://{域名}/open-api/work-report/businessUnit/save' \
 | `level` | Integer | 节点层级 |
 | `empList` | List\<BaseInfo> | 人员列表（含 id/name） |
 
+### 6.30 ReportNodeDetailVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 汇报 ID |
+| `main` | String | 汇报标题 |
+| `content` | String | 汇报正文 |
+| `writeEmpId` | Long | 汇报人 ID |
+| `writeEmpName` | String | 汇报人姓名 |
+| `createTime` | Timestamp | 发起时间 |
+| `nodeList` | List\<NodeInfo> | 节点列表 |
+
+`NodeInfo`：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `nodeName` | String | 节点名称 |
+| `type` | String | 节点类型中文 (建议/决策/传阅) |
+| `status` | String | 节点状态中文 (未开始/已完成/进行中/已取消) |
+| `level` | Integer | 节点层级 |
+| `userList` | List\<UserInfo> | 节点下的操作人列表 |
+
+`UserInfo`：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `empId` | Long | 员工 ID |
+| `name` | String | 姓名 |
+| `status` | String | 处理状态中文 (待处理/已处理等) |
+| `operate` | String | 操作动作中文 (同意/不同意/建议等) |
+| `content` | String | 处理意见/理由 |
+| `finishTime` | Timestamp | 完成时间 |
 
 ---
 
