@@ -1,4 +1,4 @@
-# 新媒体GMV Open API 接口文档
+﻿# 新媒体GMV Open API 接口文档
 
 ## 修订记录
 
@@ -145,7 +145,7 @@ o2oRate = O2O渠道年累计完成 / 该品牌年总完成 × 100
 |------|------|------|------|
 | year | Number | 否 | 年份，默认当前年 |
 | month | Number | 否 | 月份（1-12），默认当前月。影响"当月"和"季度"的计算范围 |
-| brand | String | 否 | 品牌名。不传或空字符串 = 返回全部品牌 |
+| brand | String | 否 | 品牌名。不传或空字符串 = 返回全部品牌。**⚠️ 中文必须 URL 编码（UTF-8）** |
 
 **响应参数**
 
@@ -262,7 +262,7 @@ curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/overview?year
 |------|------|------|------|
 | year | Number | 是 | 年份 |
 | month | Number | 是 | 月份（1-12） |
-| brand | String | 是 | 品牌名。传 `"合计"` 表示查所有品牌的合计 |
+| brand | String | 是 | 品牌名。传 `"合计"` 表示查所有品牌的合计。**⚠️ 中文必须 URL 编码（UTF-8）** |
 | type | String | 是 | 查询类型，见下方说明 |
 | platform | String | type=`dailyActual` 时必填 | 平台名，如 `"美团"` |
 
@@ -350,11 +350,12 @@ curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/overview?year
 
 ```bash
 # 查询亿活品牌全年目标矩阵
-curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/detail?year=2026&month=3&brand=亿活&type=yearTarget' \
+# brand 参数：原始值"亿活"，URL 编码后：%E4%BA%BF%E6%B4%BB
+curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/detail?year=2026&month=3&brand=%E4%BA%BF%E6%B4%BB&type=yearTarget' \
   -H 'Authorization: Bearer {token}'
 
 # 查询亿活品牌美团平台3月每日完成
-curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/detail?year=2026&month=3&brand=亿活&type=dailyActual&platform=美团' \
+curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/detail?year=2026&month=3&brand=%E4%BA%BF%E6%B4%BB&type=dailyActual&platform=%E7%BE%8E%E5%9B%A2' \
   -H 'Authorization: Bearer {token}'
 ```
 
@@ -376,7 +377,7 @@ curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/detail?year=2
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | platform | String | 否 | 平台名筛选，如 `"美团"` |
-| brand | String | 否 | 品牌名筛选 |
+| brand | String | 否 | 品牌名筛选。**⚠️ 中文必须 URL 编码（UTF-8）** |
 | startDate | String | 否 | 开始日期，格式 `YYYY-MM-DD` |
 | endDate | String | 否 | 结束日期，格式 `YYYY-MM-DD` |
 | page | Number | 否 | 页码，默认 1 |
@@ -420,7 +421,8 @@ curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/detail?year=2
 **请求示例**
 
 ```bash
-curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/gmv-summary?brand=亿活&startDate=2026-03-01&endDate=2026-03-31&page=1&pageSize=20' \
+# brand 参数：原始值"亿活"，URL 编码后：%E4%BA%BF%E6%B4%BB
+curl -X GET 'https://xg-node.xgjktech.com.cn/api/kol/gmv-dashboard/gmv-summary?brand=%E4%BA%BF%E6%B4%BB&startDate=2026-03-01&endDate=2026-03-31&page=1&pageSize=20' \
   -H 'Authorization: Bearer {token}'
 ```
 

@@ -1,4 +1,4 @@
-# 知识库 Open API 接口文档
+﻿# 知识库 Open API 接口文档
 
 ## 修订记录
 
@@ -824,7 +824,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `projectId` | Long | 否 | 项目/空间 id |
-| `nameKey` | String | 否 | 名称关键词 |
+| `nameKey` | String | 否 | 名称关键词。**⚠️ 中文必须 URL 编码（UTF-8）** |
 | `rootFileId` | Long | 否 | 指定根目录 id（在此目录下搜索） |
 | `startTime` | Long | 否 | 创建时间-开始时间戳（毫秒） |
 | `endTime` | Long | 否 | 创建时间-结束时间戳（毫秒） |
@@ -846,7 +846,10 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/searchFile?nameKey=测试' \
+# 示例：搜索名称包含"测试"的文件
+# 原始参数：nameKey=测试
+# URL 编码后（UTF-8）：nameKey=%E6%B5%8B%E8%AF%95
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/searchFile?nameKey=%E6%B5%8B%E8%AF%95' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -1391,7 +1394,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/ai-huiji/upload
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `appCode` | String | 否 | 应用编码（默认 `kz_doc`） |
-| `nameKey` | String | 否 | 空间名称模糊搜索关键词 |
+| `nameKey` | String | 否 | 空间名称模糊搜索关键词。**⚠️ 中文必须 URL 编码（UTF-8）** |
 | `bizCode` | String | 否 | 业务线编码过滤（如 `pmo`） |
 
 **请求与行为约定**
@@ -1470,7 +1473,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | 参数名 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `appCode` | String | 否 | 应用编码（默认 `kz_doc`） |
-| `nameKey` | String | 否 | 空间名称模糊搜索关键词 |
+| `nameKey` | String | 否 | 空间名称模糊搜索关键词。**⚠️ 中文必须 URL 编码（UTF-8）** |
 | `bizCode` | String | 否 | 业务线编码过滤（如 `pmo`） |
 
 **请求与行为约定**

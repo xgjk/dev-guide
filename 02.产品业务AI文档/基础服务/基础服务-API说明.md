@@ -1,4 +1,4 @@
-# 基础服务 Open API 接口文档
+﻿# 基础服务 Open API 接口文档
 
 ## 修订记录
 
@@ -195,7 +195,7 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-file/getDownload
 
 | 参数名      | 类型   | 必填 | 说明                           |
 | ----------- | ------ | ---- | ------------------------------ |
-| `searchKey` | String | 是   | 搜索关键词：支持按姓名模糊搜索 |
+| `searchKey` | String | 是   | 搜索关键词：支持按姓名模糊搜索。**⚠️ 中文必须 URL 编码（UTF-8）** |
 
 **响应参数**
 
@@ -204,6 +204,9 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-file/getDownload
 **请求示例**
 
 ```bash
+# 示例：搜索姓名包含"张三"的员工
+# 原始参数：searchKey=张三
+# URL 编码后（UTF-8）：searchKey=%E5%BC%A0%E4%B8%89
 curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-user/searchEmpByName?searchKey=%E5%BC%A0%E4%B8%89' \
   -H 'appKey: YOUR_API_KEY'
 ```
