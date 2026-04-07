@@ -211,11 +211,12 @@ curl -X POST 'https://{域名}/open-api/work-report/label/createLabel' \
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `id` | Long | 标签/绑定关系 ID |
+| `id` | Long | 标签主键 ID |
 | `name` | String | 标签名称 |
-| `labelId` | Long | 标签正式 ID（为空时代表当前对象即为标签定义本身） |
-| `reportRecordId` | Long | 关联的汇报 ID（仅在查询绑定关系时有值） |
+| `empId` | Long | 用户 ID |
 | `createTime` | Timestamp | 创建时间 |
+| `updateTime` | Timestamp | 修改时间 |
+| `corpId` | Long | 企业 ID |
 
 ---
 
