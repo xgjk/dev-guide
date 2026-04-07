@@ -14,9 +14,9 @@
 | 1.7 | 2026-03-30 | 汇报提交参数新增节点级填写要求（requirement）字段               | 付光伟 |
 | 1.8 | 2026-03-30 | 新增「批量删除草稿」接口（5.28）                           | 付光伟 |
 | 1.9 | 2026-03-31 | 业务单元管理专题：开放保存/更新、分页查询、删除及详情获取接口 (5.29-5.32) | 付光伟 |
-| 2.0 | 2026-04-03 | 新增获取汇报详情（含节点与处理意见）接口 (5.33) | 付光伟 |
 | 2.1 | 2026-04-07 | 新增个人标签关联汇报系列接口 (5.34-5.37) | 付光伟 |
 | 2.2 | 2026-04-07 | 汇报回复(5.2)与完成待办(5.18)接口新增 contentType 参数支持 | 付光伟 |
+| 2.3 | 2026-04-07 | 获取汇报内容(5.5)接口响应参数增加汇报人名称与id (writeEmpId, writeEmpName) | 付光伟 |
 
 
 
@@ -899,13 +899,15 @@ curl -X POST 'https://{域名}/open-api/work-report/todoTask/todoList' \
   "data": {
     "reportId": 1234567890,
     "content": "已完成接口联调",
+    "writeEmpId": 10001,
+    "writeEmpName": "张三",
     "createTime": "2026-03-17 10:00:00",
     "replies": [
       {
         "replyId": 987654321,
         "content": "已收到",
         "replyEmpId": 10002,
-        "replyEmpName": "张三",
+        "replyEmpName": "李四",
         "createTime": "2026-03-17 10:10:00"
       }
     ]
@@ -2296,6 +2298,8 @@ curl -X GET 'https://{域名}/open-api/work-report/report/getReportNodeDetail?re
 | ------------ | --------------- | -------- |
 | `reportId`   | Long            | 汇报 ID  |
 | `content`    | String          | 汇报正文 |
+| `writeEmpId` | Long            | 汇报人 ID |
+| `writeEmpName`| String          | 汇报人姓名 |
 | `createTime` | Timestamp       | 创建时间 |
 | `replies`    | List\<ReplyDTO> | 回复列表 |
 
