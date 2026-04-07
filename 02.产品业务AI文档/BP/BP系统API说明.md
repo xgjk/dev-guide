@@ -1961,3 +1961,201 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repor
 | 610030     | 重复的请求（nonce 已使用过）                 |
 
 ---
+### 2.24 查询待承接任务树（getUndertakeTaskTree）
+
+查询当前员工（或指定员工）待承接的 BP 指派任务树。包含统计信息（总数、已承接数、待承接数）以及每个任务节点的完整溯源路径（fullPath）。
+
+**规范命名**：`getUndertakeTaskTree`。
+
+**基本信息**
+
+| 项目     | 说明                            |
+| -------- | ------------------------------- |
+| 接口地址 | `/bp/task/v2/getUndertakeTaskTree` |
+| 请求方式 | `POST`                          |
+| Content-Type | `application/json`              |
+
+**请求参数**
+
+| 参数           | 类型   | 必填 | 说明                                                         |
+| -------------- | ------ | ---- | ------------------------------------------------------------ |
+| `empId`        | Long   | 否   | 指定查询的员工 ID。不传则默认为当前登录用户。                |
+| `acceptStatus` | String | 否   | 承接状态过滤：`pending`（待承接）、`accepted`（已承接）。不传返回全部。 |
+
+**响应参数**
+
+`data`：`UndertakeTaskTreeVO`。见 **三、3.19**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": {
+    "totalCount": 5,
+    "acceptedCount": 2,
+    "pendingCount": 3,
+    "groups": [
+      {
+        "groupId": "2014631829004374001",
+        "groupName": "销售管理部",
+        "tasks": [
+          {
+            "id": "2014631829004374999",
+            "name": "拓展华东市场",
+            "type": "关键举措",
+            "accepted": false,
+            "fullPath": "年度销售大纲 / 华东区市场份额提升 / 拓展华东市场"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 2.25 创建承接目标（addGoal）
+
+在指定的 BP 分组中创建一个新目标，并可选地同时建立向上对齐关系（承接指派任务）。
+
+**规范命名**：`addGoal`。
+
+**基本信息**
+
+| 项目     | 说明              |
+| -------- | ----------------- |
+| 接口地址 | `/bp/task/v2/addGoal` |
+| 请求方式 | `POST`            |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+| 参数                | 类型         | 必填 | 说明                               |
+| ------------------- | ------------ | ---- | ---------------------------------- |
+| `name`              | String       | 是   | 目标名称                           |
+| `groupId`           | Long         | 是   | 分组 ID                            |
+| `periodId`          | Long         | 是   | 周期 ID                            |
+| `weight`            | BigDecimal   | 否   | 权重 (0-100)                       |
+| `planStartDate`     | String       | 否   | 计划开始日期 (yyyy-MM-dd)          |
+| `planEndDate`       | String       | 否   | 计划结束日期 (yyyy-MM-dd)          |
+| `upwardTaskIdList`  | List<Long>   | 否   | 向上对齐的任务 ID 列表 (即承接的指派任务) |
+| `responsibleEmpIds` | List<Long>   | 否   | 责任人员工 ID 列表                 |
+| `responsibleDeptIds`| List<Long>   | 否   | 责任部门 ID 列表                   |
+| `collaboratorIds`   | List<Long>   | 否   | 协办人 ID 列表                     |
+| `copyToIds`         | List<Long>   | 否   | 抄送人 ID 列表                     |
+| `supervisorIds`     | List<Long>   | 否   | 监督人 ID 列表                     |
+| `observerIds`       | List<Long>   | 否   | 观察人 ID 列表                     |
+
+**响应参数**
+
+`data`：`Long`，新创建的目标 ID。
+
+---
+
+### 2.26 任务对齐（alignTask）
+
+建立两个任务之间的父子对齐关系（向上/向下对齐）。
+
+**规范命名**：`alignTask`。
+
+**基本信息**
+
+| 项目     | 说明                |
+| -------- | ------------------- |
+| 接口地址 | `/bp/task/v2/alignTask` |
+| 请求方式 | `POST`              |
+
+**请求参数 (Body JSON)**
+
+| 属性               | 类型   | 必填 | 说明                   |
+| ------------------ | ------ | ---- | ---------------------- |
+| `currentTaskId`    | Long   | 是   | 本级任务 ID            |
+| `upwardTaskIdList` | Long[] | 否   | 向上对齐的任务 ID 列表 |
+
+**请求示例**
+
+```json
+{
+  "currentTaskId": 2041430910616457217,
+  "upwardTaskIdList": [2007656446733037570]
+}
+```
+
+**响应参数**
+
+`data`：`Boolean`，操作是否成功。
+
+---
+
+### 2.27 修改任务内容/参与人（updateTask）
+
+通用的任务修改接口，支持修改名称、时间、权重、衡量标准以及各类参与角色（5类人+责任部门）。本接口不提供手动修改 `status` 的功能，系统将根据更新后的信息自动重新计算状态。
+
+**规范命名**：`updateTask`。
+
+**基本信息**
+
+| 项目     | 说明                |
+| -------- | ------------------- |
+| 接口地址 | `/bp/task/v2/updateTask` |
+| 请求方式 | `POST`              |
+| Content-Type | `application/json`  |
+
+**请求参数**
+
+| 参数                | 类型         | 必填 | 说明                               |
+| ------------------- | ------------ | ---- | ---------------------------------- |
+| `taskId`            | Long         | 是   | 任务 ID                            |
+| `name`              | String       | 否   | 任务名称 (不传保持原样)            |
+| `weight`            | BigDecimal   | 否   | 权重 (仅目标有效)                  |
+| `measureStandard`   | String       | 否   | 衡量标准 (仅关键成果/举措有效)     |
+| `planStartDate`     | String       | 否   | 开始日期                           |
+| `planEndDate`       | String       | 否   | 结束日期                           |
+| `responsibleEmpIds` | List<Long>   | 否   | 责任人列表 (传空数组 `[]` 则清空)  |
+| `responsibleDeptIds`| List<Long>   | 否   | 责任部门列表                       |
+| `collaboratorIds`   | List<Long>   | 否   | 协办人列表                         |
+| `copyToIds`         | List<Long>   | 否   | 抄送人列表                         |
+| `supervisorIds`     | List<Long>   | 否   | 监督人列表                         |
+| `observerIds`       | List<Long>   | 否   | 观察人列表                         |
+
+**数据流向**
+- 角色字段（如 `collaboratorIds`）：若不传（`null`），保留原样；若传入空数组（`[]`），则清空该角色；若传入具体值，则全量覆盖。
+
+---
+
+## 三、公共对象模型
+
+... (此处省略 3.1 ~ 3.18)
+
+### 3.19 UndertakeTaskTreeVO 对象
+
+| 字段          | 类型               | 说明                             |
+| ------------- | ------------------ | -------------------------------- |
+| totalCount    | Integer            | 总指派任务数                     |
+| acceptedCount | Integer            | 已承接数                         |
+| pendingCount  | Integer            | 待承接（未对齐）数               |
+| groups        | List<GroupTaskVO>  | 分组任务列表                     |
+
+**GroupTaskVO (内部类)**
+
+| 字段           | 类型              | 说明                             |
+| -------------- | ----------------- | -------------------------------- |
+| groupId        | Long              | 分组 ID                          |
+| groupName      | String            | 分组名称                         |
+| tasks          | List<TaskNodeVO>  | 该分组下的扁平任务列表           |
+
+**TaskNodeVO (内部类)**
+
+| 字段           | 类型              | 说明                             |
+| -------------- | ----------------- | -------------------------------- |
+| id             | Long              | 任务 ID                          |
+| name           | String            | 任务名称                         |
+| type           | String            | 类型（目标、关键成果、关键举措） |
+| accepted       | Boolean           | 是否已承接                       |
+| goalId         | Long              | 所属上级目标 ID                  |
+| goalName       | String            | 所属上级目标名称                 |
+| krId           | Long              | 所属上级关键成果 ID (若有)       |
+| krName         | String            | 所属上级关键成果名称 (若有)      |
+| fullPath       | String            | 溯源展示路径（如：目标 / 成果 / 举措） |
