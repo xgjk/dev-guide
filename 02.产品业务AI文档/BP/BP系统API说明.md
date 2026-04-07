@@ -649,12 +649,16 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/action/201463
 
 | 参数        | 类型    | 必填 | 说明                                                         |
 | ----------- | ------- | ---- | ------------------------------------------------------------ |
-| `taskId`    | Long    | 是   | BP 任务 ID（来自 **2.4 查询任务树**、**2.18~2.20** 列表，或 **2.5/2.6/2.7** 详情接口返回的 `id`） |
-| `keyword`   | String  | 否   | 汇报标题模糊搜索（对应响应字段 `main`）                      |
-| `sortBy`    | String  | 否   | 排序字段：`relation_time`（关联时间，默认）、`business_time`（业务时间） |
-| `sortOrder` | String  | 否   | 排序方向：`desc`（降序，默认）、`asc`（升序）                |
-| `pageIndex` | Integer | 否   | 页码，默认 `1`                                               |
-| `pageSize`  | Integer | 否   | 每页数量，默认 `10`                                          |
+| `taskId`            | Long    | 是   | BP 任务 ID（来自 **2.4 查询任务树**、**2.18~2.20** 列表，或 **2.5/2.6/2.7** 详情接口返回的 `id`） |
+| `keyword`           | String  | 否   | 汇报标题模糊搜索（对应响应字段 `main`）                      |
+| `sortBy`            | String  | 否   | 排序字段：`relation_time`（关联时间，默认）、`business_time`（业务时间） |
+| `sortOrder`         | String  | 否   | 排序方向：`desc`（降序，默认）、`asc`（升序）                |
+| `businessTimeStart` | String  | 否   | 业务时间范围-开始，格式：`yyyy-MM-dd HH:mm:ss`。手动汇报按汇报时间过滤，AI 汇报按创建时间过滤 |
+| `businessTimeEnd`   | String  | 否   | 业务时间范围-结束，格式：`yyyy-MM-dd HH:mm:ss`              |
+| `relationTimeStart` | String  | 否   | 关联时间范围-开始，格式：`yyyy-MM-dd HH:mm:ss`。仅对手动汇报生效（AI 汇报无关联时间） |
+| `relationTimeEnd`   | String  | 否   | 关联时间范围-结束，格式：`yyyy-MM-dd HH:mm:ss`              |
+| `pageIndex`         | Integer | 否   | 页码，默认 `1`                                               |
+| `pageSize`          | Integer | 否   | 每页数量，默认 `10`                                          |
 
 **请求体示例**
 
@@ -664,6 +668,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/action/201463
   "keyword": null,
   "sortBy": "relation_time",
   "sortOrder": "desc",
+  "businessTimeStart": "2026-01-01 00:00:00",
+  "businessTimeEnd": "2026-03-31 23:59:59",
+  "relationTimeStart": null,
+  "relationTimeEnd": null,
   "pageIndex": 1,
   "pageSize": 10
 }
@@ -706,6 +714,8 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/relatio
   -H 'Content-Type: application/json' \
   -d '{
     "taskId": 2014631829004374017,
+    "businessTimeStart": "2026-01-01 00:00:00",
+    "businessTimeEnd": "2026-03-31 23:59:59",
     "pageIndex": 1,
     "pageSize": 10
   }'
