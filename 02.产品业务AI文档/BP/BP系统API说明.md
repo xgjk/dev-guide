@@ -1579,11 +1579,12 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 
 **请求参数**
 
-| 参数            | 类型   | 必填 | 说明                                    |
-| --------------- | ------ | ---- | --------------------------------------- |
-| `groupId`       | Long   | 是   | 个人分组 ID                             |
-| `reportContent` | String | 是   | 汇报内容                                |
-| `reportMonth`   | String | 是   | 汇报月份，格式 `YYYY-MM`（如 `2026-04`）|
+| 参数              | 类型   | 必填 | 说明                                    |
+| ----------------- | ------ | ---- | --------------------------------------- |
+| `groupId`         | Long   | 是   | 个人分组 ID                             |
+| `reportContent`   | String | 是   | 汇报内容                                |
+| `reportMonth`     | String | 是   | 汇报月份，格式 `YYYY-MM`（如 `2026-04`）|
+| `reportRecordId`  | Long   | 是   | 汇报记录 ID                             |
 
 **请求体示例**
 
@@ -1591,7 +1592,8 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 {
   "groupId": 2014631829004371002,
   "reportContent": "## 4月工作汇报\n\n### 一、整体进度\n本月完成了核心业绩目标的80%...",
-  "reportMonth": "2026-04"
+  "reportMonth": "2026-04",
+  "reportRecordId": 2014631829004375100
 }
 ```
 
@@ -1618,7 +1620,8 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repo
   -d '{
     "groupId": 2014631829004371002,
     "reportContent": "## 4月工作汇报\n\n本月完成了核心业绩目标的80%",
-    "reportMonth": "2026-04"
+    "reportMonth": "2026-04",
+    "reportRecordId": 2014631829004375100
   }'
 ```
 
