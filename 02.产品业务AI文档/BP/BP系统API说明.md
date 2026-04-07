@@ -1,4 +1,4 @@
-﻿# BP 目标管理 Open API 接口定义
+# BP 目标管理 Open API 接口定义
 
 **配套文档**：[《BP 目标管理 Open API 调用说明》](./BP系统API调用说明.md)（修订记录、概述、通用约定、接口清单索引、场景编排、注意事项与历史路径）。**本文仅描述数据模型、接口契约与公共类型。**
 
@@ -1563,6 +1563,121 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 
 ---
 
+### 2.22 保存月度汇报（saveMonthlyReport）
+
+保存或更新月度汇报内容。基于分组 ID + 月份的唯一键（`uk_group_month`），已存在则更新汇报内容，不存在则新增。
+
+**规范命名**：`saveMonthlyReport`（规划 W1）。
+
+**基本信息**
+
+| 项目         | 说明                          |
+| ------------ | ----------------------------- |
+| 接口地址     | `/bp/monthly/report/save`     |
+| 请求方式     | `POST`                        |
+| Content-Type | `application/json`            |
+
+**请求参数**
+
+| 参数            | 类型   | 必填 | 说明                                    |
+| --------------- | ------ | ---- | --------------------------------------- |
+| `groupId`       | Long   | 是   | 个人分组 ID                             |
+| `reportContent` | String | 是   | 汇报内容                                |
+| `reportMonth`   | String | 是   | 汇报月份，格式 `YYYY-MM`（如 `2026-04`）|
+
+**请求体示例**
+
+```json
+{
+  "groupId": 2014631829004371002,
+  "reportContent": "## 4月工作汇报\n\n### 一、整体进度\n本月完成了核心业绩目标的80%...",
+  "reportMonth": "2026-04"
+}
+```
+
+**响应参数**
+
+`data`：`Long`，保存后的月报 ID。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": "2014631829004375001"
+}
+```
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/report/save' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "groupId": 2014631829004371002,
+    "reportContent": "## 4月工作汇报\n\n本月完成了核心业绩目标的80%",
+    "reportMonth": "2026-04"
+  }'
+```
+
+**数据流向**
+
+`groupId` 来自 **2.2 获取分组树** 或 **2.3 批量查询员工个人分组 ID**。保存后可通过 **2.23 根据分组和月份获取月度汇报** 查询。
+
+---
+
+### 2.23 根据分组和月份获取月度汇报（getMonthlyReportByMonth）
+
+根据分组 ID 和汇报月份获取指定月份的月度汇报，仅返回分组 ID 和汇报内容。
+
+**规范命名**：`getMonthlyReportByMonth`（规划 R3）。
+
+**基本信息**
+
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| 接口地址 | `/bp/monthly/report/getByMonth`   |
+| 请求方式 | `GET`                             |
+
+**请求参数**
+
+| 参数          | 类型   | 必填 | 说明                                     |
+| ------------- | ------ | ---- | ---------------------------------------- |
+| `groupId`     | Long   | 是   | 个人分组 ID                              |
+| `reportMonth` | String | 是   | 汇报月份，格式 `YYYY-MM`（如 `2026-04`）|
+
+**响应参数**
+
+`data`：`MonthlyReportSimpleVO`，见 **三、3.18**。若该月份无记录，`data` 为 `null`。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "groupId": "2014631829004371002",
+    "reportContent": "## 4月工作汇报\n\n### 一、整体进度\n本月完成了核心业绩目标的80%..."
+  }
+}
+```
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/report/getByMonth?groupId=2014631829004371002&reportMonth=2026-04' \
+  -H 'appKey: XXXXXXXX'
+```
+
+**数据流向**
+
+`groupId` 来自 **2.2 获取分组树** 或 **2.3 批量查询员工个人分组 ID**。配合 **2.22 保存月度汇报** 使用。
+
+---
+
 ## 三、公共数据结构
 
 以下为多个接口共用的数据结构定义。**第二章「接口详细说明」的响应参数**一般只写出 `data` 的类型；字段与嵌套类型以**本章**及**第一章 1.4**为准，不在接口处重复展开。
@@ -1803,6 +1918,15 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 | `name`     | String                  | 任务名称                                    |
 | `type`     | String                  | 类型：`目标` / `关键成果` / `关键举措`      |
 | `children` | List\<TaskSkeletonVO\>  | 子节点（叶节点为 `null`）                   |
+
+---
+
+### 3.18 MonthlyReportSimpleVO（月度汇报轻量信息 — 二、2.23）
+
+| 字段            | 类型   | 说明       |
+| --------------- | ------ | ---------- |
+| `groupId`       | Long   | 个人分组ID |
+| `reportContent` | String | 汇报内容   |
 
 ---
 
