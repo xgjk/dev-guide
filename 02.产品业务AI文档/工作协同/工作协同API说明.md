@@ -16,6 +16,7 @@
 | 1.9 | 2026-03-31 | 业务单元管理专题：开放保存/更新、分页查询、删除及详情获取接口 (5.29-5.32) | 付光伟 |
 | 2.0 | 2026-04-03 | 新增获取汇报详情（含节点与处理意见）接口 (5.33) | 付光伟 |
 | 2.1 | 2026-04-07 | 新增个人标签关联汇报系列接口 (5.34-5.37) | 付光伟 |
+| 2.2 | 2026-04-07 | 汇报回复(5.2)与完成待办(5.18)接口新增 contentType 参数支持 | 付光伟 |
 
 
 
@@ -582,7 +583,7 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 | `main`            | String                  | 是   | 汇报标题                                                                                   |
 | `grade`           | String                  | 否   | 优先级：一般/紧急，默认“一般”                                                                       |
 | `privacyLevel`    | String                  | 否   | 密级：非涉密/涉密（涉密下载文件需要申请），默认“非涉密”                                                          |
-| `contentType`     | String                  | 否   | 正文类型：`html`/`markdown`，默认 `html`                                                       |
+| `contentType`     | String                  | 是   | 正文类型：`html`/`markdown`，默认 `html`                                                       |
 | `contentHtml`     | String                  | 是   | 汇报内容（富文本/字符串）                                                                          |
 | `acceptEmpIdList` | List\<Long>             | 否   | 接收人员 id 列表；仅在 `reportLevelList` 为空时作为兜底：系统会用该列表自动生成 1 级“read 接收人”节点                    |
 | `copyEmpIdList`   | List\<Long>             | 否   | 抄送人员 id 列表                                                                             |
@@ -694,6 +695,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
 | `isMedia`        | Integer             | 否   | 是否带附件：0-没有（默认）、1-有                            |
 | `mediaVOList`    | List\<ReportFileVO> | 否   | 附件集合，结构见 **6.2 ReportReplyInnerParam.ReportFileVO** |
 | `contentHtml`    | String              | 是   | 回复内容                                                    |
+| `contentType`    | String              | 是   | 正文类型：`html`(默认)、`markdown`                          |
 | `sendMsg`        | Boolean             | 否   | 是否发送通知到填写汇报人，默认 `true`                       |
 | `addEmpIdList`   | List\<String>       | 否   | 被 @ 的员工 id 集合，会添加到转发到人列表                   |
 
@@ -1274,6 +1276,7 @@ curl -X POST 'https://{域名}/open-api/work-report/template/listByIds' \
 | --------- | ------ | ---- | ---------------------------------------------------------------------------------------------------------- |
 | `todoId`  | Long   | 是   | 待办主键 ID（TodoTask.id）                                                                                 |
 | `content` | String | 是   | 填写内容（纯文本）；建议时建议必填，决策可为空；写阶段可不传 `contentHtml`，未传时用 `<p>content</p>` 填充 |
+| `contentType` | String | 是   | 正文类型：`html`(默认)、`markdown` |
 | `operate` | String | 否   | 决策时必填：agree-同意、disagree-不同意；建议类型无需传                                                    |
 
 **响应参数**
