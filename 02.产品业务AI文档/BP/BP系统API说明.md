@@ -1,4 +1,4 @@
-# BP 目标管理 Open API 接口定义
+﻿# BP 目标管理 Open API 接口定义
 
 **配套文档**：[《BP 目标管理 Open API 调用说明》](./BP系统API调用说明.md)（修订记录、概述、通用约定、接口清单索引、场景编排、注意事项与历史路径）。**本文仅描述数据模型、接口契约与公共类型。**
 
@@ -161,7 +161,7 @@ Period（周期）
 
 | 参数   | 类型   | 必填 | 说明                   |
 | ------ | ------ | ---- | ---------------------- |
-| `name` | String | 否   | 周期名称，支持模糊搜索 |
+| `name` | String | 否   | 周期名称，支持模糊搜索。**⚠️ 中文必须 URL 编码（UTF-8）** |
 
 **响应参数**
 
@@ -863,7 +863,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/delayReport/l
 | 参数      | 类型   | 必填 | 说明           |
 | --------- | ------ | ---- | -------------- |
 | `groupId` | Long   | 是   | 分组 ID        |
-| `name`    | String | 是   | 任务名称关键字 |
+| `name`    | String | 是   | 任务名称关键字。**⚠️ 中文必须 URL 编码（UTF-8）** |
 
 **响应参数**
 
@@ -872,7 +872,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/delayReport/l
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/searchByName?groupId=1993982002185506818&name=全栈' \
+# 示例：搜索任务名称包含"全栈"的任务
+# 原始参数：name=全栈
+# URL 编码后（UTF-8）：name=%E5%85%A8%E6%A0%88
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/searchByName?groupId=1993982002185506818&name=%E5%85%A8%E6%A0%88' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -929,7 +932,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/searc
 | 参数       | 类型   | 必填 | 说明           |
 | ---------- | ------ | ---- | -------------- |
 | `periodId` | Long   | 是   | 周期 ID        |
-| `name`     | String | 是   | 分组名称关键字 |
+| `name`     | String | 是   | 分组名称关键字。**⚠️ 中文必须 URL 编码（UTF-8）** |
 
 **响应参数**
 
@@ -938,7 +941,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/v2/searc
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/group/searchByName?periodId=1993981738711912449&name=技术' \
+# 示例：搜索分组名称包含"技术"的分组
+# 原始参数：name=技术
+# URL 编码后（UTF-8）：name=%E6%8A%80%E6%9C%AF
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/group/searchByName?periodId=1993981738711912449&name=%E6%8A%80%E6%9C%AF' \
   -H 'appKey: XXXXXXXX'
 ```
 

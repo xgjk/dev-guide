@@ -6,6 +6,7 @@
 |------|------|----------|--------|
 | 1.0 | 2026-04-01 | 初版创建 | 刘艳华 |
 | 1.1 | 2026-04-02 | 新增用户/模型/产品使用明细接口 | 刘艳华 |
+| 1.2 | 2026-04-03 | 补充 inCacheToken（缓存输入Token）字段说明；修复 personId 类型 Long→String | 刘艳华 |
 
 ---
 
@@ -197,6 +198,12 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/overview' 
 | `month_out_token` | Long | 本月输出Token总量 |
 | `last_month_in_token` | Long | 上月输入Token总量 |
 | `last_month_out_token` | Long | 上月输出Token总量 |
+| `today_inCacheToken` | Long | 今日缓存输入Token总量 |
+| `yesterday_inCacheToken` | Long | 昨日缓存输入Token总量 |
+| `week_inCacheToken` | Long | 本周缓存输入Token总量 |
+| `last_week_inCacheToken` | Long | 上周缓存输入Token总量 |
+| `month_inCacheToken` | Long | 本月缓存输入Token总量 |
+| `last_month_inCacheToken` | Long | 上月缓存输入Token总量 |
 | `date_ranges` | Object | 各周期对应的日期范围，如 `{"week": "3/24-3/31", "last_week": "3/17-3/24", "month": "3/1-3/31", "last_month": "2/1-2/28"}` |
 
 **响应示例**
@@ -227,6 +234,12 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/overview' 
     "month_out_token": 2100000,
     "last_month_in_token": 3500000,
     "last_month_out_token": 1900000,
+    "today_inCacheToken": 30000,
+    "yesterday_inCacheToken": 28000,
+    "week_inCacheToken": 180000,
+    "last_week_inCacheToken": 160000,
+    "month_inCacheToken": 720000,
+    "last_month_inCacheToken": 650000,
     "date_ranges": {
       "week": "3/24-3/31",
       "last_week": "3/17-3/24",
@@ -546,6 +559,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 | `vendor` | String | 厂商名称（仅 model 维度） |
 | `total_in_token` | Long | 输入 Token 总量 |
 | `total_out_token` | Long | 输出 Token 总量 |
+| `total_inCacheToken` | Long | 缓存输入 Token 总量 |
 | `request_count` | Long | 请求次数 |
 
 **响应示例**
@@ -566,6 +580,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": "OpenAI",
         "total_in_token": 950000,
         "total_out_token": 520000,
+        "total_inCacheToken": 180000,
         "request_count": 15000
       }
     ],
@@ -577,6 +592,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": "OpenAI",
         "total_in_token": 950000,
         "total_out_token": 520000,
+        "total_inCacheToken": 180000,
         "request_count": 15000
       },
       {
@@ -586,6 +602,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": "Anthropic",
         "total_in_token": 620000,
         "total_out_token": 340000,
+        "total_inCacheToken": 95000,
         "request_count": 8000
       }
     ]
@@ -771,6 +788,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 | `total` | Array\<TokenTrendItem\> | 每日总 Token 用量趋势 |
 | `total_in_token` | Long | 时间段内输入 Token 总量 |
 | `total_out_token` | Long | 时间段内输出 Token 总量 |
+| `total_inCacheToken` | Long | 时间段内缓存输入 Token 总量 |
 | `companies` | Array\<CompanyTokenTrend\> | 按厂商分组的每日 Token 用量趋势 |
 
 **TokenTrendItem** 结构：
@@ -780,12 +798,16 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 | `date` | String | 日期，格式 `YYYY-MM-DD` |
 | `in_token` | Long | 当日输入 Token 总量 |
 | `out_token` | Long | 当日输出 Token 总量 |
+| `inCacheToken` | Long | 当日缓存输入 Token 总量 |
 
 **CompanyTokenTrend** 结构：
 
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `company` | String | 厂商名称 |
+| `total_in_token` | Long | 该厂商输入 Token 总量 |
+| `total_out_token` | Long | 该厂商输出 Token 总量 |
+| `total_inCacheToken` | Long | 该厂商缓存输入 Token 总量 |
 | `items` | Array\<TokenTrendItem\> | 该厂商每日 Token 用量趋势 |
 
 **响应示例**
@@ -796,24 +818,31 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
   "resultMsg": null,
   "data": {
     "total": [
-      { "date": "2026-03-25", "in_token": 150000, "out_token": 80000 },
-      { "date": "2026-03-26", "in_token": 160000, "out_token": 85000 }
+      { "date": "2026-03-25", "in_token": 150000, "out_token": 80000, "inCacheToken": 30000 },
+      { "date": "2026-03-26", "in_token": 160000, "out_token": 85000, "inCacheToken": 32000 }
     ],
     "total_in_token": 3800000,
     "total_out_token": 2100000,
+    "total_inCacheToken": 720000,
     "companies": [
       {
         "company": "OpenAI",
+        "total_in_token": 2500000,
+        "total_out_token": 1400000,
+        "total_inCacheToken": 480000,
         "items": [
-          { "date": "2026-03-25", "in_token": 100000, "out_token": 55000 },
-          { "date": "2026-03-26", "in_token": 110000, "out_token": 58000 }
+          { "date": "2026-03-25", "in_token": 100000, "out_token": 55000, "inCacheToken": 20000 },
+          { "date": "2026-03-26", "in_token": 110000, "out_token": 58000, "inCacheToken": 22000 }
         ]
       },
       {
         "company": "Anthropic",
+        "total_in_token": 1300000,
+        "total_out_token": 700000,
+        "total_inCacheToken": 240000,
         "items": [
-          { "date": "2026-03-25", "in_token": 50000, "out_token": 25000 },
-          { "date": "2026-03-26", "in_token": 50000, "out_token": 27000 }
+          { "date": "2026-03-25", "in_token": 50000, "out_token": 25000, "inCacheToken": 10000 },
+          { "date": "2026-03-26", "in_token": 50000, "out_token": 27000, "inCacheToken": 10000 }
         ]
       }
     ]
@@ -906,6 +935,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 650000,
         "total_out_token": 360000,
+        "total_inCacheToken": 120000,
         "request_count": 9500
       },
       {
@@ -915,6 +945,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 300000,
         "total_out_token": 160000,
+        "total_inCacheToken": 55000,
         "request_count": 5500
       }
     ],
@@ -926,6 +957,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 650000,
         "total_out_token": 360000,
+        "total_inCacheToken": 120000,
         "request_count": 9500
       },
       {
@@ -935,6 +967,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 300000,
         "total_out_token": 160000,
+        "total_inCacheToken": 55000,
         "request_count": 5500
       }
     ]
@@ -1036,6 +1069,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": "OpenAI",
           "total_in_token": 950000,
           "total_out_token": 520000,
+          "total_inCacheToken": 180000,
           "request_count": 15000
         }
       ],
@@ -1047,6 +1081,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": "OpenAI",
           "total_in_token": 950000,
           "total_out_token": 520000,
+          "total_inCacheToken": 180000,
           "request_count": 15000
         }
       ]
@@ -1061,6 +1096,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 720000,
           "total_out_token": 390000,
+          "total_inCacheToken": 135000,
           "request_count": 11000
         },
         {
@@ -1070,6 +1106,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 230000,
           "total_out_token": 130000,
+          "total_inCacheToken": 45000,
           "request_count": 4000
         }
       ],
@@ -1081,6 +1118,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 720000,
           "total_out_token": 390000,
+          "total_inCacheToken": 135000,
           "request_count": 11000
         },
         {
@@ -1090,6 +1128,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 230000,
           "total_out_token": 130000,
+          "total_inCacheToken": 45000,
           "request_count": 4000
         }
       ]
@@ -1104,6 +1143,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 340000,
           "total_out_token": 185000,
+          "total_inCacheToken": 68000,
           "request_count": 5200
         },
         {
@@ -1113,6 +1153,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 250000,
           "total_out_token": 140000,
+          "total_inCacheToken": 50000,
           "request_count": 3800
         }
       ],
@@ -1124,6 +1165,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 340000,
           "total_out_token": 185000,
+          "total_inCacheToken": 68000,
           "request_count": 5200
         },
         {
@@ -1133,6 +1175,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
           "vendor": null,
           "total_in_token": 250000,
           "total_out_token": 140000,
+          "total_inCacheToken": 50000,
           "request_count": 3800
         }
       ]
@@ -1228,6 +1271,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 290000,
         "total_out_token": 160000,
+        "total_inCacheToken": 58000,
         "request_count": 4200
       },
       {
@@ -1237,6 +1281,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 168000,
         "total_out_token": 92000,
+        "total_inCacheToken": 33000,
         "request_count": 2400
       }
     ],
@@ -1248,6 +1293,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 290000,
         "total_out_token": 160000,
+        "total_inCacheToken": 58000,
         "request_count": 4200
       },
       {
@@ -1257,6 +1303,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
         "vendor": null,
         "total_in_token": 168000,
         "total_out_token": 92000,
+        "total_inCacheToken": 33000,
         "request_count": 2400
       }
     ]
@@ -1348,6 +1395,9 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `median_cost` | Number | 当日费用中位数 P50（$） |
 | `p10_cost` | Number | 当日费用 P10 分位数（$） |
 | `max_user_cost` | Number | 当日单用户最大费用（$） |
+| `total_in_token` | Long | 当日总输入 Token |
+| `total_out_token` | Long | 当日总输出 Token |
+| `total_in_cache_token` | Long | 当日总缓存输入 Token |
 
 **响应示例**
 
@@ -1367,7 +1417,10 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
         "avg_cost_per_user": 0.28,
         "median_cost": 0.15,
         "p10_cost": 0.02,
-        "max_user_cost": 3.8
+        "max_user_cost": 3.8,
+        "total_in_token": 150000,
+        "total_out_token": 80000,
+        "total_in_cache_token": 30000
       }
     ]
   }
@@ -1695,7 +1748,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 
 | 参数名 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `personId` | Long | 否 | 用户ID（数值型），不传则自动使用当前登录用户 |
+| `personId` | String | 否 | 用户ID（字符串型），不传则自动使用当前登录用户 |
 | `startTime` | String | 否 | 开始日期，格式 `YYYY-MM-DD`，默认当天 |
 | `endTime` | String | 否 | 结束日期，格式 `YYYY-MM-DD`，默认当天 |
 | `limit` | Integer | 否 | 每个维度返回数量，默认 10，最大 100 |
@@ -1725,7 +1778,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `query` | UserUsageQuery | 查询条件，含 `personId`、`personName`、`startTime`、`endTime`、`currency` |
-| `summary` | UserUsageSummary | 汇总数据，含 `personId`、`personName`、`inputTokens`、`outputTokens`、`callCount`、`cost`、`currency` |
+| `summary` | UserUsageSummary | 汇总数据，含 `personId`、`personName`、`inputTokens`、`outputTokens`、`inCacheToken`、`callCount`、`cost`、`currency` |
 | `products` | Array\<ProductUsageItem\> | 按产品分组的明细列表，每个产品内嵌套 `models` 列表 |
 
 **ProductUsageItem** 结构：
@@ -1736,6 +1789,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
 | `productName` | String | 产品名称 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位，如 `USD` |
@@ -1749,6 +1803,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
 | `modelName` | String | 模型名称 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
@@ -1772,6 +1827,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
       "personName": "张三",
       "inputTokens": 950000,
       "outputTokens": 520000,
+      "inCacheToken": 180000,
       "callCount": 15000,
       "cost": 125.6,
       "currency": "USD"
@@ -1782,6 +1838,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
         "productName": "LLM推理服务",
         "inputTokens": 800000,
         "outputTokens": 450000,
+        "inCacheToken": 150000,
         "callCount": 12000,
         "cost": 100.3,
         "currency": "USD",
@@ -1791,6 +1848,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
             "modelName": "GPT-4o",
             "inputTokens": 600000,
             "outputTokens": 350000,
+            "inCacheToken": 110000,
             "callCount": 8000,
             "cost": 65.2,
             "currency": "USD"
@@ -1800,6 +1858,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
             "modelName": "Claude 3.5",
             "inputTokens": 200000,
             "outputTokens": 100000,
+            "inCacheToken": 40000,
             "callCount": 4000,
             "cost": 35.1,
             "currency": "USD"
@@ -1886,7 +1945,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `query` | Object | 查询条件，含 `aiType`、`modelName`、`startTime`、`endTime`、`currency` |
-| `summary` | Object | 汇总数据，含 `aiType`、`modelName`、`inputTokens`、`outputTokens`、`callCount`、`cost`、`currency` |
+| `summary` | Object | 汇总数据，含 `aiType`、`modelName`、`inputTokens`、`outputTokens`、`inCacheToken`、`callCount`、`cost`、`currency` |
 | `products` | Array\<ProductFlatItem\> | 使用该模型的产品列表（平铺，不含嵌套） |
 | `users` | Array\<UserUsageItem\> | 使用该模型的用户列表 |
 
@@ -1898,6 +1957,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
 | `productName` | String | 产品名称 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
@@ -1910,6 +1970,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
 | `personName` | String | 用户姓名 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
@@ -1933,6 +1994,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
       "modelName": "GPT-4o",
       "inputTokens": 950000,
       "outputTokens": 520000,
+      "inCacheToken": 180000,
       "callCount": 15000,
       "cost": 125.6,
       "currency": "USD"
@@ -1943,6 +2005,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
         "productName": "LLM推理服务",
         "inputTokens": 800000,
         "outputTokens": 450000,
+        "inCacheToken": 150000,
         "callCount": 12000,
         "cost": 100.3,
         "currency": "USD"
@@ -1954,6 +2017,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
         "personName": "张三",
         "inputTokens": 600000,
         "outputTokens": 350000,
+        "inCacheToken": 110000,
         "callCount": 8000,
         "cost": 65.2,
         "currency": "USD"
@@ -2039,7 +2103,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `query` | Object | 查询条件，含 `bizCode`、`productName`、`startTime`、`endTime`、`currency` |
-| `summary` | Object | 汇总数据，含 `bizCode`、`productName`、`inputTokens`、`outputTokens`、`callCount`、`cost`、`currency` |
+| `summary` | Object | 汇总数据，含 `bizCode`、`productName`、`inputTokens`、`outputTokens`、`inCacheToken`、`callCount`、`cost`、`currency` |
 | `models` | Array\<ModelUsageItem\> | 该产品使用的各模型明细，结构见 4.14 ModelUsageItem |
 | `users` | Array\<UserUsageItem\> | 使用该产品的各用户明细，结构见 4.15 UserUsageItem |
 
@@ -2062,6 +2126,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
       "productName": "LLM推理服务",
       "inputTokens": 950000,
       "outputTokens": 520000,
+      "inCacheToken": 180000,
       "callCount": 15000,
       "cost": 125.6,
       "currency": "USD"
@@ -2072,6 +2137,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
         "modelName": "GPT-4o",
         "inputTokens": 600000,
         "outputTokens": 350000,
+        "inCacheToken": 110000,
         "callCount": 8000,
         "cost": 65.2,
         "currency": "USD"
@@ -2083,6 +2149,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
         "personName": "张三",
         "inputTokens": 600000,
         "outputTokens": 350000,
+        "inCacheToken": 110000,
         "callCount": 8000,
         "cost": 65.2,
         "currency": "USD"
@@ -2135,6 +2202,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `vendor` | String | 厂商名称（仅 model 维度） |
 | `total_in_token` | Long | 输入 Token 总量 |
 | `total_out_token` | Long | 输出 Token 总量 |
+| `total_inCacheToken` | Long | 缓存输入 Token 总量 |
 | `request_count` | Long | 请求次数 |
 
 ### 5.3 CompareItem
@@ -2157,6 +2225,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `date` | String | 日期，格式 `YYYY-MM-DD` |
 | `in_token` | Long | 当日输入 Token 总量 |
 | `out_token` | Long | 当日输出 Token 总量 |
+| `inCacheToken` | Long | 当日缓存输入 Token 总量 |
 
 ### 5.5 CompanyTrend
 
@@ -2170,6 +2239,9 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
 | `company` | String | 厂商名称 |
+| `total_in_token` | Long | 该厂商输入 Token 总量 |
+| `total_out_token` | Long | 该厂商输出 Token 总量 |
+| `total_inCacheToken` | Long | 该厂商缓存输入 Token 总量 |
 | `items` | Array\<TokenTrendItem\> | 该厂商每日 Token 用量趋势，TokenTrendItem 见 5.4 |
 
 ### 5.7 DailyStat
@@ -2183,6 +2255,9 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `median_cost` | Number | 当日费用中位数 P50（$） |
 | `p10_cost` | Number | 当日费用 P10 分位数（$） |
 | `max_user_cost` | Number | 当日单用户最大费用（$） |
+| `total_in_token` | Long | 当日总输入 Token |
+| `total_out_token` | Long | 当日总输出 Token |
+| `total_in_cache_token` | Long | 当日总缓存输入 Token |
 
 ### 5.8 ModelItem
 
@@ -2214,6 +2289,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `productName` | String | 产品名称 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位，如 `USD` |
@@ -2227,6 +2303,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `productName` | String | 产品名称 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
@@ -2239,6 +2316,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `modelName` | String | 模型名称，如 `GPT-4o` |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
@@ -2251,6 +2329,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 | `personName` | String | 用户姓名 |
 | `inputTokens` | Long | 输入 Token 总量 |
 | `outputTokens` | Long | 输出 Token 总量 |
+| `inCacheToken` | Long | 缓存输入 Token 总量 |
 | `callCount` | Long | 调用次数 |
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
