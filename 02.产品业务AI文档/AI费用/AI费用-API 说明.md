@@ -1,4 +1,4 @@
-# AI费用查询服务 Open API 接口文档
+﻿# AI费用查询服务 Open API 接口文档
 
 ## 修订记录
 
@@ -1562,7 +1562,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/models' \
 
 | 参数名 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `search` | String | 否 | 搜索关键词，按 ID 或名称模糊匹配 |
+| `search` | String | 否 | 搜索关键词，按 ID 或名称模糊匹配。**⚠️ 中文必须 URL 编码（UTF-8）** |
 
 **请求与行为约定**
 
@@ -1655,7 +1655,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/products?s
 
 | 参数名 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `search` | String | 否 | 搜索关键词，按 ID 或姓名模糊匹配 |
+| `search` | String | 否 | 搜索关键词，按 ID 或姓名模糊匹配。**⚠️ 中文必须 URL 编码（UTF-8）** |
 | `limit` | Integer | 否 | 返回数量上限，默认 100 |
 
 **请求与行为约定**
