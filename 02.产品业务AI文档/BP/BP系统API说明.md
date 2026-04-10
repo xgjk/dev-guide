@@ -2184,6 +2184,105 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repor
 
 ---
 
+### 2.31 按月份查询月报列表（listMonthlyReports）
+
+根据分组 ID 和月份查询该月所有类型的月报精简信息。仅返回报告类型描述和汇报记录 ID，AI 通过工作协同接口（`/work-report/report/info`）获取正文。
+
+**基本信息**
+
+| 项目     | 说明                |
+| -------- | ------------------- |
+| 接口地址 | `/bp/monthly/report/listByMonth` |
+| 请求方式 | `GET`              |
+
+**请求参数**
+
+| 参数          | 类型   | 必填 | 说明                      |
+| ------------- | ------ | ---- | ------------------------- |
+| `groupId`     | Long   | 是   | 个人分组 ID               |
+| `reportMonth` | String | 是   | 汇报月份，格式 `YYYY-MM`  |
+
+**响应 `data`**：`List<MonthlyReportItemVO>`
+
+| 字段             | 类型   | 说明                                           |
+| ---------------- | ------ | ---------------------------------------------- |
+| `reportTypeDesc` | String | 报告类型描述："BP自查报告" / "个人总结报告"    |
+| `reportRecordId` | Long   | 工作汇报系统的汇报记录 ID                      |
+
+**示例响应**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    { "reportTypeDesc": "BP自查报告", "reportRecordId": 2042140681165959170 },
+    { "reportTypeDesc": "个人总结报告", "reportRecordId": 2042140681165959171 }
+  ]
+}
+```
+
+> **注意**：`reportRecordId` 为工作汇报系统的记录 ID，通过 `/work-report/report/info?reportId={reportRecordId}` 获取报告正文和回复。同一 groupId + month 下最多返回 2 条记录（BP自查报告 + 个人总结报告）。
+
+---
+
+### 2.32 查询月度评价 Markdown（getMonthlyEvaluation）
+
+根据分组 ID 和月份查询该月的评价数据（自评 + 上级评价），返回翻译后的 Markdown 格式，AI 可直接阅读。
+
+**基本信息**
+
+| 项目     | 说明                |
+| -------- | ------------------- |
+| 接口地址 | `/bp/monthly/evaluation/query` |
+| 请求方式 | `GET`              |
+
+**请求参数**
+
+| 参数              | 类型   | 必填 | 说明                      |
+| ----------------- | ------ | ---- | ------------------------- |
+| `groupId`         | Long   | 是   | 个人分组 ID               |
+| `evaluationMonth` | String | 是   | 评价月份，格式 `YYYY-MM`  |
+
+**响应 `data`**：`List<MonthlyEvaluationMarkdownVO>`
+
+| 字段                 | 类型   | 说明                                  |
+| -------------------- | ------ | ------------------------------------- |
+| `evaluationTypeDesc` | String | 评价类型描述："自评" / "上级评价"     |
+| `evaluationMarkdown` | String | 翻译后的评价 Markdown，含目标名称、各维度评分、评语 |
+
+**评分维度说明**（Markdown 中已翻译为中文）：
+
+| 原始字段        | 中文维度名          | 权重 |
+| --------------- | ------------------- | ---- |
+| `achievement`   | 目标达成度          | 0.35 |
+| `quality`       | 推进质量            | 0.25 |
+| `collaboration` | 协同与影响力        | 0.20 |
+| `risk`          | 风险与确定性        | 0.20 |
+
+**示例响应**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {
+      "evaluationTypeDesc": "自评",
+      "evaluationMarkdown": "## 自评\n\n**加权总分：75.9**\n\n### 目标：组织BP制定与落地执行\n| 维度 | 评分(1-5) |\n|------|----------|\n| 目标达成度(权重0.35) | 4 |\n| 推进质量(权重0.25) | 4 |\n| 协同与影响力(权重0.20) | 3 |\n| 风险与确定性(权重0.20) | 3 |"
+    },
+    {
+      "evaluationTypeDesc": "上级评价",
+      "evaluationMarkdown": "## 上级评价\n\n**总体要求：** 主要先对齐一下工作实际开展时间\n\n### 目标：组织BP制定与落地执行\n| 维度 | 评分(1-5) |\n|------|----------|\n| 目标达成度(权重0.35) | 4 |\n| 推进质量(权重0.25) | 4 |\n| 协同与影响力(权重0.20) | 3 |\n| 风险与确定性(权重0.20) | 3 |\n\n**上级评语：** 1月主要是以组织BP为主"
+    }
+  ]
+}
+```
+
+> **注意**：一次返回 self + manager（有几条返回几条，最多 2 条）。Markdown 中目标 ID 已替换为目标名称，评分维度已翻译为中文。自评包含加权总分（`__monthlySelfTotal__`），上级评价包含总体要求（`__managerRequirements__`）和逐目标评语（`managerComment`）。
+
+---
+
 ## 三、公共对象模型
 
 ... (此处省略 3.1 ~ 3.18)
