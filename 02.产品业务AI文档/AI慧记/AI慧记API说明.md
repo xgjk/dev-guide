@@ -210,7 +210,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/chatListByPage' \
 
 **数据流向**
 
-- 列表项中的 `name`、`createTime`、`finishTime`、`recordState` 等可直接用于 UI；其中 **`recordState`**：`0`=录制中，`1`=结束，`3`=处理出错（见 **五、5.1 FindChatVO**）。
+- 列表项中的 `name`、`createTime`、`finishTime`、`recordState` 等可直接用于 UI；其中 **`recordState`**：`0`=录制中，`2`=结束，`3`=处理出错（见 **五、5.1 FindChatVO**）。
 - 返回的 `pageContent[*]._id` 可作为需传入 **`meetingChatId`** 的接口（**4.2 / 4.3 / 4.5**）的入参（**4.6** 使用 `shareId`，不适用；调用前注意 **七、注意事项** 中 `_id` 带 `__` 后缀时的处理）。
 
 
@@ -606,7 +606,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl'
 | ------------ | ------- | ---- |
 | `_id`        | String  | 慧记 ID。 |
 | `chatType`   | Integer | 慧记类型。 |
-| `recordState`| Integer | 当前处理状态（以慧记服务返回为准）。 |
+| `recordState`| Integer | 当前处理状态（`0` 录制中，`2` 结束，`3` 处理出错）。 |
 | `fileUrl`    | String  | 文件 URL。 |
 | `fileExt`    | String  | 文件扩展名。 |
 | `name`       | String  | 慧记名称。 |
@@ -648,7 +648,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl'
 | --------------- | ---------------------- | ---- |
 | `_id`           | String                 | 会议 ID（即 `meetingChatId`）。 |
 | `name`          | String                 | 会议名称。 |
-| `recordState`   | Integer                | 录音状态：`0` 录制中，`1` 结束，`3` 处理出错。 |
+| `recordState`   | Integer                | 录音状态：`0` 录制中，`2` 结束，`3` 处理出错。 |
 | `createTime`    | Long                   | 创建时间（毫秒时间戳）。 |
 | `finishTime`    | Long                   | 完成时间（毫秒时间戳）。 |
 | `meetingLength` | Long                   | 会议时长（毫秒）。 可能为空，例如：慧记为结束|
