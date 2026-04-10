@@ -178,6 +178,119 @@ curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-file/getDownload
 
 ---
 
+### 4.3 获取七牛上传 Token
+
+获取七牛云直传所需的上传凭证信息（`token`、`key`、`host`），便于客户端直接上传到对象存储。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/cwork-file/getUploadToken/cwork` |
+| 请求方式 | `GET` |
+
+**请求参数**
+
+无。
+
+**响应参数**
+
+`data` 类型为 `QiniuUploadTokenVO`，详见 **[6.9 QiniuUploadTokenVO](#69-qiniuuploadtokenvo)**。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://cwork-api.mediportal.com.cn/open-api/cwork-file/getUploadToken/cwork' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": {
+    "token": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    "key": "upload/2026/04/10/demo.png",
+    "host": "https://upload.qiniup.com"
+  }
+}
+```
+
+> 上传提示：使用获取token接口返回的 `token`、`host`，可以通过以下两种方式将录音文件上传至七牛（任选其一）：
+>
+> **方式一：使用七牛官方 SDK（推荐）**
+> - 使用各语言 SDK（如 JavaScript、Java、Android、iOS 等）直传文件。
+> - 上传时的文件 `key` 由调用方（通常为前端）生成；本接口**可能**返回 `key`，但对接时不应依赖返回值，建议统一由调用方按规则生成并传入。
+
+> **Python SDK 示例（基于七牛 Python SDK）**
+>
+> ```python
+> # pip install qiniu
+> import os
+> import uuid
+> from qiniu import put_file_v2
+>
+> # 上传凭证信息：由 /cwork-file/getUploadToken/cwork 接口返回
+> token = "YOUR_QINIU_TOKEN"
+>
+> # 本地待上传文件
+> localfile = r"D:\audio\demo.wav"
+> file_ext = os.path.splitext(localfile)[1]  # 例如 .wav
+> key = f"{uuid.uuid4()}{file_ext}"          # 建议：UUID + 文件后缀
+>
+> # 使用 SDK 上传（v2 分片上传）
+> ret, info = put_file_v2(token, key, localfile, version="v2")
+> print("ret:", ret)
+> print("info:", info)
+> ```
+>
+> - 参考：`https://developer.qiniu.com/kodo/1242/python`
+> - 其他端：参考七牛官方各语言 SDK 文档，使用相同的 `token` / `key` 机制上传。
+>
+> **方式二：直接调用七牛直传文件 HTTP 接口**
+> - 使用 `multipart/form-data` 方式调用七牛「直传文件」接口，参考七牛官方「直传文件 API」文档。
+>
+> **Python 上传示例（HTTP 直传）**
+>
+> ```python
+> import os
+> import uuid
+> import requests
+>
+> # 上传凭证信息：由 /cwork-file/getUploadToken/cwork 接口返回
+> token = "YOUR_QINIU_TOKEN"
+> upload_host = "https://upload.qiniup.com"  # getUploadToken 返回的 host
+>
+> # 本地待上传文件
+> file_path = r"D:\audio\demo.wav"
+> file_ext = os.path.splitext(file_path)[1]  # 例如 .wav
+> file_key = f"{uuid.uuid4()}{file_ext}"     # 建议：UUID + 文件后缀
+>
+> with open(file_path, "rb") as f:
+>     # 七牛直传表单字段：token + key + file
+>     files = {"file": (os.path.basename(file_path), f, "application/octet-stream")}
+>     data = {"token": token, "key": file_key}
+>     resp = requests.post(upload_host, data=data, files=files, timeout=30)
+>     resp.raise_for_status()
+>     print("upload response:", resp.text)
+>
+> # 上传成功后，使用空间外链域名拼接最终可访问 URL
+> # final_url = f"https://<空间外链域名>/{file_key}"
+> ```
+>
+> **强烈建议**
+> - 无论使用 SDK 还是直传 API，上传时统一使用 `UUID + 文件后缀` 作为 `key`，避免重名与冲突。
+> - 示例：`773fc76b-72aa-4f71-831f-86acd9e4daa8.wav`、`a1b2c3d4-e5f6-7890-abcd-ef1234567890.mp3`。
+>
+> **上传成功后如何拼出音频 URL**
+> - 用「空间外链域名」+ 该 `key` 拼出音频文件 URL，即可作为后续语音/慧记相关接口的 `url` / `fileUrl` 入参。
+> - 最终音频地址格式：`https://<空间外链域名>/<key>`。
+> - 说明：此处「空间外链域名」需要按七牛空间配置获取；**本接口返回的 `host` 字段为上传域名（upload host），不等同于空间外链域名**。
+
+---
+
 ## 五、用户服务接口详细说明
 
 ### 5.1 按姓名搜索全部员工(带外部联系人)

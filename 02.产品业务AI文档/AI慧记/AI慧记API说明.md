@@ -8,6 +8,7 @@
 | 1.1 | 2026-03-27 | 新增 4.10 增量查询指定慧记的分片录音转写列表、4.11 按视频会议号查询慧记列表 | - |
 | 1.2 | 2026-03-28 | 补充场景六；明确 **4.1**（本人名下）与 **4.11**（参与会议 + 会议号）口径差异 | - |
 | 1.3 | 2026-03-31 | 删除已废弃接口，重新编号接口列表；完善公共数据结构 | - |
+| 1.4 | 2026-04-10 | 新增 **4.7** 通过文件URL创建慧记接口说明（`startChatByFileUrl`） | - |
 
 > 历史版本（1.1、1.2）变更摘要中的接口编号（如 4.10、4.11）为当时文档版本，与当前「一、概述」及第四章编号不必一致。
 
@@ -23,6 +24,7 @@
 | 4 | 按视频会议号查询慧记列表（参与关系，含他人录制本人参会） | 4.4 | `/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumberV2` |
 | 5 | 根据慧记Id创建慧记分享信息 | 4.5 | `/ai-huiji/meetingChat/createShareV2` |
 | 6 | 根据慧记分享ID查询慧记信息 | 4.6 | `/ai-huiji/meetingChat/getChatFromShareId` |
+| 7 | 通过文件URL创建慧记（上传音频V2） | 4.7 | `/ai-huiji/meetingChat/startChatByFileUrl` |
 
 ---
 
@@ -212,9 +214,10 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/chatListByPage' \
 - 返回的 `pageContent[*]._id` 可作为需传入 **`meetingChatId`** 的接口（**4.2 / 4.3 / 4.5**）的入参（**4.6** 使用 `shareId`，不适用；调用前注意 **七、注意事项** 中 `_id` 带 `__` 后缀时的处理）。
 
 
-### 4.2 查询指定慧记的改写的原文
+### 4.2 查询指定慧记的转写状态、进度
 
-查询指定慧记二次改写原文的处理状态，改写总进度、 整体状态和改写文字内容。
+查询指定慧记音频转文字的处理状态、进度及改写文字内容。是否已转写完成请以整体 `state` 字段为准。
+
 
 **基本信息**
 
@@ -254,11 +257,12 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/checkSecondSttV2' \
 
 `SttPartItem`（`CheckSecondSttV2VO.SttPartItem`）字段：
 
-| 字段名         | 类型   | 说明 |
-| -------------- | ------ | ---- |
-| `speakerName`  | String | 发言人 |
-| `rewriteText`  | String | 改写后的文本 |
+| 字段名         | 类型   | 说明            |
+| -------------- | ------ |---------------|
+| `speakerName`  | String | 发言人           |
+| `rewriteText`  | String | 改写后的文本        |
 | `startTime`    | Long   | 分片开始对应的慧记录制时间 |
+| `rewriteState`    | Integer   | 原文改写状态: `1`=进行中, `2`=成功, `3`=失败      |
 
 **响应示例**
 
@@ -280,6 +284,8 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/checkSecondSttV2' \
   }
 }
 ```
+
+> 提示：该接口返回的是**当前时刻**的转写状态快照。若业务侧需要更准确地感知“是否已完成转写”，建议基于 `meetingChatId` 按固定间隔（如 2~5 秒）轮询调用本接口，并以 `state`（整体状态）作为完成判断依据；当状态为成功（`2`）后即可停止轮询。
 
 ---
 
@@ -554,6 +560,82 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId'
 }
 ```
 
+---
+
+### 4.7 通过文件URL创建慧记
+
+通过可访问的音频文件 URL 发起慧记创建。
+
+**基本信息**
+
+| 项目         | 说明                                           |
+| ------------ | ---------------------------------------------- |
+| 接口地址     | `/ai-huiji/meetingChat/startChatByFileUrl`    |
+| 请求方式     | `POST`                                        |
+| Content-Type | `application/json`                            |
+
+**请求参数**
+
+请求体为 JSON，字段如下（与 `StartChatByFileUrlParam` 一致）：
+
+| 参数名      | 类型    | 必填 | 说明 |
+| ----------- | ------- | ---- | ---- |
+| `fileUrl`   | String  | 是   | 音频/视频文件可访问 URL。 |
+| `fileExt`   | String  | 是   | 文件扩展名（不含点，内部会规范化）。当前支持：`mp3`、`mp4`、`wav`、`m4a`。 |
+
+> 文件URL建议：推荐先将文件上传到七牛，拿到可公网访问的 URL（例如 `https://...`）后，再将该地址作为 `fileUrl` 传入本接口。获取七牛上传 token 的接口请参考《基础服务 Open API 接口文档》**4.3 获取七牛上传 Token（cwork）** 的说明。
+
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "fileUrl": "https://filegpt-hn.file.mediportal.com.cn/21ccb6c1-6500-46f8-a4ff-d26deb73c36c语音035.m4a",
+    "fileExt": "m4a"
+  }'
+```
+
+**响应参数**
+
+`data` 类型为 `StartChatResultVO`，常用字段如下：
+
+| 字段名       | 类型    | 说明 |
+| ------------ | ------- | ---- |
+| `_id`        | String  | 慧记 ID。 |
+| `chatType`   | Integer | 慧记类型。 |
+| `recordState`| Integer | 当前处理状态（以慧记服务返回为准）。 |
+| `fileUrl`    | String  | 文件 URL。 |
+| `fileExt`    | String  | 文件扩展名。 |
+| `name`       | String  | 慧记名称。 |
+| `createTime` | Long    | 创建时间（毫秒）。 |
+| `updateTime` | Long    | 更新时间（毫秒）。 |
+| `personId`   | String  | 人员 ID。 |
+| `userId`     | String  | 用户 ID。 |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "_id": "e6839164-2491-4fb3-899a-c27fedb82a68",
+    "chatType": 8,
+    "recordState": 2,
+    "fileUrl": "https://filegpt-hn.file.mediportal.com.cn/21ccb6c1-6500-46f8-a4ff-d26deb73c36c语音035.m4a",
+    "fileExt": "m4a",
+    "name": "2026-04-10 11:17:13 记录",
+    "createTime": 1775791033252,
+    "updateTime": 1775791033252,
+    "personId": "12028",
+    "userId": "1742024210481586177"
+  }
+}
+```
+
 ## 五、公共数据结构
 
 > 本章列出**在多个接口中复用、且返回结构一致**的数据结构（当前仅 **FindChatVO**）。仅在单接口出现的结构（如 **4.3** 的 `SplitRecordVO`）已在对应 **四、接口详细说明** 中描述。
@@ -603,5 +685,5 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId'
 
 ---
 
-**文档版本**：v1.3
-**更新日期**：2026-04-01
+**文档版本**：v1.4
+**更新日期**：2026-04-10
