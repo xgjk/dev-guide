@@ -1,4 +1,4 @@
-﻿# 知识库 Open API 接口文档
+# 知识库 Open API 接口文档
 
 ## 修订记录
 
@@ -15,6 +15,7 @@
 | 1.8 | 2026-04-01 | 补全 4.11-4.20 全量子节（基本信息/行为约定/curl示例/响应示例/数据流向）；统一全文档请求/响应示例格式；修复 4.9 curl 方法错误；补全 5.12 字段 | 刘艳华 |
 | 1.9 | 2026-04-02 | SaveFileToProjectParam 新增 suffix 字段；更新 saveFileByParentId/saveFileByPath 请求示例 | 刘艳华 |
 | 1.10 | 2026-04-03 | 全量校对上传链路字段准确性：预检接口补充 size/sensitive/suffix 参数；UploadFileSliceParam storageType 修正为 MINIO；SaveResourceParam 修正 suffix/size 为非必填；SaveFileToProjectParam 新增 isSensitive 字段、修正 suffix 描述；全量 curl 示例补全 suffix/size/isSensitive | 刘艳华 |
+| 1.11 | 2026-04-13 | 新增“记忆沙盒”模块 (4.21-4.24)；默认存盘逻辑下放至接入层控制 | 刘艳华 |
 
 ## 一、概述
 
@@ -169,21 +170,40 @@ https://{域名}/open-api/{接口地址}
 
 ---
 
-### 场景六：AI 生成内容一键入库到知识库空间 [新增]
+### 场景六：AI 生成内容一键入库到知识库个人空间 [新增]
 
-> 需求：将 AI 对话、摘要或 Markdown 报告等文本内容快速保存到用户有权限的知识库空间。
+> 需求：将 AI 对话、摘要或 Markdown 报告等纯文本内容，以最快速度保存到知识库个人空间，无需关心具体空间 ID。
 
-**方式一：通过空间列表自主选择目标空间**
-1. 调用 **4.20 获取有上传/编辑权限的空间列表** 获取可写空间。
-2. 调用 **4.16 或 4.17** 将富文本内容（`fileType=doc`，`fileContent=内容`）保存到选定空间。
+**原生一键入库流程：**
+1. 调用 **4.18 一键快速保存纯文本到个人空间** (`POST /document-database/file/uploadContent`)。
+2. 构造请求参数：
+   - `content`: 文本/Markdown/HTML 源码内容；
+   - `fileName`: 文件展示名称（建议带上扩展名，如 `调研结论.md`）；
+   - `fileSuffix`: (**建议传**) 显式指定文件后缀（如 `md`, `json`, `html`, `txt`）；
+   - `folderName`: (**可选**) 逻辑目录路径。**不传则默认归档至个人空间“和AI的对话”目录下**。
+3. **亮点功能 (Smart Logic)**：
+   - **智能后缀识别**：即便不传 `fileSuffix`，系统也会自动从 `fileName` 中通过“嗅探”补全后缀并决定索引模型。
+   - **零配置归档**：无需前置调用 `getProjectId`，系统自动根据当前 Token 绑定个人专属空间。
+4. **结果流转**：接口同步返回 `projectId`、`fileId` 和 `downloadUrl`，可直接通过 `fileId` 进行后续的预览或属性维护。
 
-**方式二：一键入库到个人专属空间**
-1. 调用 **4.18 上传内容到个人知识库**（`POST /ai-huiji/uploadContentToPersonalProject`），传入：
-   - `content`: 文件内容（支持纯文本/Markdown/HTML）；
-   - `fileName`: 文件名称；
-   - `fileSuffix`: 文件后缀（默认 `md`）；
-   - `folderName`: 目标文件夹名称（默认 `和cms智汇的对话`，不存在自动创建）。
-2. 返回中包含 `projectId`、`folderId`、`fileId`、`downloadUrl` 等完整入库信息。
+**响应成功示例**：
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "projectId": 2009488364113997826,
+    "projectName": "个人知识库",
+    "folderId": 32100,
+    "folderName": "调研结论",
+    "fileId": 32188,
+    "fileName": "调研结论.md",
+    "downloadUrl": "https://sg-al-cwork-web.mediportal.com.cn/..."
+  }
+}
+```
+
+---
 
 ---
 
@@ -213,7 +233,7 @@ https://{域名}/open-api/{接口地址}
 | `type` | Integer | 否 | 过滤资源类型(空为所有，1只查文件夹，2只查文件) |
 | `label` | String | 否 | 标签:空或者[原始]都是全部,初始化,待处理,放行 |
 | `order` | Integer | 否 | 排序规则：1倒序更新 2顺序更新 3倒序创建 4顺序创建 5倒序名字 6顺序名字(AI常用1或3) |
-| `excludeFileTypes` | String | 否 | 需要排除的文件业务分类，多个用逗号分隔(例如: work_report,work_plan,huiji) |
+| `excludeFileTypes` | String | 否 | 需要排除的文件业务分类，多个用逗号分隔(例如: work_report,work_plan,huiji,ai-report) |
 | `excludeFolderNames` | String | 否 | 需要排除的文件夹名称，多个用逗号分隔(例如: 临时文件,测试文件夹) |
 | `returnFileDesc` | Boolean | 否 | 强制带回文件描述摘要(建议AI传true) |
 
@@ -830,7 +850,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 | `endTime` | Long | 否 | 创建时间-结束时间戳（毫秒） |
 | `isFileStorage` | Boolean | 否 | 是否为文件存储范围（默认 false） |
 | `permissionQuery` | String | 否 | 权限查询条件 |
-| `excludeFileTypes` | String | 否 | 排除的文件类型，逗号分隔（如 `work_report,huiji`） |
+| `excludeFileTypes` | String | 否 | 排除的文件类型，逗号分隔（如 `work_report,huiji,ai-report`） |
 | `excludeFolderNames` | String | 否 | 排除的文件夹名称，逗号分隔（如 `临时文件,测试文件夹`） |
 
 **请求与行为约定**
@@ -1011,7 +1031,15 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 
 ### 4.14 【写操作】更新文件属性（重命名/移动/覆盖）
 
-【Agent 提示】支持重命名和跨目录移动。同名冲突策略（三选一）：cover=true 静默覆盖 -> autoRename=true 自动追加后缀 -> 二者均不传则抛异常。请 Agent 依据人类用户的意向选择。
+【Agent 提示】支持重命名和跨目录移动。
+
+**冲突处理策略（重要）**:
+同名冲突时，系统支持三选一策略：
+1. **静默覆盖**：传 `cover=true`。
+2. **自动追加后缀**：传 `autoRename=true`（如 `文件名(1).pdf`）。
+3. **严格报错**：二者均不传，冲突时后端抛出异常。
+
+请 Agent 依据人类用户的意向选择合适的策略参数。
 
 **基本信息**
 
@@ -1305,49 +1333,57 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 
 ---
 
-### 4.18 【上传】上传内容到个人知识库 [新增]
+### 4.18 【上传】一键快速保存纯文本到个人空间 [新增]
 
-将 AI 生成的文本内容（如对话摘要、Markdown 报告等）直接保存到用户个人知识库的指定文件夹。若目标文件夹不存在将自动创建。
+**Agent 极速存盘首选方案**。专门用于保存 AI 生成的文本内容（摘要、报告、Markdown）。该接口会自动解析当前用户的个人空间，无需外部传入 `projectId`。
 
 **基本信息**
 
 | 项目 | 说明 |
 | :--- | :--- |
-| 接口地址 | `/ai-huiji/uploadContentToPersonalProject` |
+| 接口地址 | `/document-database/file/uploadContent` |
 | 请求方式 | `POST` |
 | Content-Type | `application/json` |
-| 接口负责人 | 知识库服务团队 |
-| 所属模块 | 知识库服务 |
 | 版本号 | v1 |
 | 接口类型 | 写入 |
-| 推荐调用场景 | AI 一键入库生成内容到个人知识库 |
+| 推荐调用场景 | AI 生成内容一键持久化到个人空间 |
 
 **请求参数**
 
-请求体为 `UploadContentToPersonalProjectParam`，字段详见 **[5.11 UploadContentToPersonalProjectParam](#511-uploadcontenttopersonalprojectparam)**。
+请求体为 `UploadContentToPersonalProjectParam`：
 
-**请求与行为约定**
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `content` | String | 是 | 文本/Markdown/HTML 内容字节流 |
+| `fileName` | String | 是 | 保存的文件名 |
+| `fileSuffix` | String | 否 | 文件后缀（如 `md`, `json`, `html`, `txt`）。**强烈建议显式传入**，决定了知识库的索引与展示模式。不传则尝试从 `fileName` 自动识别，未识别则保存为`md`|
+| `folderName` | String | 否 | 逻辑目录名。**默认：'和AI的对话'**。支持多级路径。 |
 
-| 项 | 说明 |
-| --- | --- |
-| 是否支持分页 | 否 |
-| 是否支持批量 | 否 |
-| 幂等性要求 | 否-重复调用会创建多个文件 |
-| 额外字段策略 | 忽略未定义字段 |
-| 返回裁剪策略 | 不适用 |
+**请求行为约定**
+
+1. **纯文本限制**：该接口仅支持保存纯文本性质的数据，不支持物理二进制流。
+2. **智能嗅探**：后端具备后缀感知能力，会根据文件名自动修正 `fileType`。
+3. **默认归档**：如果不传 `folderName`，文件将归档至个人空间默认目录 **“和AI的对话”** 下。
 
 **请求示例**
+保存原生 Markdown 文档（Agent 归档首选）
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/ai-huiji/uploadContentToPersonalProject' \
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/uploadContent' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"content":"# 会议纪要\n\n## 讨论要点\n\n1. 项目进度同步\n2. 技术方案评审","fileName":"2026年4月项目会议纪要","fileSuffix":"md","folderName":"AI会议纪要"}'
+  -d '{
+    "content": "# 调研结论\n\n## 1. 核心观点\n- 方案可行\n- 成本可控\n\n> 提示：这是自动生成的报告",
+    "fileName": "2026Q1调研报告",
+    "fileSuffix": "md"
+  }'
 ```
 
 **响应参数**
 
-`data` 类型为 `UploadContentToPersonalProjectResult`，字段详见 **[5.12 UploadContentToPersonalProjectResult](#512-uploadcontenttopersonalprojectresult)**。
+| 属性名称 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `data` | Object | `UploadContentToPersonalProjectResult` 结构（详见 **[5.12](#512-uploadcontenttopersonalprojectresult-新增)**） |
 
 **响应示例**
 
@@ -1356,20 +1392,20 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/ai-huiji/upload
   "resultCode": 1,
   "resultMsg": null,
   "data": {
-    "projectId": 2025001,
+    "projectId": 2009488364113997826,
     "projectName": "个人知识库",
-    "folderId": 30001,
-    "folderName": "AI会议纪要",
-    "fileId": 40001,
-    "fileName": "2026年4月项目会议纪要",
-    "downloadUrl": "https://..."
+    "folderId": 10086,
+    "folderName": "AI生成",
+    "fileId": 30005,
+    "fileName": "2026Q1调研报告.md",
+    "downloadUrl": "https://oss.../signed-url"
   }
 }
 ```
 
 **数据流向**
 
-- 返回的 `fileId` 可用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参。`downloadUrl` 可直接用于下载/预览。
+- 生成的 `fileId` 可直接用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参，实现从“写入”到“阅读/索引”的闭环。
 
 ---
 
@@ -1522,6 +1558,204 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 - 返回的 `id`（即 `projectId`）用于 **4.16 saveFileByParentId** / **4.17 saveFileByPath** 的 `projectId` 入参。
 
 ---
+
+### 4.21 【记忆沙盒】新建项目长程记忆
+
+新建项目长程记忆空间。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/memory/createProject` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 版本号 | v1 |
+| 推荐调用场景 | 为 AI 任务创建独立的长程记忆容器 |
+
+**请求参数**
+
+请求体为 `CreateProjectParam`：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | String | 是 | 项目名称 |
+
+**响应参数**
+
+`data` 类型为 `Long`，返回新创建的项目 ID。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/createProject' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "大模型调研方案"}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "操作成功",
+  "data": 10086
+}
+```
+
+---
+
+### 4.22 【记忆沙盒】获取项目记忆列表
+
+获取当前用户可见的所有项目记忆空间列表。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/memory/getProjectList` |
+| 请求方式 | `GET` |
+| 推荐调用场景 | 概览所有已存在的记忆空间 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `order` | Integer | 否 | 排序规则：1(更新倒序), 3(创建倒序) |
+
+**响应参数**
+
+`data` 类型为 `List<ProjectItemVO>`，字段详见 **[5.14 ProjectItemVO](#514-projectitemvo)**。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/getProjectList?order=1' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "操作成功",
+  "data": [
+    {
+      "id": 10086,
+      "name": "大模型知识空间",
+      "hasChild": true,
+      "createTime": 1712620800000,
+      "createTimeStr": "2026-04-09 10:00"
+    }
+  ]
+}
+```
+
+---
+
+### 4.23 【记忆沙盒】项目记忆检索
+
+按名称关键词快速检索记忆空间。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/memory/searchProject` |
+| 请求方式 | `GET` |
+| 推荐调用场景 | 快速定位特定的记忆项目 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `nameKey` | String | 是 | 搜索关键词 |
+
+**响应参数**
+
+`data` 类型为 `List<ProjectItemVO>`，字段详见 **[5.14 ProjectItemVO](#514-projectitemvo)**。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/searchProject?nameKey=%E5%A4%A7%E6%A8%A1%E5%9E%8B' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "操作成功",
+  "data": [
+    {
+      "id": 10086,
+      "name": "大模型安全机制",
+      "hasChild": true,
+      "createTime": 1712620800000,
+      "createTimeStr": "2026-04-09 10:00"
+    }
+  ]
+}
+```
+
+---
+
+### 4.24 【记忆沙盒】获取项目骨架与记忆内容
+
+提取指定记忆项目下的逻辑骨架（目录）及文件脱水内容摘要。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/memory/getProjectContents` |
+| 请求方式 | `GET` |
+| 推荐调用场景 | 获取项目记忆的具体内容大纲 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 记忆空间的根 ID 或子目录 ID |
+
+**响应参数**
+
+`data` 类型为 `List<ProjectFileVO>`，字段详见 **[5.15 ProjectFileVO](#515-projectfilevo)**。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/getProjectContents?fileId=10086' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "操作成功",
+  "data": [
+    {
+      "id": 2001,
+      "name": "技术方案.pdf",
+      "type": 2,
+      "suffix": "pdf",
+      "size": 204800,
+      "fileType": "file",
+      "relationId": "98765",
+      "hasChild": false,
+      "fileDescription": "本方案描述了架构总体设计...",
+      "createTime": 1712620800000,
+      "createTimeStr": "2026-04-09 10:00"
+    }
+  ]
+}
+```
 
 ---
 
@@ -1699,10 +1933,10 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `content` | String | 是 | 文件内容（支持纯文本/Markdown/HTML） |
-| `fileName` | String | 是 | 文件名称，最大长度 500 字符，超出将自动截取 |
-| `fileSuffix` | String | 否 | 文件后缀，默认为 `md` |
-| `folderName` | String | 否 | 文件夹名称，默认为 `和cms智汇的对话`（不存在自动创建） |
+| `content` | String | 是 | 文件正文内容 (Markdown/Plain Text) |
+| `fileName` | String | 是 | 文件展示名称 |
+| `fileSuffix` | String | 否 | 文件后缀（按需传入，逻辑层默认为 `md`） |
+| `folderName` | String | 否 | 逻辑目录路径。**默认行为由接入层决定** |
 
 ---
 
@@ -1711,13 +1945,14 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 | 字段 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `projectId` | Long | 空间 ID（项目 ID） |
-| `projectName` | String | 空间名称（项目名称） |
+| `projectId` | Long | 目标个人空间 ID |
+| `projectName` | String | 空间名称 |
 | `folderId` | Long | 文件夹 ID |
 | `folderName` | String | 文件夹名称 |
-| `fileId` | Long | 文件 ID |
-| `fileName` | String | 文件名称 |
-| `downloadUrl` | String | 文件下载地址 |
+| `fileId` | Long | 生成的文件 ID |
+| `fileName` | String | 最终保存的文件名称 |
+| `downloadUrl` | String | 文件的下载/预览地址 |
+
 
 ---
 
@@ -1737,6 +1972,47 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 | `hasTopping` | Boolean | 是否已置顶 |
 | `creator` | String | 创建人姓名 |
 | `createTime` | Long | 创建时间戳 |
+
+---
+
+### 5.14 ProjectItemVO [新增]
+记忆项目/目录节点模型。
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | Long | 项目(目录)ID |
+| `name` | String | 项目名称 |
+| `hasChild` | Boolean | 是否有子项 |
+| `createTime` | Long | 创建时间戳 |
+| `createTimeStr` | String | 格式化时间(yyyy-MM-dd HH:mm) |
+
+---
+
+### 5.15 ProjectFileVO [新增]
+记忆项目文件节点模型。
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | Long | 文件或目录ID |
+| `name` | String | 名称 |
+| `type` | Integer | 节点类型: 1=文件夹, 2=文件 |
+| `suffix` | String | 文件后缀 |
+| `size` | Long | 文件大小(字节) |
+| `fileType` | String | 业务类型(doc/file/url等) |
+| `relationId` | String | 业务关联ID(拉取AI阅读内容必须) |
+| `hasChild` | Boolean | 是否有子项 |
+| `fileDescription` | String | 文件描述摘要(包含脱水内容骨架) |
+| `createTime` | Long | 创建时间戳 |
+| `createTimeStr` | String | 格式化创建时间 |
+
+---
+
+### 5.16 CreateProjectParam [新增]
+创建记忆项目入参。
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | String | 是 | 项目名称 |
 
 ---
 
@@ -1801,6 +2077,6 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
-**文档版本**：v1.10
-**更新日期**：2026-04-03
+**文档版本**：v1.11
+**更新日期**：2026-04-13
 **维护人/团队**：知识库服务团队
