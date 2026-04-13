@@ -167,7 +167,7 @@ https://{域名}/open-api/llm-cost/{接口地址}
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/overview' \
+curl -X GET 'https://{域名}/open-api/llm-cost/overview' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -320,7 +320,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/overview' 
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/trend?days=7' \
+curl -X GET 'https://{域名}/open-api/llm-cost/trend?days=7' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -416,7 +416,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/trend?days
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/compare?period=week&dimension=model&limit=10' \
+curl -X GET 'https://{域名}/open-api/llm-cost/compare?period=week&dimension=model&limit=10' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -533,7 +533,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/compare?pe
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-range?start_date=2026-03-01&end_date=2026-03-31&dimension=model&limit=10' \
+curl -X GET 'https://{域名}/open-api/llm-cost/custom-range?start_date=2026-03-01&end_date=2026-03-31&dimension=model&limit=10' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -670,7 +670,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-range/trend?start_date=2026-03-01&end_date=2026-03-31' \
+curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/trend?start_date=2026-03-01&end_date=2026-03-31' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -775,7 +775,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-range/token-trend?start_date=2026-03-01&end_date=2026-03-31' \
+curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/token-trend?start_date=2026-03-01&end_date=2026-03-31' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -909,7 +909,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-range/drilldown?start_date=2026-03-01&end_date=2026-03-31&parent_type=model&parent_id=gpt-4o&child_dimension=product' \
+curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/drilldown?start_date=2026-03-01&end_date=2026-03-31&parent_type=model&parent_id=gpt-4o&child_dimension=product' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1036,7 +1036,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-range/linked-rankings?start_date=2026-03-01&end_date=2026-03-31&filter_dimension=model&filter_id=gpt-4o&limit=20' \
+curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/linked-rankings?start_date=2026-03-01&end_date=2026-03-31&filter_dimension=model&filter_id=gpt-4o&limit=20' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1245,7 +1245,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-range/target-trend?start_date=2026-03-01&end_date=2026-03-31&filter_dimension=model&filter_id=gpt-4o&second_filter_dimension=product&second_filter_id=llm-inference&target_dimension=person&limit=20' \
+curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/target-trend?start_date=2026-03-01&end_date=2026-03-31&filter_dimension=model&filter_id=gpt-4o&second_filter_dimension=product&second_filter_id=llm-inference&target_dimension=person&limit=20' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1369,7 +1369,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/custom-ran
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-user-stats?product=llm-inference&days=7' \
+curl -X GET 'https://{域名}/open-api/llm-cost/product-user-stats?product=llm-inference&days=7' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1483,7 +1483,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-us
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/models' \
+curl -X GET 'https://{域名}/open-api/llm-cost/models' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1577,7 +1577,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/models' \
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/products?search=llm' \
+curl -X GET 'https://{域名}/open-api/llm-cost/products?search=llm' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1671,7 +1671,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/products?s
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?search=zhang&limit=20' \
+curl -X GET 'https://{域名}/open-api/llm-cost/persons?search=zhang&limit=20' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1767,7 +1767,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/persons?se
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage?personId=11628&startTime=2026-03-25&endTime=2026-03-31' \
+curl -X GET 'https://{域名}/open-api/llm-cost/user-usage?personId=11628&startTime=2026-03-25&endTime=2026-03-31' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -1934,7 +1934,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/user-usage
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usage?aiType=gpt-4o&startTime=2026-03-25&endTime=2026-03-31' \
+curl -X GET 'https://{域名}/open-api/llm-cost/model-usage?aiType=gpt-4o&startTime=2026-03-25&endTime=2026-03-31' \
   -H 'appKey: XXXXXXXX'
 ```
 
@@ -2092,7 +2092,7 @@ curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/model-usag
 **请求示例**
 
 ```bash
-curl -X GET 'https://cwork-api-test.xgjktech.com.cn/open-api/llm-cost/product-usage?bizCode=llm-inference&startTime=2026-03-25&endTime=2026-03-31' \
+curl -X GET 'https://{域名}/open-api/llm-cost/product-usage?bizCode=llm-inference&startTime=2026-03-25&endTime=2026-03-31' \
   -H 'appKey: XXXXXXXX'
 ```
 

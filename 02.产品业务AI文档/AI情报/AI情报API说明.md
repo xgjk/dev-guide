@@ -48,8 +48,8 @@ https://{鉴权域名}/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
 
 | 环境 | 域名/Base URL | 备注 |
 |------|---------------|------|
-| 生产环境-业务接口 | `https://cwork-api.mediportal.com.cn` | AI情报业务接口 |
-| 生产环境-鉴权接口 | `https://cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
+| 生产环境-业务接口 | `https://sg-al-cwork-web.mediportal.com.cn` | AI情报业务接口 |
+| 生产环境-鉴权接口 | `https://sg-al-cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
 
 ### 2.3 公共请求头
 
