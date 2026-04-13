@@ -41,7 +41,7 @@ https://{域名}/open-api/{接口地址}
 
 | 环境   | 域名/Base URL                    | 备注  |
 | ---- | ------------------------------ | --- |
-| 生产环境 | `https://sg-al-cwork-web.mediportal.com.cn` | -   |
+| 生产环境 | `https://{域名}` | -   |
 
 ### 2.3 公共请求头
 
@@ -114,7 +114,7 @@ https://{域名}/open-api/{接口地址}
 
 1. **获取个人空间 ID**：调用 **4.8 获取个人知识库空间Id**（`GET /document-database/project/personal/getProjectId`），拿到 `projectId`。
 2. **底层资源初始化（物理文件必需）**：
-   - 若保存的是物理文件，需按需分段调用 **4.5 预检**、**4.7 分片切片上传** 以及 **4.6 合并生成资源**，最终拿到 `resourceId`。
+   - 若保存的是物理文件，需调用 **基础服务-文件服务** 中的大文件分片上传流程（基于 MD5 预检、分片上传与合并），最终拿到 `resourceId`。详见 [02-文件服务.md](../基础服务/API接口明细/02-文件服务.md#场景二大文件分片上传流程-推荐)。
    - 若保存的是富文本/在线文档，可直接传 `fileContent`，无需此步骤。
 3. **存盘绑定**：调用 **4.10 将文件资源保存到个人知识库目录**（`POST /document-database/project/personal/saveFile`），载荷传入：
    - `name`: 文件展示名称；
@@ -156,7 +156,7 @@ https://{域名}/open-api/{接口地址}
 
 1. **发现可写空间**：调用 **4.20 获取有上传/编辑权限的空间列表**（`GET /document-database/project/uploadableList`），获取用户可写入的空间列表。根据返回的 `ProjectVO.name` 和 `ProjectVO.id` 确定目标空间。
 2. **底层资源初始化（物理文件场景必需）**：
-   - 若保存的是物理文件，需按需分段调用 **4.5 预检**、**4.7 分片切片上传** 以及 **4.6 合并生成资源**，最终拿到 `resourceId`。
+   - 若保存的是物理文件，需调用 **基础服务-文件服务** 中的大文件分片上传流程（基于 MD5 预检、分片上传与合并），最终拿到 `resourceId`。详见 [02-文件服务.md](../基础服务/API接口明细/02-文件服务.md#场景二大文件分片上传流程-推荐)。
    - 若保存的是富文本/在线文档（`fileType=doc`），可直接传 `fileContent`，无需此步骤。
 3. **按路径存入文件**：调用 **4.17 根据路径保存文件到项目目录**（`POST /document-database/file/saveFileByPath`），传入：
    - `projectId`: 步骤 1 中确定的目标空间 ID；
@@ -198,7 +198,7 @@ https://{域名}/open-api/{接口地址}
     "folderName": "调研结论",
     "fileId": 32188,
     "fileName": "调研结论.md",
-    "downloadUrl": "https://sg-al-cwork-web.mediportal.com.cn/..."
+    "downloadUrl": "https://{域名}/..."
   }
 }
 ```
@@ -254,7 +254,7 @@ https://{域名}/open-api/{接口地址}
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getChildFiles?parentId=1000' \
+curl -X GET 'https://{域名}/open-api/document-database/file/getChildFiles?parentId=1000' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -323,7 +323,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo?fileId=20001' \
+curl -X GET 'https://{域名}/open-api/document-database/file/getDownloadInfo?fileId=20001' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -391,7 +391,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getFileContent?fileId=30001&pageNumber=1' \
+curl -X GET 'https://{域名}/open-api/document-database/file/getFileContent?fileId=30001&pageNumber=1' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -452,7 +452,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getFullFileContent?fileId=30001' \
+curl -X GET 'https://{域名}/open-api/document-database/file/getFullFileContent?fileId=30001' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -472,182 +472,15 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 
 ---
 
-### 4.5 【上传】预检文件MD5信息（支持秒传）
+### 4.5 - 4.7 大文件分片上传 (已迁移)
 
-上传前根据文件 MD5 预检，若服务器已存在该文件可秒传，无需重复上传。
+为了统一文件处理能力，分片上传相关接口已迁移至 **基础服务 — 文件服务**：
 
-**基本信息**
+- **4.5 预检文件MD5信息（支持秒传）**
+- **4.6 合并文件分片生成底层资源**
+- **4.7 注册文件分片数据**
 
-| 项目 | 说明 |
-| :--- | :--- |
-| 接口地址 | `/document-database/file/getSliceIdByMd5V2` |
-| 请求方式 | `GET` |
-| 接口负责人 | 知识库服务团队 |
-| 所属模块 | 知识库服务 |
-| 版本号 | v1 |
-| 接口类型 | 校验 |
-| 推荐调用场景 | 大文件上传前预检与秒传 |
-
-**请求参数**
-
-| 参数名 | 类型 | 必填 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `md5` | String | 是 | 文件分片的 MD5 |
-| `size` | Long | 否 | 文件总大小（单位：字节），用于配额检查与存储路由 |
-| `sensitive` | Boolean | 否 | 是否为敏感文件（默认 false） |
-| `suffix` | String | 否 | 文件后缀（如 `pdf`、`docx`） |
-
-**响应参数**
-
-`data` 类型为 `SliceCheckVO`，字段详见 **[5.4 SliceCheckVO](#54-slicecheckvo)**。
-
-**请求与行为约定**
-
-| 项 | 说明 |
-| --- | --- |
-| 是否支持分页 | 否 |
-| 是否支持批量 | 否 |
-| 幂等性要求 | 是-天然幂等（MD5 相同结果不变） |
-| 额外字段策略 | 忽略未定义字段 |
-| 返回裁剪策略 | 不适用 |
-
-**请求示例**
-
-```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getSliceIdByMd5V2?md5=d41d8cd98f00b204e9800998ecf8427e&size=1048576&suffix=pdf' \
-  -H 'appKey: YOUR_API_KEY'
-```
-
-**响应示例**
-
-秒传命中时：
-```json
-{
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "sliceId": 5001
-  }
-}
-```
-
-未命中时返回 `uploadUrl` 和 `fullPath`，用于物理上传后传入 4.7。
-
-**数据流向**
-
-- 返回的 `sliceId` 用于 **4.6 saveResource** 的 `sliceIds` 入参；返回的 `uploadUrl`/`fullPath` 用于物理上传后传入 **4.7 uploadFileSliceV2**。
-
----
-
-### 4.6 【上传】合并文件分片生成底层资源
-
-所有分片上传完成后，合并分片并生成底层资源。
-
-**基本信息**
-
-| 项目 | 说明 |
-| :--- | :--- |
-| 接口地址 | `/document-database/file/saveResource` |
-| 请求方式 | `POST` |
-| Content-Type | `application/json` |
-| 接口负责人 | 知识库服务团队 |
-| 所属模块 | 知识库服务 |
-| 版本号 | v1 |
-| 接口类型 | 写入 |
-| 推荐调用场景 | 分片上传完成后合并资源 |
-
-**请求参数**
-
-请求体为 `SaveResourceParam` (见 5.5)。
-
-**请求与行为约定**
-
-| 项 | 说明 |
-| --- | --- |
-| 是否支持分页 | 否 |
-| 是否支持批量 | 否 |
-| 幂等性要求 | 否-重复调用会生成多个资源 |
-| 额外字段策略 | 忽略未定义字段 |
-| 返回裁剪策略 | 不适用 |
-
-**请求示例**
-
-```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveResource' \
-  -H 'appKey: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"报告.pdf","size":1048576,"sliceIds":[1001,1002],"suffix":"pdf","mimeType":"application/pdf"}'
-```
-
-**响应示例**
-
-```json
-{
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": 987654321
-}
-```
-
-**数据流向**
-
-- 返回的 `resourceId` 用于 **4.10 saveFile** / **4.16 saveFileByParentId** / **4.17 saveFileByPath** 的 `resourceId` 入参。
-
----
-
-### 4.7 【上传】注册文件分片数据
-
-当 MD5 预检未命中秒传时，将已物理上传到 MinIO (通过 PUT `uploadUrl`) 的文件分片在服务端进行注册。
-
-**基本信息**
-
-| 项目 | 说明 |
-| :--- | :--- |
-| 接口地址 | `/document-database/file/uploadFileSliceV2` |
-| 请求方式 | `POST` |
-| Content-Type | `application/json` |
-| 接口负责人 | 知识库服务团队 |
-| 所属模块 | 知识库服务 |
-| 版本号 | v1 |
-| 接口类型 | 写入 |
-| 推荐调用场景 | 注册已物理上传的分片数据 |
-
-**请求参数**
-
-请求体为 `UploadFileSliceParam` (见 5.6)。
-
-**请求与行为约定**
-
-| 项 | 说明 |
-| --- | --- |
-| 是否支持分页 | 否 |
-| 是否支持批量 | 否 |
-| 幂等性要求 | 否 |
-| 额外字段策略 | 忽略未定义字段 |
-| 返回裁剪策略 | 不适用 |
-
-**请求示例**
-
-```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/uploadFileSliceV2' \
-  -H 'appKey: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"filePath":"/data/upload/xxx.part","md5":"d41d8cd98f00b204e9800998ecf8427e","size":524288,"storageType":"MINIO"}'
-```
-
-**响应示例**
-
-```json
-{
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": 5001
-}
-```
-
-**数据流向**
-
-- 返回的 `sliceId` 用于 **4.6 saveResource** 的 `sliceIds` 入参。
+请参阅：**[02-文件服务.md](../基础服务/API接口明细/02-文件服务.md#场景二大文件分片上传流程-推荐)** 获取最新接口详述与调用流程。
 
 ---
  
@@ -686,7 +519,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/getProjectId' \
+curl -X GET 'https://{域名}/open-api/document-database/project/personal/getProjectId' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -743,7 +576,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/getRecentFiles' \
+curl -X POST 'https://{域名}/open-api/document-database/project/personal/getRecentFiles' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"limit":10,"searchKey":"报告"}'
@@ -801,7 +634,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/saveFile' \
+curl -X POST 'https://{域名}/open-api/document-database/project/personal/saveFile' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"parentId":0,"name":"测试文件.pdf","type":2,"resourceId":987654321,"fileType":"file","suffix":"pdf","size":102400,"isSensitive":0}'
@@ -869,7 +702,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 # 示例：搜索名称包含"测试"的文件
 # 原始参数：nameKey=测试
 # URL 编码后（UTF-8）：nameKey=%E6%B5%8B%E8%AF%95
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/searchFile?nameKey=%E6%B5%8B%E8%AF%95' \
+curl -X GET 'https://{域名}/open-api/document-database/file/searchFile?nameKey=%E6%B5%8B%E8%AF%95' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -937,7 +770,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getLevel1Folders?projectId=2009488364113997826' \
+curl -X GET 'https://{域名}/open-api/document-database/file/getLevel1Folders?projectId=2009488364113997826' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -1003,7 +836,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/deleteFile' \
+curl -X POST 'https://{域名}/open-api/document-database/file/deleteFile' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"fileId":30001}'
@@ -1079,7 +912,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/updateFileProperty' \
+curl -X POST 'https://{域名}/open-api/document-database/file/updateFileProperty' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"fileId":30001,"newName":"新版报告.pdf","autoRename":true}'
@@ -1151,7 +984,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/ai/batchGetContent' \
+curl -X POST 'https://{域名}/open-api/document-database/ai/batchGetContent' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"files":[{"fileId":30001},{"fileId":30002,"fileType":"doc"}]}'
@@ -1225,7 +1058,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 场景 A — 绑定物理文件：
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId' \
+curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByParentId' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"projectId":2025001,"parentId":10086,"name":"技术方案.pdf","fileType":"file","suffix":"pdf","size":204800,"resourceId":987654321,"isSensitive":0}'
@@ -1234,7 +1067,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 场景 B — 创建在线文档：
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId' \
+curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByParentId' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"projectId":2025001,"parentId":10086,"name":"总结.doc","fileType":"doc","fileContent":"<h2>内容...</h2>","isSensitive":0}'
@@ -1298,7 +1131,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 场景 A — 按路径绑定物理文件：
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByPath' \
+curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByPath' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"projectId":2025001,"path":"工程档案/设计图纸","name":"方案.pdf","fileType":"file","suffix":"pdf","size":204800,"resourceId":987654321,"isSensitive":0}'
@@ -1307,7 +1140,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 场景 B — 按路径创建富文本文档：
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByPath' \
+curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByPath' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"projectId":2025001,"path":"AI建议/周报总结","name":"周报.doc","fileType":"doc","fileContent":"<h2>报告内容</h2>...","isSensitive":0}'
@@ -1369,7 +1202,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 保存原生 Markdown 文档（Agent 归档首选）
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/uploadContent' \
+curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -1446,7 +1279,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/list' \
+curl -X GET 'https://{域名}/open-api/document-database/project/list' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -1525,7 +1358,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/uploadableList?bizCode=pmo' \
+curl -X GET 'https://{域名}/open-api/document-database/project/uploadableList?bizCode=pmo' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -1588,7 +1421,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/createProject' \
+curl -X POST 'https://{域名}/open-api/document-database/memory/createProject' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"name": "大模型调研方案"}'
@@ -1631,7 +1464,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databa
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/getProjectList?order=1' \
+curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectList?order=1' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -1680,7 +1513,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/searchProject?nameKey=%E5%A4%A7%E6%A8%A1%E5%9E%8B' \
+curl -X GET 'https://{域名}/open-api/document-database/memory/searchProject?nameKey=%E5%A4%A7%E6%A8%A1%E5%9E%8B' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
@@ -1729,7 +1562,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-databas
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/memory/getProjectContents?fileId=10086' \
+curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectContents?fileId=10086' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
