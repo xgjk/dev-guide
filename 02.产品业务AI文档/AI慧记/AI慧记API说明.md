@@ -55,9 +55,9 @@ https://{域名}/open-api/{接口地址}
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": null
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": null
 }
 ```
 
@@ -119,7 +119,7 @@ https://{域名}/open-api/{接口地址}
 - **按视频会议 + 我是否参与（推荐，概述表第 4 项）**：调用 **4.4 按视频会议号查询慧记列表**（`POST /ai-huiji/meetingChat/listHuiJiIdsByMeetingNumberV2`），请求体传入 **`meetingNumber`**（视频会议号，与会议域一致），可选 **`lastTs`** 做增量同步。返回的 **`data`** 为 `List<FindChatVO>`；每一项的 **`_id`** 即后续 **4.2 / 4.3** 等接口所需的 **`meetingChatId`**。可结合 **`recordState`**、`createTime`、`finishTime`、`meetingLength` 等做展示与粗判。需 **当前登录用户上下文** + **`appKey`**，详见 **4.4**。
 
 
-1. **视频会议（含他人录制、本人参会）**：用 **4.4**（`meetingNumber`）→ 列表项 **`_id`** 即 `meetingChatId`；**仅查本人名下**请用 **4.1**，不按会议号从会议域反查时用 **4.1**。 
+1. **视频会议（含他人录制、本人参会）**：用 **4.4**（`meetingNumber`）→ 列表项 **`_id`** 即 `meetingChatId`；**仅查本人名下**请用 **4.1**，不按会议号从会议域反查时用 **4.1**。
 
 
 ---
@@ -294,7 +294,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/checkSecondSttV2' \
 查询进行中、已完成慧记的录音原文内容，按照录音分片结构返回。
 请求体支持可选字段 **`lastStartTime`**：不传或者值小于0，表示查询全量内容； 其它返回所有startTime > lastStartTime 的分片原文内容。
 
-调用方需要根据拉取到的总列表按照startTime顺序排列获得最大的startTime作为下一次调用接口时lastStartTime值，从而实现增量查询。 
+调用方需要根据拉取到的总列表按照startTime顺序排列获得最大的startTime作为下一次调用接口时lastStartTime值，从而实现增量查询。
 
 **基本信息**
 
@@ -583,7 +583,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId'
 | `fileUrl`   | String  | 是   | 音频/视频文件可访问 URL。 |
 | `fileExt`   | String  | 是   | 文件扩展名（不含点，内部会规范化）。当前支持：`mp3`、`mp4`、`wav`、`m4a`。 |
 
-> 文件URL建议：推荐先将文件上传到七牛，拿到可公网访问的 URL（例如 `https://...`）后，再将该地址作为 `fileUrl` 传入本接口。获取七牛上传 token 的接口请参考《基础服务API说明 https://github.com/xgjk/dev-guide/blob/main/02.%E4%BA%A7%E5%93%81%E4%B8%9A%E5%8A%A1AI%E6%96%87%E6%A1%A3/%E5%9F%BA%E7%A1%80%E6%9C%8D%E5%8A%A1/%E5%9F%BA%E7%A1%80%E6%9C%8D%E5%8A%A1API%E8%AF%B4%E6%98%8E.md》**4.3 获取七牛上传 Token（cwork）** 的说明。
+> 文件URL建议：推荐先将文件上传到七牛，拿到可公网访问的 URL（例如 `https://...`）后，再将该地址作为 `fileUrl` 传入本接口。获取七牛上传 token 的接口请参考 [《基础服务API说明 4.3章节》](https://github.com/xgjk/dev-guide/blob/main/02.%E4%BA%A7%E5%93%81%E4%B8%9A%E5%8A%A1AI%E6%96%87%E6%A1%A3/%E5%9F%BA%E7%A1%80%E6%9C%8D%E5%8A%A1/API%E6%8E%A5%E5%8F%A3%E6%98%8E%E7%BB%86/02-%E6%96%87%E4%BB%B6%E6%9C%8D%E5%8A%A1.md#43-%E8%8E%B7%E5%8F%96%E4%B8%83%E7%89%9B%E4%B8%8A%E4%BC%A0-token)。
 
 
 **请求示例**
@@ -619,20 +619,20 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl'
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "_id": "e6839164-2491-4fb3-899a-c27fedb82a68",
-    "chatType": 8,
-    "recordState": 2,
-    "fileUrl": "https://filegpt-hn.file.mediportal.com.cn/21ccb6c1-6500-46f8-a4ff-d26deb73c36c语音035.m4a",
-    "fileExt": "m4a",
-    "name": "2026-04-10 11:17:13 记录",
-    "createTime": 1775791033252,
-    "updateTime": 1775791033252,
-    "personId": "12028",
-    "userId": "1742024210481586177"
-  }
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": {
+      "_id": "e6839164-2491-4fb3-899a-c27fedb82a68",
+      "chatType": 8,
+      "recordState": 2,
+      "fileUrl": "https://filegpt-hn.file.mediportal.com.cn/21ccb6c1-6500-46f8-a4ff-d26deb73c36c语音035.m4a",
+      "fileExt": "m4a",
+      "name": "2026-04-10 11:17:13 记录",
+      "createTime": 1775791033252,
+      "updateTime": 1775791033252,
+      "personId": "12028",
+      "userId": "1742024210481586177"
+   }
 }
 ```
 
