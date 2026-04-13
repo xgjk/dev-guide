@@ -180,31 +180,31 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/chatListByPage' \
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "total": 50,
-    "pageContent": [
-      {
-        "_id": "664f1a2b3c4d5e6f7a8b9c0d",
-        "name": "产品周会（录制中）",
-        "recordState": 0,
-        "createTime": 1716345600000,
-        "finishTime": null,
-        "meetingLength": null,
-        "simpleSummary": null
-      },
-      {
-        "_id": "774f1a2b3c4d5e6f7a8b9c0e",
-        "name": "上周复盘（已结束）",
-        "recordState": 1,
-        "createTime": 1715740800000,
-        "finishTime": 1715745300000,
-        "meetingLength": 2700000,
-        "simpleSummary": "示例摘要"
-      }
-    ]
-  }
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": {
+      "total": 50,
+      "pageContent": [
+         {
+            "_id": "664f1a2b3c4d5e6f7a8b9c0d",
+            "name": "产品周会（录制中）",
+            "recordState": 0,
+            "createTime": 1716345600000,
+            "finishTime": null,
+            "meetingLength": null,
+            "simpleSummary": null
+         },
+         {
+            "_id": "774f1a2b3c4d5e6f7a8b9c0e",
+            "name": "上周复盘（已结束）",
+            "recordState": 1,
+            "createTime": 1715740800000,
+            "finishTime": 1715745300000,
+            "meetingLength": 2700000,
+            "simpleSummary": "示例摘要"
+         }
+      ]
+   }
 }
 ```
 
@@ -268,20 +268,20 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/checkSecondSttV2' \
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "totalProgress": 100,
-    "state": 2,
-    "sttPartList": [
-      {
-        "speakerName": "张三",
-        "rewriteText": "改写后的段落内容……",
-        "startTime": 120000
-      }
-    ],
-    "errMsg": null
-  }
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": {
+      "totalProgress": 100,
+      "state": 2,
+      "sttPartList": [
+         {
+            "speakerName": "张三",
+            "rewriteText": "改写后的段落内容……",
+            "startTime": 120000
+         }
+      ],
+      "errMsg": null
+   }
 }
 ```
 
@@ -348,15 +348,15 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/splitRecordListV2' 
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": [
-    {
-      "realTime": 1774613847119,
-      "startTime": 120000,
-      "text": "片段会议原文..."
-    }
-  ]
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": [
+      {
+         "realTime": 1774613847119,
+         "startTime": 120000,
+         "text": "片段会议原文..."
+      }
+   ]
 }
 ```
 
@@ -405,22 +405,22 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/listHuiJiIdsByMeeti
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": [
-    {
-      "_id": "37644c5a-5ddd-48f1-b473-75098924d7a0",
-      "name": "周例会",
-      "recordState": 1,
-      "createTime": 0,
-      "finishTime": 3600000,
-      "meetingLength": 3600000,
-      "tidyText": null,
-      "simpleSummary": null,
-      "keywordList": null,
-      "personId": null
-    }
-  ]
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": [
+      {
+         "_id": "37644c5a-5ddd-48f1-b473-75098924d7a0",
+         "name": "周例会",
+         "recordState": 1,
+         "createTime": 0,
+         "finishTime": 3600000,
+         "meetingLength": 3600000,
+         "tidyText": null,
+         "simpleSummary": null,
+         "keywordList": null,
+         "personId": null
+      }
+   ]
 }
 ```
 
@@ -474,17 +474,17 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/createShareV2' \
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "code": "ABC123",
-    "title": "产品周会",
-    "shareId": "83780c2a-572f-4c3f-a964-d542f2a1372c",
-    "url": "https://example.com/share/...",
-    "shortUrl": "https://s.example.com/xxxxx",
-    "desc": null,
-    "imgUrl": null
-  }
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": {
+      "code": "ABC123",
+      "title": "产品周会",
+      "shareId": "83780c2a-572f-4c3f-a964-d542f2a1372c",
+      "url": "https://example.com/share/...",
+      "shortUrl": "https://s.example.com/xxxxx",
+      "desc": null,
+      "imgUrl": null
+   }
 }
 ```
 
@@ -541,22 +541,22 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId'
 
 ```json
 {
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "_id": "664f1a2b3c4d5e6f7a8b9c0d",
-    "chatType": 7,
-    "createTime": 1716345600000,
-    "meetingLength": 3600000,
-    "name": "产品周会（分享副本）",
-    "simpleSummary": "本次会议讨论了Q2产品路线图...",
-    "srcText": "大家好，今天我们主要讨论...",
-    "srcUser": {
-      "_id": "user_001",
-      "name": "张三"
-    },
-    "updateTime": 1716349200000
-  }
+   "resultCode": 1,
+   "resultMsg": null,
+   "data": {
+      "_id": "664f1a2b3c4d5e6f7a8b9c0d",
+      "chatType": 7,
+      "createTime": 1716345600000,
+      "meetingLength": 3600000,
+      "name": "产品周会（分享副本）",
+      "simpleSummary": "本次会议讨论了Q2产品路线图...",
+      "srcText": "大家好，今天我们主要讨论...",
+      "srcUser": {
+         "_id": "user_001",
+         "name": "张三"
+      },
+      "updateTime": 1716349200000
+   }
 }
 ```
 
@@ -583,7 +583,7 @@ curl -X POST 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId'
 | `fileUrl`   | String  | 是   | 音频/视频文件可访问 URL。 |
 | `fileExt`   | String  | 是   | 文件扩展名（不含点，内部会规范化）。当前支持：`mp3`、`mp4`、`wav`、`m4a`。 |
 
-> 文件URL建议：推荐先将文件上传到七牛，拿到可公网访问的 URL（例如 `https://...`）后，再将该地址作为 `fileUrl` 传入本接口。获取七牛上传 token 的接口请参考 [《基础服务API说明 4.3章节》](https://github.com/xgjk/dev-guide/blob/main/02.%E4%BA%A7%E5%93%81%E4%B8%9A%E5%8A%A1AI%E6%96%87%E6%A1%A3/%E5%9F%BA%E7%A1%80%E6%9C%8D%E5%8A%A1/API%E6%8E%A5%E5%8F%A3%E6%98%8E%E7%BB%86/02-%E6%96%87%E4%BB%B6%E6%9C%8D%E5%8A%A1.md#43-%E8%8E%B7%E5%8F%96%E4%B8%83%E7%89%9B%E4%B8%8A%E4%BC%A0-token)。
+> 文件URL建议：推荐先将文件上传到七牛，拿到可公网访问的 URL（例如 `https://...`）后，再将该地址作为 `fileUrl` 传入本接口。获取七牛上传 token 的接口请参考 [《基础服务-> API接口明细-> 文件服务 4.3章节》](https://github.com/xgjk/dev-guide/blob/main/02.%E4%BA%A7%E5%93%81%E4%B8%9A%E5%8A%A1AI%E6%96%87%E6%A1%A3/%E5%9F%BA%E7%A1%80%E6%9C%8D%E5%8A%A1/API%E6%8E%A5%E5%8F%A3%E6%98%8E%E7%BB%86/02-%E6%96%87%E4%BB%B6%E6%9C%8D%E5%8A%A1.md#43-%E8%8E%B7%E5%8F%96%E4%B8%83%E7%89%9B%E4%B8%8A%E4%BC%A0-token)。
 
 
 **请求示例**
