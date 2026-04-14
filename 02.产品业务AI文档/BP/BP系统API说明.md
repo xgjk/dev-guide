@@ -2,6 +2,8 @@
 
 **配套文档**：[《BP 目标管理 Open API 调用说明》](./BP系统API调用说明.md)（修订记录、概述、通用约定、接口清单索引、场景编排、注意事项与历史路径）。**本文仅描述数据模型、接口契约与公共类型。**
 
+> **最新变更（v1.19）**：Group 对象新增 `deptId` 字段（`type=org` 时有效）。批量获取部门信息接口（`listDeptByIds`）已移至基础服务（用户服务），详见 [《基础服务 API 接口文档》](../基础服务/基础服务API说明.md)。
+
 ---
 
 ## 一、数据模型与对象规格
@@ -63,6 +65,7 @@ Period（周期）
 | type        | ✅     | ✅   | `org` / `personal`                  |
 | levelNumber | ✅     | ✅   | 完整层级编码（如 `A4-1`）；部分响应字段名可能为 `fullLevelNumber`，语义相同 |
 | employeeId  | ✅     | ✅   | 个人分组时有效                      |
+| deptId      | —      | ✅   | 关联部门 ID（`type=org` 时有效）    |
 | parentId    | —      | ✅   | 父分组 ID                           |
 | childCount  | —      | ✅   | 直接下级分组数量                    |
 | children    | —      | ✅   | 递归子分组（仅分组树，不含任务）    |
@@ -237,6 +240,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/period/list?n
       "name": "技术中心",
       "type": "org",
       "employeeId": null,
+      "deptId": "1512393131319586800",
       "parentId": null,
       "levelNumber": "1",
       "childCount": 1,
