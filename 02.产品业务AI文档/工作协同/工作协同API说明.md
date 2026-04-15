@@ -20,6 +20,7 @@
 | 2.4 | 2026-04-10 | 汇报提交接口(5.1)参数增加虚拟员工提交人id (virtualEmpId) | 付光伟 |
 | 2.5 | 2026-04-11 | 草稿提交接口(5.23)开放支持虚拟员工代理提交 (virtualEmpId) | 付光伟 |
 | 2.6 | 2026-04-15 | 新增「编辑汇报正文」接口并支持自定义日志前缀 (5.42) | 付光伟 |
+| 2.7 | 2026-04-15 | 获取汇报内容(5.5)接口响应参数增加正文富文本与正文类型 (contentHtml, contentType) | 付光伟 |
 
 
 
@@ -906,6 +907,8 @@ curl -X POST 'https://{域名}/open-api/work-report/todoTask/todoList' \
   "data": {
     "reportId": 1234567890,
     "content": "已完成接口联调",
+    "contentHtml": "<p>已完成接口联调</p>",
+    "contentType": "html",
     "writeEmpId": 10001,
     "writeEmpName": "张三",
     "createTime": "2026-03-17 10:00:00",
@@ -913,6 +916,8 @@ curl -X POST 'https://{域名}/open-api/work-report/todoTask/todoList' \
       {
         "replyId": 987654321,
         "content": "已收到",
+        "contentHtml": "已收到",
+        "contentType": "html",
         "replyEmpId": 10002,
         "replyEmpName": "李四",
         "createTime": "2026-03-17 10:10:00"
@@ -2361,7 +2366,9 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 | 字段名       | 类型            | 说明     |
 | ------------ | --------------- | -------- |
 | `reportId`   | Long            | 汇报 ID  |
-| `content`    | String          | 汇报正文 |
+| `content`    | String          | 汇报正文 (纯文本) |
+| `contentHtml`| String          | 汇报内容 (富文本) |
+| `contentType`| String          | 正文类型：`html`/`markdown` |
 | `writeEmpId` | Long            | 汇报人 ID |
 | `writeEmpName`| String          | 汇报人姓名 |
 | `createTime` | Timestamp       | 创建时间 |
@@ -2372,7 +2379,9 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 | 字段名         | 类型      | 说明       |
 | -------------- | --------- | ---------- |
 | `replyId`      | Long      | 回复 ID    |
-| `content`      | String    | 回复内容   |
+| `content`      | String    | 回复内容 (纯文本)  |
+| `contentHtml`  | String    | 回复内容 (富文本)  |
+| `contentType`  | String    | 正文类型：`html`/`markdown` |
 | `replyEmpId`   | Long      | 回复人 ID  |
 | `replyEmpName` | String    | 回复人姓名 |
 | `createTime`   | Timestamp | 创建时间   |
