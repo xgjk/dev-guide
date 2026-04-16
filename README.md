@@ -32,10 +32,10 @@
 | --- | --- |
 | `BP` | bp |
 | `工作协同` | cwork |
-| `基础服务` | base |
+| `基础服务` | basic |
 | `知识库` | kb |
 | `AI慧记` | ai-huiji |
-| `新媒体` | media |
+| `新媒体` | new-media |
 | `SFE系统` | sfe |
 | `AI情报` | ai-report |
 | `AI费用` | ai-billing |
@@ -94,7 +94,7 @@
 | `基础服务` | basic | 业务说明、API（含用户、文件、机器人、标签、虚拟员工管理等，详见 `基础服务/API接口明细/`） | 无 | 成伟 |
 | `知识库` | kb | 业务说明、API | 欧倩 | 刘艳华 |
 | `AI慧记` | ai-huiji | 业务说明、API | 王晓辉 | 伍孝权 |
-| `新媒体` | new_media | 开放平台使用说明、GMV 相关 API 等 | 陈洁 | 周斯 |
+| `新媒体` | new-media | 开放平台使用说明、GMV 相关 API 等 | 陈洁 | 周斯 |
 | `SFE系统` | sfe | 业务说明、通用与客户专属 API 说明 | 王馗 | 周皓 |
 | `AI情报` | ai-report | 业务说明、API；BD 等模版与报告链路文档（见 `AI情报/模版/`） | 杨宵 | 杨宵 |
 | `AI费用` | ai-billing | 业务说明、API | 屈军利 | 刘艳华 |
