@@ -21,6 +21,7 @@
 | 2.5 | 2026-04-11 | 草稿提交接口(5.23)开放支持虚拟员工代理提交 (virtualEmpId) | 付光伟 |
 | 2.6 | 2026-04-15 | 新增「编辑汇报正文」接口并支持自定义日志前缀 (5.42) | 付光伟 |
 | 2.7 | 2026-04-15 | 获取汇报内容(5.5)接口响应参数增加正文富文本与正文类型 (contentHtml, contentType) | 付光伟 |
+| 2.8 | 2026-04-16 | 汇报流程节点(6.1)参数增加按钮配置 (buttonConfig) | 付光伟 |
 
 
 
@@ -2284,6 +2285,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 | `levelUserList` | List\<ReportLevelUserParam> | 当前层级用户列表（见下表）                           |
 | `groupIdList`   | List\<Long>                 | 分组 ID 列表（通过 **4.3** 接口获取）               |
 | `requirement`   | String                      | 节点填写要求：AI会对节点下的员工输入内容做总结评价                  |
+| `buttonConfig`  | NodeButtonConfig            | 按钮配置：自定义节点按钮显隐与事件，见 **6.31**                     |
 
 `ReportLevelUserParam`：
 
@@ -2729,6 +2731,36 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 | `operate` | String | 操作动作中文 (同意/不同意/建议等) |
 | `content` | String | 处理意见/理由 |
 | `finishTime` | Timestamp | 完成时间 |
+
+### 6.31 NodeButtonConfig
+
+用于自定义汇报流程中各节点的按钮样式与交互逻辑。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `systemButtons` | SystemNodeButtonConfig | 系统默认按钮配置 |
+| `customButtons` | List\<CustomNodeButton> | 自定义按钮配置列表 |
+
+**SystemNodeButtonConfig**：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `showSuggestButton` | Boolean | 是否显示建议按钮 |
+| `suggestButtons` | List\<SystemNodeButton> | 建议按钮配置列表 (仅在 showSuggestButton 为 true 时有效) |
+| `showAddFlowUserButton` | Boolean | 是否显示“添加流程人员”按钮 |
+| `showIgnoreOrTransferTodoButton` | Boolean | 是否显示“忽略或转办”按钮 |
+
+**CustomNodeButton**：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | String | 按钮类型 |
+| `name` | String | 按钮名称 |
+| `style` | String | 按钮样式：`blue_background_white_font`(蓝底白字)、`white_background_blue_font`(白底蓝字) |
+| `url` | String | 跳转链接 |
+| `openMethod` | String | 跳转方式：`new_window`(新窗口)、`popup`(弹窗)、`no_operation`(无操作) |
+| `displayTiming` | String | 显示时机：`always`(一直显示)、`after_activate`(节点激活后显示) |
+| `clickEffect` | String | 点击后效果：`repeatable`(可重复点击)、`once_hide`(点击后隐藏)、`once_disable`(点击后禁用) |
 
 ---
 
