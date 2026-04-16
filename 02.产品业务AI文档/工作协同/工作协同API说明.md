@@ -22,6 +22,8 @@
 | 2.6 | 2026-04-15 | 新增「编辑汇报正文」接口并支持自定义日志前缀 (5.42) | 付光伟 |
 | 2.7 | 2026-04-15 | 获取汇报内容(5.5)接口响应参数增加正文富文本与正文类型 (contentHtml, contentType) | 付光伟 |
 | 2.8 | 2026-04-16 | 汇报流程节点(6.1)参数增加按钮配置 (buttonConfig) | 付光伟 |
+| 2.9 | 2026-04-16 | 汇报提交(5.1)与草稿保存(5.23)接口响应数据由 BaseInfo 更改为 Long (主键 ID) | 付光伟 |
+| 3.0 | 2026-04-16 | 汇报提交(5.1)与草稿保存(5.23)接口新增流程类型参数 (flowType) | 付光伟 |
 
 
 
@@ -599,12 +601,13 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 | `reportLevelList` | List\<ReportLevelParam> | 否   | 流程配置，多级用户列表（read-传阅、suggest-建议、decide-决策等节点）；**接收人以该字段为准**；结构见 **6.1 ReportLevelParam** |
 | `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件列表；结构见 **6.24 OpenPlatformFileVO**                                                 |
 | `businessUnitId`  | Long                    | 否   | 业务单元 ID。**传入此 ID 后，汇报流程将强制按照该方案定义的节点流转，并忽略请求中的流程配置(`reportLevelList` )**               |
+| `flowType`        | String                  | 否   | 流程类型，用于控制特殊的流程处理逻辑                                                               |
 
 > 注意：服务端会将 `contentHtml` 去除 HTML 标签生成 `content`（纯文本）后提交；调用方无需传 `content`。
 
 **响应参数**
 
-`data` 类型为 `BaseInfo`（主要字段是主键 id）。
+`data` 类型为 `Long`，代表**汇报主键 ID**。
 
 **响应示例**
 
@@ -612,9 +615,7 @@ curl -X POST 'https://{域名}/open-api/cwork-user/group/manageGroupMembers' \
 {
   "resultCode": 1,
   "resultMsg": null,
-  "data": {
-    "id": 1234567890L
-  }
+  "data": 1234567890
 }
 ```
 
@@ -678,7 +679,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/submit' \
 
 **数据流向**
 
-- 返回 `data.id`（若平台返回）可用于后续通过 **5.5 获取汇报内容** 查询详情（入参 `reportId`）。
+- 返回的 `data`（ID）可用于后续通过 **5.5 获取汇报内容** 查询详情（入参 `reportId`）。
 
 ---
 
@@ -1524,7 +1525,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 
 
 > **更新约定（务必遵守）**  
-> - **若是更新草稿，必须在请求体中传入 `id`（汇报 id）**；不传则一律视为**新增**，会生成新的草稿记录。`id` 可与 **5.23** 返回的 `data.id`、**5.24** 列表中 `bizType=report` 时的 `businessId`、或 **5.25** 路径中的 `reportRecordId` 对齐。  
+> - **若是更新草稿，必须在请求体中传入 `id`（汇报 id）**；不传则一律视为**新增**，会生成新的草稿记录。`id` 可与 **5.23** 返回的 `data`、**5.24** 列表中 `bizType=report` 时的 `businessId`、或 **5.25** 路径中的 `reportRecordId` 对齐。  
 > - **更新语义为全量更新（覆盖写）**：服务端按本次请求体整体落库，**未传入的字段不会保留旧值**。例如原草稿已填写接收人，本次更新若**不带** `acceptEmpIdList`（或等价地传空列表，以实际联调为准），则**接收人会被清空**；`copyEmpIdList`、`reportLevelList`、`fileVOList` 等集合类字段同理。建议更新前先调用 **5.25 草稿汇报详情** 取回完整数据，在完整对象上修改后再调用本接口保存。
 
 **基本信息**
@@ -1556,12 +1557,13 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 | `reportLevelList` | List\<ReportLevelParam>   | 否   | 流程配置，多级用户列表（read-传阅、suggest-建议、decide-决策等节点） **6.1**。**更新时须带齐须保留的节点，省略可能导致原节点被清空**。          |
 | `fileVOList`      | List\<OpenPlatformFileVO> | 否   | 关联附件，见 **6.24**。**更新时省略可能导致原附件关联被清空**。                            |
 | `businessUnitId`  | Long                      | 否   | **业务单元 ID**：传入后，草稿发布时将强制按照该方案定义的节点流转，并忽略请求中的 `reportLevelList`。               |
+| `flowType`        | String                  | 否   | 流程类型，用于控制特殊的流程处理逻辑                                                               |
 
 > 说明：服务端对正文的处理与 **5.1** 相同，会将 `contentHtml` 去标签生成纯文本 `content` 落库；调用方无需传 `content`。
 
 **响应参数**
 
-`data` 类型为 `BaseInfo`（主要字段为主键 `id`），与 **5.1** 响应一致。
+`data` 类型为 `Long`，代表**汇报主键 ID**，与 **5.1** 响应一致。
 
 **响应示例**
 
@@ -1569,9 +1571,7 @@ curl -X GET 'https://{域名}/open-api/work-report/open-platform/report/readRepo
 {
   "resultCode": 1,
   "resultMsg": null,
-  "data": {
-    "id": 1234567890
-  }
+  "data": 1234567890
 }
 ```
 
@@ -1648,7 +1648,7 @@ curl -X POST 'https://{域名}/open-api/work-report/draftBox/saveOrUpdate' \
 
 **数据流向**
 
-- 返回的 `data.id` 为汇报的id，非草稿id，可用于后续草稿列表、详情或更新、提交草稿等流程（具体以平台提供的草稿相关接口为准）。
+- 返回的 `data` 为汇报的 ID，非草稿 ID，可用于后续草稿列表、详情 or 更新、提交草稿等流程（具体以平台提供的草稿相关接口为准）。
 
 ---
 
