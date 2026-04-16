@@ -2287,6 +2287,37 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repor
 
 ---
 
+### 2.33 保存AI生成月报内容（saveOpenClawReport）
+
+将 AI 生成的月报内容保存到 OpenClaw 任务记录（`bp_openclaw_task`），**不发送工作汇报**。匹配最新的 QUEUED/RUNNING 状态记录并更新为 SUCCESS；若无匹配记录则自动新建。
+
+| 项目 | 值 |
+|------|----|
+| 路径 | `POST /bp/openclaw/saveReport` |
+| 鉴权 | `BP_OPEN_API_APP_KEY`（数据查询用 key） |
+
+**请求参数**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | Long | 是 | 个人分组 ID |
+| reportMonth | String | 是 | 汇报月份，格式 `YYYY-MM` |
+| reportContent | String | 是 | AI 生成的月报内容（Markdown） |
+
+**响应**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": 123456789   // OpenClaw 任务记录 ID
+}
+```
+
+> **说明**：此接口将报告保存到生成记录而非最终月报表（`bp_monthly_report`）。报告在人工审阅确认后，再通过 `saveMonthlyReport`（2.22）写入最终月报。
+
+---
+
 ## 三、公共对象模型
 
 ... (此处省略 3.1 ~ 3.18)
