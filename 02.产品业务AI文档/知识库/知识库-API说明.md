@@ -16,6 +16,7 @@
 | 1.9 | 2026-04-02 | SaveFileToProjectParam 新增 suffix 字段；更新 saveFileByParentId/saveFileByPath 请求示例 | 刘艳华 |
 | 1.10 | 2026-04-03 | 全量校对上传链路字段准确性：预检接口补充 size/sensitive/suffix 参数；UploadFileSliceParam storageType 修正为 MINIO；SaveResourceParam 修正 suffix/size 为非必填；SaveFileToProjectParam 新增 isSensitive 字段、修正 suffix 描述；全量 curl 示例补全 suffix/size/isSensitive | 刘艳华 |
 | 1.11 | 2026-04-13 | 新增“记忆沙盒”模块 (4.21-4.24)；默认存盘逻辑下放至接入层控制 | 刘艳华 |
+| 1.12 | 2026-04-16 | 移除 saveFileByParentId/saveFileByPath/saveFile 接口的 doc 富文本上传路径（fileType=doc + fileContent），三个接口统一仅支持 fileType=file + resourceId；纯文本内容统一通过 uploadContent 接口入库；更新相关接口说明、curl 示例及数据结构注释 | 刘艳华 |
 
 ## 一、概述
 
@@ -25,7 +26,7 @@
 2. **文件获取与在线预览** — 支持获取在线预览凭据、下载 url、及针对解析后的文本提取。
 3. **大文件分片上传** — 覆盖预检秒传、多段切片提交、分布式资源后置合并流程。
 4. **空间发现与个人知识库维护** — 获取用户有权限的空间列表（含可写空间筛选），支持个人专属空间 `projectId` 的获取。
-5. **项目知识库文件保存** — 支持按父 ID 或逻辑路径自动解析目录结构，将物理资源或富文本内容聚合入库到任意有权限的项目空间。
+5. **项目知识库文件保存** — 支持按父 ID 或逻辑路径自动解析目录结构，将物理文件资源入库到任意有权限的项目空间。
 6. **AI 内容一键入库** — 支持将 AI 生成的文本内容（如对话摘要、Markdown 报告）保存到用户有权限的知识库空间或个人专属文件夹。
 
 ---
@@ -41,7 +42,7 @@ https://{域名}/open-api/{接口地址}
 
 | 环境   | 域名/Base URL                    | 备注  |
 | ---- | ------------------------------ | --- |
-| 生产环境 | `https://{域名}` | -   |
+| 生产环境 | `https://sg-al-cwork-web.mediportal.com.cn` | -   |
 
 ### 2.3 公共请求头
 
@@ -115,14 +116,15 @@ https://{域名}/open-api/{接口地址}
 1. **获取个人空间 ID**：调用 **4.8 获取个人知识库空间Id**（`GET /document-database/project/personal/getProjectId`），拿到 `projectId`。
 2. **底层资源初始化（物理文件必需）**：
    - 若保存的是物理文件，需调用 **基础服务-文件服务** 中的大文件分片上传流程（基于 MD5 预检、分片上传与合并），最终拿到 `resourceId`。详见 [02-文件服务.md](../基础服务/API接口明细/02-文件服务.md#场景二大文件分片上传流程-推荐)。
-   - 若保存的是富文本/在线文档，可直接传 `fileContent`，无需此步骤。
+   - 若保存的是纯文本内容，请使用 **4.18 uploadContent** 接口直接入库，无需此步骤。
 3. **存盘绑定**：调用 **4.10 将文件资源保存到个人知识库目录**（`POST /document-database/project/personal/saveFile`），载荷传入：
    - `name`: 文件展示名称；
    - `parentId`: 存盘的目标文件夹 ID（若直接存入绝对根目录，传 `0`）；
    - `type`: `2` (文件)；
-   - `fileType`: `file`（物理文件）或 `doc`（富文本）；
-   - 场景 A（物理文件）传步骤 2 中获取的 `resourceId`；
-   - 场景 B（富文本）传 `fileContent`。
+   - `fileType`: `file`（物理文件）；
+   - 传步骤 2 中获取的 `resourceId`。
+   
+> **纯文本内容**（如 AI 生成的 Markdown/报告）请直接使用 **4.18 uploadContent** 接口，无需走分片上传流程。
 
 ---
 
@@ -157,16 +159,15 @@ https://{域名}/open-api/{接口地址}
 1. **发现可写空间**：调用 **4.20 获取有上传/编辑权限的空间列表**（`GET /document-database/project/uploadableList`），获取用户可写入的空间列表。根据返回的 `ProjectVO.name` 和 `ProjectVO.id` 确定目标空间。
 2. **底层资源初始化（物理文件场景必需）**：
    - 若保存的是物理文件，需调用 **基础服务-文件服务** 中的大文件分片上传流程（基于 MD5 预检、分片上传与合并），最终拿到 `resourceId`。详见 [02-文件服务.md](../基础服务/API接口明细/02-文件服务.md#场景二大文件分片上传流程-推荐)。
-   - 若保存的是富文本/在线文档（`fileType=doc`），可直接传 `fileContent`，无需此步骤。
+   - 若保存的是纯文本内容，请使用 **4.18 uploadContent** 接口直接入库，无需此步骤。
 3. **按路径存入文件**：调用 **4.17 根据路径保存文件到项目目录**（`POST /document-database/file/saveFileByPath`），传入：
    - `projectId`: 步骤 1 中确定的目标空间 ID；
    - `path`: 逻辑目录路径（如 `"工程档案/设计图纸"`），后端自动解析并创建不存在的文件夹；
    - `name`: 文件名；
-   - `fileType`: `file`（物理文件）或 `doc`（富文本）；
-   - 场景 A（物理文件）传步骤 2 中获取的 `resourceId`；
-   - 场景 B（富文本）传 `fileContent`。
+   - `fileType`: `file`（物理文件）；
+   - 传步骤 2 中获取的 `resourceId`。
 
-> 补充：若已知目标文件夹 ID，也可直接调用 **4.16 根据父ID保存文件到项目目录** 跳过路径解析。
+> 补充：若已知目标文件夹 ID，也可直接调用 **4.16 根据父ID保存文件到项目目录** 跳过路径解析。纯文本内容请使用 **4.18 uploadContent** 接口。
 
 ---
 
@@ -182,7 +183,7 @@ https://{域名}/open-api/{接口地址}
    - `fileSuffix`: (**建议传**) 显式指定文件后缀（如 `md`, `json`, `html`, `txt`）；
    - `folderName`: (**可选**) 逻辑目录路径。**不传则默认归档至个人空间“和AI的对话”目录下**。
 3. **亮点功能 (Smart Logic)**：
-   - **智能后缀识别**：即便不传 `fileSuffix`，系统也会自动从 `fileName` 中通过“嗅探”补全后缀并决定索引模型。
+   - **后缀兜底**：不传 `fileSuffix` 时，系统兜底为 `md`。**强烈建议显式传入 `fileSuffix`**，避免文件名中已含扩展名（如 `报告.html`）时被错误追加 `.md` 后缀。
    - **零配置归档**：无需前置调用 `getProjectId`，系统自动根据当前 Token 绑定个人专属空间。
 4. **结果流转**：接口同步返回 `projectId`、`fileId` 和 `downloadUrl`，可直接通过 `fileId` 进行后续的预览或属性维护。
 
@@ -195,7 +196,7 @@ https://{域名}/open-api/{接口地址}
     "projectId": 2009488364113997826,
     "projectName": "个人知识库",
     "folderId": 32100,
-    "folderName": "调研结论",
+    "folderName": "和AI的对话",
     "fileId": 32188,
     "fileName": "调研结论.md",
     "downloadUrl": "https://{域名}/..."
@@ -1022,9 +1023,9 @@ curl -X POST 'https://{域名}/open-api/document-database/ai/batchGetContent' \
 
 ### 4.16 【上传】根据父ID保存文件到项目目录 [新增]
 
-已知目标文件夹 ID 时，通过 `parentId` 直接将物理资源或富文本内容保存到项目知识库的指定目录。支持双模式入库：
-- **场景 A**：绑定已上传的物理文件（传 `resourceId`，建议同时传 `suffix`、`size`）；
-- **场景 B**：创建在线文档（传 `fileContent`，`fileType` 为 `doc`；`suffix` 可传 `md`、`html`、`txt` 等，不传则后端兜底为 `md`）。
+已知目标文件夹 ID 时，通过 `parentId` 直接将物理文件资源保存到项目知识库的指定目录。此接口仅支持绑定已上传的物理文件（传 `resourceId`，建议同时传 `suffix`、`size`）。
+
+> **纯文本内容**（如 AI 生成的 Markdown/报告）请使用 **4.18 uploadContent** 接口，无需走分片上传流程。
 
 **基本信息**
 
@@ -1055,22 +1056,11 @@ curl -X POST 'https://{域名}/open-api/document-database/ai/batchGetContent' \
 
 **请求示例**
 
-场景 A — 绑定物理文件：
-
 ```bash
 curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByParentId' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"projectId":2025001,"parentId":10086,"name":"技术方案.pdf","fileType":"file","suffix":"pdf","size":204800,"resourceId":987654321,"isSensitive":0}'
-```
-
-场景 B — 创建在线文档：
-
-```bash
-curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByParentId' \
-  -H 'appKey: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"projectId":2025001,"parentId":10086,"name":"总结.doc","fileType":"doc","fileContent":"<h2>内容...</h2>","isSensitive":0}'
 ```
 
 **响应参数**
@@ -1095,9 +1085,9 @@ curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByParentI
 
 ### 4.17 【上传】根据路径保存文件到项目目录 [新增]
 
-通过 `path` 参数指定逻辑目录路径（如 `FolderA/FolderB`），后端将自动递归解析并创建不存在的文件夹，将文件保存到最终目录下。支持双模式入库：
-- **场景 A**：绑定已上传的物理文件（传 `resourceId`，建议同时传 `suffix`、`size`）；
-- **场景 B**：创建在线文档（传 `fileContent`，`fileType` 为 `doc`；`suffix` 可传 `md`、`html`、`txt` 等，不传则后端兜底为 `md`）。
+通过 `path` 参数指定逻辑目录路径（如 `FolderA/FolderB`），后端将自动递归解析并创建不存在的文件夹，将物理文件资源保存到最终目录下。此接口仅支持绑定已上传的物理文件（传 `resourceId`，建议同时传 `suffix`、`size`）。
+
+> **纯文本内容**（如 AI 生成的 Markdown/报告）请使用 **4.18 uploadContent** 接口，无需走分片上传流程。
 
 **基本信息**
 
@@ -1128,22 +1118,11 @@ curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByParentI
 
 **请求示例**
 
-场景 A — 按路径绑定物理文件：
-
 ```bash
 curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByPath' \
   -H 'appKey: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"projectId":2025001,"path":"工程档案/设计图纸","name":"方案.pdf","fileType":"file","suffix":"pdf","size":204800,"resourceId":987654321,"isSensitive":0}'
-```
-
-场景 B — 按路径创建富文本文档：
-
-```bash
-curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByPath' \
-  -H 'appKey: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"projectId":2025001,"path":"AI建议/周报总结","name":"周报.doc","fileType":"doc","fileContent":"<h2>报告内容</h2>...","isSensitive":0}'
 ```
 
 **响应参数**
@@ -1189,13 +1168,13 @@ curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByPath' \
 | :--- | :--- | :--- | :--- |
 | `content` | String | 是 | 文本/Markdown/HTML 内容字节流 |
 | `fileName` | String | 是 | 保存的文件名 |
-| `fileSuffix` | String | 否 | 文件后缀（如 `md`, `json`, `html`, `txt`）。**强烈建议显式传入**，决定了知识库的索引与展示模式。不传则尝试从 `fileName` 自动识别，未识别则保存为`md`|
+| `fileSuffix` | String | 否 | 文件后缀（如 `md`, `json`, `html`, `txt`）。**强烈建议显式传入**。不传则直接兜底为 `md`，若文件名已含扩展名（如 `报告.html`）会被错误追加 `.md` 后缀 |
 | `folderName` | String | 否 | 逻辑目录名。**默认：'和AI的对话'**。支持多级路径。 |
 
 **请求行为约定**
 
 1. **纯文本限制**：该接口仅支持保存纯文本性质的数据，不支持物理二进制流。
-2. **智能嗅探**：后端具备后缀感知能力，会根据文件名自动修正 `fileType`。
+2. **后缀兜底**：不传 `fileSuffix` 时，系统兜底为 `md`。建议显式传入 `fileSuffix` 以确保文件格式正确。
 3. **默认归档**：如果不传 `folderName`，文件将归档至个人空间默认目录 **“和AI的对话”** 下。
 
 **请求示例**
@@ -1228,7 +1207,7 @@ curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
     "projectId": 2009488364113997826,
     "projectName": "个人知识库",
     "folderId": 10086,
-    "folderName": "AI生成",
+    "folderName": "和AI的对话",
     "fileId": 30005,
     "fileName": "2026Q1调研报告.md",
     "downloadUrl": "https://oss.../signed-url"
@@ -1726,8 +1705,8 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 | `suffix` | String | 否 | 文件后缀 |
 | `size` | Long | 否 | 文件大小（字节） |
 | `resourceId` | Long | 否 | 引用底层的资源 ID |
-| `fileType` | String | 否 | doc 富文本 / file 普通文件 |
-| `fileContent` | String | 否 | 文件内容（fileType 为 doc 时的富文本内容） |
+| `fileType` | String | 否 | file 普通文件（纯文本内容请使用 uploadContent 接口） |
+| `fileContent` | String | 否 | 已废弃，请勿传入（纯文本内容请使用 uploadContent 接口） |
 | `directory` | List\<String\> | 否 | 文件目录路径列表 |
 | `isSensitive` | Integer | 否 | 是否跨境敏感文件（0 非敏感，1 敏感） |
 
@@ -1751,11 +1730,11 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 | `projectId` | Long | 是 | 项目空间 id |
 | `parentId` | Long | 否 | 父文件夹 ID（已知目标文件夹时传入；若基于路径则传 `path`） |
 | `name` | String | 是 | 保存的文件名 |
-| `fileType` | String | 是 | 文件类型：doc(富文本/在线文档), file(普通物理文件) |
-| `suffix` | String | 否 | 文件后缀。`fileType=file` 时建议传入（不传则后端从资源反查）；`fileType=doc` 时可传 `md`、`html`、`txt` 等，不传则后端兜底为 `md` |
-| `size` | Long | 否 | 文件大小（字节）。`fileType=file` 时建议传入（不传则后端从资源反查）；`fileType=doc` 时后端自动计算 |
-| `resourceId` | Long | 否 | 资源 id（场景 A 必填：对应已上传的物理文件资源。`fileType` 为 `file` 时有效） |
-| `fileContent` | String | 否 | 文件内容（场景 B 必填：对应在线文档内容。仅在 `fileType` 为 `doc` 时有效） |
+| `fileType` | String | 是 | 文件类型：file(普通物理文件)。纯文本内容请使用 uploadContent 接口 |
+| `suffix` | String | 否 | 文件后缀（如 `pdf`、`docx`）。建议传入，不传则后端从资源反查 |
+| `size` | Long | 否 | 文件大小（字节）。建议传入，不传则后端从资源反查 |
+| `resourceId` | Long | 是 | 资源 id，对应已上传的物理文件资源 |
+| `fileContent` | String | 否 | 已废弃，请勿传入（纯文本内容请使用 uploadContent 接口） |
 | `path` | String | 否 | 逻辑目录路径（不传则存入项目根目录）。示例：`"AI生成/日报总结"`，后端自动递归创建不存在的目录 |
 | `isSensitive` | Integer | 否 | 是否跨境敏感文件（0 非敏感，默认；1 敏感） |
 
@@ -1769,7 +1748,7 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 | `content` | String | 是 | 文件正文内容 (Markdown/Plain Text) |
 | `fileName` | String | 是 | 文件展示名称 |
 | `fileSuffix` | String | 否 | 文件后缀（按需传入，逻辑层默认为 `md`） |
-| `folderName` | String | 否 | 逻辑目录路径。**默认行为由接入层决定** |
+| `folderName` | String | 否 | 逻辑目录路径。**不传则默认归档至"和AI的对话"目录下**，支持多级路径（如 `"AI生成/调研摘要"`） |
 
 ---
 
@@ -1910,6 +1889,6 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 
 ---
 
-**文档版本**：v1.11
-**更新日期**：2026-04-13
+**文档版本**：v1.12
+**更新日期**：2026-04-16
 **维护人/团队**：知识库服务团队
