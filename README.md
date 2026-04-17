@@ -19,6 +19,8 @@
 | 1.4 | 2026-04-07 | 简化系统英文名，移除中文别名列，将目录作为系统的中文名称 | AI助手 |
 | 1.5 | 2026-04-09 | 01.规范索引下增加 API 规范使用小指南引导块 | AI助手 |
 | 1.6 | 2026-04-16 | 补全 AI情报、AI费用开发责任人；更新基础服务典型内容说明；移除失效的 doc-guard-design.md 链接 | AI助手 |
+| 1.7 | 2026-04-17 | 增加 Git 账号与人员姓名映射表 | AI助手 |
+| 1.8 | 2026-04-17 | 全量补充 Git 账号与人员姓名映射表 | AI助手 |
 
 
 ---
@@ -39,6 +41,36 @@
 | `SFE系统` | sfe |
 | `AI情报` | ai-report |
 | `AI费用` | ai-billing |
+
+
+---
+
+## Git 账号与人员映射
+
+用于在 Git 提交记录、修订记录中快速对应人员身份。
+
+
+| Git 账号 | 姓名 | 备注/角色 |
+| --- | --- | --- |
+| `cwei001` / `chengwei` / `xgjk2024-2026` | 成伟 | 基础服务负责人 |
+| `jasonzengls` | 曾朗生 | |
+| `fuguangwei` | 付光伟 | 工作协同负责人 |
+| `zengwenzhe` | 曾文哲 | BP 负责人 |
+| `liuyanhua1222` | 刘艳华 | 知识库、AI费用负责人 |
+| `wuxiaoquan1024` | 伍孝权 | AI慧记负责人 |
+| `zhousi-zs` | 周斯 | 新媒体负责人 |
+| `yangxiao9012` | 杨宵 | AI情报负责人 |
+| `qujunli` / `hoverqjl` | 屈军利 | AI费用负责人 |
+| `chenjie` | 陈洁 | 新媒体负责人 |
+| `waylon-nas1` | 王馗 | SFE 负责人 |
+| `liuhuifang` / `huifliu` | 刘惠芳 | |
+| `houtong` | 侯桐 | 规范责任人 |
+| `songpeizhong` | 宋培众 | Skill 规范责任人 |
+| `fengmin` | 封敏 | BP 产品负责人 |
+| `jianxiaofeng` | 蹇晓枫 | 工作协同产品负责人 |
+| `ouqian` | 欧倩 | 知识库产品负责人 |
+| `wangxiaohui` | 王晓辉 | AI慧记产品负责人 |
+
 
 
 ---
