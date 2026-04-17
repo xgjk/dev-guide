@@ -24,6 +24,7 @@
 | 2.8 | 2026-04-16 | 汇报流程节点(6.1)参数增加按钮配置 (buttonConfig) | 付光伟 |
 | 2.9 | 2026-04-16 | 汇报提交(5.1)与草稿保存(5.23)接口响应数据由 BaseInfo 更改为 Long (主键 ID) | 付光伟 |
 | 3.0 | 2026-04-16 | 汇报提交(5.1)与草稿保存(5.23)接口新增流程类型参数 (flowType) | 付光伟 |
+| 3.1 | 2026-04-17 | 获取汇报内容(5.5)接口响应参数增加汇报标题 (main) | 付光伟 |
 
 
 
@@ -908,6 +909,7 @@ curl -X POST 'https://{域名}/open-api/work-report/todoTask/todoList' \
   "resultMsg": null,
   "data": {
     "reportId": 1234567890,
+    "main": "项目周报",
     "content": "已完成接口联调",
     "contentHtml": "<p>已完成接口联调</p>",
     "contentType": "html",
@@ -2368,6 +2370,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 | 字段名       | 类型            | 说明     |
 | ------------ | --------------- | -------- |
 | `reportId`   | Long            | 汇报 ID  |
+| `main`       | String          | 汇报标题 |
 | `content`    | String          | 汇报正文 (纯文本) |
 | `contentHtml`| String          | 汇报内容 (富文本) |
 | `contentType`| String          | 正文类型：`html`/`markdown` |
