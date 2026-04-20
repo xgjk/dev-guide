@@ -1,4 +1,4 @@
-﻿# AI费用查询服务 Open API 接口文档
+# AI费用查询服务 Open API 接口文档
 
 ## 修订记录
 
@@ -7,6 +7,9 @@
 | 1.0 | 2026-04-01 | 初版创建 | 刘艳华 |
 | 1.1 | 2026-04-02 | 新增用户/模型/产品使用明细接口 | 刘艳华 |
 | 1.2 | 2026-04-03 | 补充 inCacheToken（缓存输入Token）字段说明；修复 personId 类型 Long→String | 刘艳华 |
+| 1.3 | 2026-04-20 | 新增企业级过滤支持（enterprise 参数）；新增获取企业列表接口；完善所有接口示例 | 刘艳华 |
+| 1.4 | 2026-04-20 | 完善周期对比基准；统一钻取维度枚举值 | 刘艳华 |
+| 1.5 | 2026-04-20 | 完善 4xxxx/61xxxx 错误码；修正周期对比逻辑；审计全量接口字段名 | 刘艳华 |
 
 ---
 
@@ -20,8 +23,9 @@
 4. **自定义时间段查询** — 查询任意时间段的费用分布、趋势、Token用量，支持多维度筛选与钻取
 5. **联动排行榜** — 查询Model/Product/Person三维度排行榜，支持二级交叉过滤
 6. **产品用户分析** — 查询指定产品的用户费用统计，含人均费用、中位数、分位数等指标
-7. **实体列表查询** — 获取所有AI模型、产品、人员的基础信息列表
+7. **实体列表查询** — 获取所有AI模型、产品、人员、企业的基础信息列表
 8. **使用明细查询** — 查询指定用户/模型/产品的详细使用数据，包含费用、Token、调用次数及其关联维度分布
+9. **企业数据隔离** — 支持按企业维度过滤分析数据，满足多租户场景下的费用管理需求
 
 ---
 
@@ -127,6 +131,14 @@ https://{域名}/open-api/llm-cost/{接口地址}
 2. 若需从模型视角查看，调用 **4.15 模型使用明细**（`GET /llm-cost/model-usage`），传入 `aiType=gpt-4o&startTime=2026-03-25&endTime=2026-03-31`，获取该模型被哪些产品使用、被哪些用户使用
 3. 若需从产品视角查看，调用 **4.16 产品使用明细**（`GET /llm-cost/product-usage`），传入 `bizCode=llm-inference&startTime=2026-03-25&endTime=2026-03-31`，获取该产品使用了哪些模型、被哪些用户使用
 
+### 场景六：多租户/企业级费用管控
+
+> 需求：针对不同分支机构或子公司，分别查看其 AI 费用消耗情况
+
+1. 调用 **4.17 获取企业列表**（`GET /llm-cost/enterprises`），获取当前系统中所有有费用记录的企业标识（如 `xg`, `kz` 等）
+2. 在调用概览、对比、趋势等任意接口时，传入 `enterprise=xg`，即可过滤出仅属于该企业的数据
+3. 查看人员排行时，通过返回的 `enterprise_code` 识别该人员所属的企业归属
+
 ---
 
 ## 四、接口详细说明
@@ -152,7 +164,10 @@ https://{域名}/open-api/llm-cost/{接口地址}
 
 **请求参数**
 
-无参数。
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
+
 
 **请求与行为约定**
 
@@ -306,6 +321,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/overview' \
 | 参数名 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `days` | Integer | 否 | 天数范围，取值 1～365，默认 60 |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 
 **请求与行为约定**
 
@@ -400,14 +416,27 @@ curl -X GET 'https://{域名}/open-api/llm-cost/trend?days=7' \
 | `parent_type` | String | 否 | 钻取父维度类型，枚举值：`model` / `product` / `person` |
 | `parent_id` | String | 否 | 钻取父维度 ID，与 `parent_type` 配合使用 |
 | `parent_name` | String | 否 | 钻取父维度名称，用于显示 |
-| `child_dimension` | String | 否 | 子维度，枚举值：`product` / `model`（仅人员钻取时使用） |
+| `child_dimension` | String | 否 | 子维度，枚举值：`model` / `product` / `person`（下钻维度不可与父维度相同） |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 
 **请求与行为约定**
 
 | 项 | 说明 |
 | --- | --- |
+| 周期对比逻辑 | 基于请求参数 `period` 自动确定主周期与对比周期（见下表） |
 | 是否支持分页 | 否，通过 `limit` 控制返回数量 |
 | 幂等性要求 | 幂等 |
+
+**周期对比基准规则 (基于后端逻辑)**
+
+| 传入 period | 主周期 (Primary) | 对比周期 (Compare) | 说明 |
+| :--- | :--- | :--- | :--- |
+| `today` | 今日 | 昨日 | 查看今日费用较昨日的变化 |
+| `yesterday` | 昨日 | 今日 | 查看昨日费用较今日的变化（逆向对比） |
+| `week` | 本周 (周一至今) | 上周 (完整周) | 查看本周累计费用较上周同期的趋势 |
+| `last_week` | 上周 | 本周 | 查看上周较本周的变化 |
+| `month` | 本月 (1号至今) | 上月 (完整月) | 查看本月累计费用较上月同期的趋势 |
+| `last_month` | 上月 | 本月 | 查看上月较本月的变化 |
 | 钻取说明 | 传入 `parent_type` + `parent_id` + `child_dimension` 后，从父维度下钻到子维度查看费用分布 |
 | 是否支持批量 | 否 |
 | 额外字段策略 | 不适用（无请求体） |
@@ -518,6 +547,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/compare?period=week&dimension=mo
 | `model_id` | String | 否 | 模型 ID 过滤 |
 | `product_id` | String | 否 | 产品 ID 过滤 |
 | `person_id` | String | 否 | 人员 ID 过滤 |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 
 **请求与行为约定**
 
@@ -557,6 +587,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range?start_date=2026-03-
 | `name` | String | 维度实体名称 |
 | `cost` | Number | 费用（$） |
 | `vendor` | String | 厂商名称（仅 model 维度） |
+| `enterprise_code` | String | 企业标识（仅 person 维度） |
 | `total_in_token` | Long | 输入 Token 总量 |
 | `total_out_token` | Long | 输出 Token 总量 |
 | `total_inCacheToken` | Long | 缓存输入 Token 总量 |
@@ -656,6 +687,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range?start_date=2026-03-
 | --- | --- | --- | --- |
 | `start_date` | String | 是 | 开始日期，格式 `YYYY-MM-DD` |
 | `end_date` | String | 是 | 结束日期，格式 `YYYY-MM-DD` |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 
 **请求与行为约定**
 
@@ -761,6 +793,8 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/trend?start_date=20
 | --- | --- | --- | --- |
 | `start_date` | String | 是 | 开始日期，格式 `YYYY-MM-DD` |
 | `end_date` | String | 是 | 结束日期，格式 `YYYY-MM-DD` |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
+
 
 **请求与行为约定**
 
@@ -893,7 +927,8 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/token-trend?start_d
 | `end_date` | String | 是 | 结束日期，格式 `YYYY-MM-DD` |
 | `parent_type` | String | 是 | 父维度类型，枚举值：`product` / `model` / `person` |
 | `parent_id` | String | 是 | 父维度 ID，来自列表接口或费用分布接口的返回值 |
-| `child_dimension` | String | 是 | 子维度，枚举值：`model` / `product` / `person` |
+| `child_dimension` | String | 是 | 子维度，枚举值：`model` / `product` / `person`（下钻维度不可与父维度相同） |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 | `limit` | Integer | 否 | 返回数量，默认 50 |
 
 **请求与行为约定**
@@ -1020,6 +1055,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/drilldown?start_dat
 | `filter_id` | String | 是 | 主过滤维度 ID |
 | `second_filter_dimension` | String | 否 | 二级过滤维度，枚举值：`model` / `product` / `person` |
 | `second_filter_id` | String | 否 | 二级过滤 ID |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 | `limit` | Integer | 否 | 返回数量，默认 50 |
 
 **请求与行为约定**
@@ -1230,6 +1266,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/linked-rankings?sta
 | `second_filter_dimension` | String | 是 | 二级过滤维度，枚举值：`model` / `product` / `person` |
 | `second_filter_id` | String | 是 | 二级过滤 ID |
 | `target_dimension` | String | 是 | 目标维度（第三维），枚举值：`model` / `product` / `person` |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 | `limit` | Integer | 否 | 返回数量，默认 50 |
 
 **请求与行为约定**
@@ -1354,6 +1391,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/custom-range/target-trend?start_
 | `days` | Integer | 否 | 天数，枚举值：`7` / `15` / `30`，与 `start_date`/`end_date` 二选一 |
 | `start_date` | String | 否 | 开始日期，格式 `YYYY-MM-DD`，与 `days` 二选一 |
 | `end_date` | String | 否 | 结束日期，格式 `YYYY-MM-DD`，与 `days` 二选一 |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
 
 **请求与行为约定**
 
@@ -1397,7 +1435,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/product-user-stats?product=llm-i
 | `max_user_cost` | Number | 当日单用户最大费用（$） |
 | `total_in_token` | Long | 当日总输入 Token |
 | `total_out_token` | Long | 当日总输出 Token |
-| `total_in_cache_token` | Long | 当日总缓存输入 Token |
+| `total_inCacheToken` | Long | 当日总缓存输入 Token |
 
 **响应示例**
 
@@ -1420,7 +1458,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/product-user-stats?product=llm-i
         "max_user_cost": 3.8,
         "total_in_token": 150000,
         "total_out_token": 80000,
-        "total_in_cache_token": 30000
+        "total_inCacheToken": 30000
       }
     ]
   }
@@ -1468,7 +1506,10 @@ curl -X GET 'https://{域名}/open-api/llm-cost/product-user-stats?product=llm-i
 
 **请求参数**
 
-无参数。
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `enterprise` | String | 否 | 企业过滤：xg/kz/dm/kld/kh (不传默认全部企业) |
+
 
 **请求与行为约定**
 
@@ -2183,6 +2224,61 @@ curl -X GET 'https://{域名}/open-api/llm-cost/product-usage?bizCode=llm-infere
 
 ---
 
+### 4.17 获取企业列表
+
+返回有费用记录的企业列表，包含企业标识（code）和名称。
+
+**基本信息**
+
+| 项目 | 说明 |
+| --- | --- |
+| 接口地址 | `/llm-cost/enterprises` |
+| 请求方式 | `GET` |
+| Content-Type | 不适用（GET 请求无 Body） |
+| 接口负责人 | liuyanhua |
+| 所属模块 | AI费用查询服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 初始化企业过滤器、分析企业归属 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `days` | Integer | 否 | 天数范围，默认 60 |
+
+**响应参数**
+
+`data` 类型为 `Object`，字段如下：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `items` | Array\<EnterpriseItem\> | 企业列表 |
+
+**EnterpriseItem** 结构：
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `code` | String | 企业标识（如 `xg`, `kz`） |
+| `name` | String | 企业名称（如 `西瓜`, `桔子`） |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "items": [
+      { "code": "xg", "name": "西瓜" },
+      { "code": "kz", "name": "桔子" }
+    ]
+  }
+}
+```
+
+---
+
 ## 五、公共数据结构
 
 ### 5.1 TrendItem
@@ -2200,6 +2296,7 @@ curl -X GET 'https://{域名}/open-api/llm-cost/product-usage?bizCode=llm-infere
 | `name` | String | 维度实体名称 |
 | `cost` | Number | 费用（$） |
 | `vendor` | String | 厂商名称（仅 model 维度） |
+| `enterprise_code` | String | 企业标识（仅 person 维度） |
 | `total_in_token` | Long | 输入 Token 总量 |
 | `total_out_token` | Long | 输出 Token 总量 |
 | `total_inCacheToken` | Long | 缓存输入 Token 总量 |
@@ -2334,15 +2431,46 @@ curl -X GET 'https://{域名}/open-api/llm-cost/product-usage?bizCode=llm-infere
 | `cost` | Number | 费用（$） |
 | `currency` | String | 货币单位 |
 
+### 5.15 EnterpriseItem
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `code` | String | 企业标识（如 `xg`） |
+| `name` | String | 企业名称 |
+
 ---
 
 ## 六、错误码说明
 
-| resultCode | 说明 |
-| --- | --- |
-| 1 | 请求成功 |
-| 0 | 通用失败 |
-| 500 | 系统异常 |
+开放平台接口统一使用 `resultCode` 表示业务处理结果。除通用的成功（1）和失败（0）外，系统还定义了以下标准错误码，便于调用方进行精确的分支处理与异常提示：
+
+| resultCode | 说明 | 参考信息 / 异常原因 |
+| ---------- | ---------------------- | ------------------------------------------ |
+| **1** | 请求成功 | success |
+| **0** | 通用失败 | failure |
+| **500** | 系统异常/内部错误 | 系统崩溃、微服务超时或内部异常 |
+| **40001** | 参数校验失败 | 缺少必填参数或参数格式错误 |
+| **40002** | 枚举值非法 | 传入了不在定义范围内的枚举值 |
+| **40003** | 查询范围越界 | 时间段跨度过大（如超过 1 年） |
+| **40100** | 认证失败 | `appKey` 无效或权限不足 |
+| **42900** | 请求太频繁（限流） | 超过 QPS 限制，请稍后重试 |
+| **610002** | `appKey` 无效 | 应用密钥不匹配或未分配 |
+| **610003** | `appSecret` 无效 | 密钥校验失败 |
+| **610005** | 签名 `sign` 无效 | 签名计算错误 |
+| **610006** | `access_key` 无效/非最新 | 授权令牌过期或已被顶替 |
+| **610007** | 授权度达到上限 | 授权额度已耗尽 |
+| **610008** | 请求 URL 不在白名单 | 跨域或未白名单授权的 API 访问 |
+| **610009** | 不支持的请求方法 | 例如 GET 接口使用了 POST 请求 |
+| **610010** | `nonce` 防重放值无效 | `nonce` 重复使用 |
+| **610011** | 时间戳 `timestamp` 无效 | 调用方系统时间相差过大（通常需在 5 分钟内） |
+| **610012** | 请求太频繁（限流） | 超过 QPS 限制，请休眠后重试 |
+| **610013** | 请求 API 未找到 | 404，路由错误 |
+| **610014** | 应用被禁用 | 开发者应用已被管理员冻结 |
+| **610015** | 无访问权限 | 未给该 `appKey` 授权对应接口调用权限 |
+| **610016** | `openUserId` 无效 | 外部用户 ID 映射错误 |
+| **610018** | 非当前企业用户 | 跨企业越权访问禁止 |
+| **610019** | 用户已被禁用 | 对应的协同系统用户已离职或冻结 |
+| **610030** | 重复的请求 | 防重放/幂等拦截 |
 
 ---
 
