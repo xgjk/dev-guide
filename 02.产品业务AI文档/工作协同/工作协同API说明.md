@@ -2116,6 +2116,7 @@ curl -X GET 'https://{域名}/open-api/work-report/report/getReportNodeDetail?re
         "level": 1,
         "userList": [
           {
+            "id": 1,
             "empId": 10002,
             "name": "李四",
             "status": "已处理",
@@ -2796,6 +2797,7 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 
 | 字段名 | 类型 | 说明 |
 | --- | --- | --- |
+| `id` | Long | 节点处理人关联 ID |
 | `empId` | Long | 员工 ID |
 | `name` | String | 姓名 |
 | `status` | String | 处理状态中文 (待处理/已处理等) |
