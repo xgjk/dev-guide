@@ -2343,6 +2343,157 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 
 ---
 
+### 5.45 根据汇报ID和类型列表获取汇报正文、附件、回复、关联汇报、关联邮件信息
+
+根据汇报 ID 与类型列表，获取汇报正文、关联附件、回复、关联汇报、关联邮件等简要信息。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/report/record/getReportSimpleInfo` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `reportRecordId` | Long | 是 | 汇报 ID |
+| `typeList` | List\<String> | 是 | 变更类型列表：`content`-正文、`attachment`-关联附件、`reply`-回复、`mail`-关联邮件 |
+| `needAssociatedReport` | Boolean | 否 | 是否需要关联汇报的内容 |
+| `needAssociatedReportFile` | Boolean | 否 | 是否需要关联汇报的附件内容 |
+
+**响应参数**
+
+`data` 类型为 `ReportSimpleInfoByTypeVO`，结构见 **6.38 ReportSimpleInfoByTypeVO** 及其关联结构（**6.32 - 6.37**）。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/report/record/getReportSimpleInfo' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "reportRecordId": 1234567890,
+    "typeList": ["content", "attachment", "reply", "mail"],
+    "needAssociatedReport": false,
+    "needAssociatedReportFile": false
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": {
+    "associatedContent": {
+      "fileList": [
+        {
+          "downloadUrl": "https://xxx/1",
+          "duration": 0,
+          "fileName": "附件A.docx",
+          "fileSummary": "附件摘要",
+          "resourceId": 10001,
+          "size": 1024,
+          "suffix": "docx",
+          "translationWord": null
+        }
+      ]
+    },
+    "associatedReportList": [],
+    "createTime": "2026-04-20 09:00:00",
+    "mailBoxList": [
+      {
+        "content": "{\"content\":\"<div>abc</div>\"}",
+        "id": 1,
+        "realContent": "abc",
+        "subject": "项目周报补充说明"
+      }
+    ],
+    "planIdList": [20001],
+    "planList": [
+      {
+        "id": 20001,
+        "main": "接口联调任务",
+        "needful": "联调并回归",
+        "requirement": "按规范输出联调结论",
+        "target": "完成联调上线"
+      }
+    ],
+    "replyList": [
+      {
+        "content": "请补充风险项",
+        "createTime": "2026-04-20 10:00:00",
+        "fileList": [],
+        "replyEmpName": "李四",
+        "title": "项目经理",
+        "type": "suggest"
+      }
+    ],
+    "reportRecord": {
+      "content": "本周完成接口联调",
+      "createTime": "2026-04-20 08:30:00",
+      "leadContent": "下周推进上线",
+      "main": "项目周报",
+      "reportRecordType": 5,
+      "updateTime": "2026-04-20 09:30:00"
+    },
+    "reportRecordId": 1234567890,
+    "writeEmpId": 10086,
+    "writeEmpName": "张三"
+  }
+}
+```
+
+---
+
+### 5.46 创建汇报或工作任务的分享连接
+
+为指定汇报或工作任务创建分享连接。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/report/share/create` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `bizId` | Long | 是 | 业务 ID |
+| `bizType` | Integer | 是 | 业务类型：`1`-汇报、`2`-任务 |
+
+**响应参数**
+
+`data` 类型为 `String`，表示分享连接。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/report/share/create' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "bizId": 1234567890,
+    "bizType": 1
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": "https://xxx/share/abc123"
+}
+```
+
+---
+
 ## 六、公共数据结构
 
 ### 6.1 ReportLevelParam
@@ -2834,6 +2985,83 @@ curl -X POST 'https://{域名}/open-api/work-report/report/record/editContent' \
 | `openMethod` | String | 跳转方式：`new_window`(新窗口)、`popup`(弹窗)、`no_operation`(无操作) |
 | `displayTiming` | String | 显示时机：`always`(一直显示)、`after_activate`(节点激活后显示) |
 | `clickEffect` | String | 点击后效果：`repeatable`(可重复点击)、`once_hide`(点击后隐藏)、`once_disable`(点击后禁用) |
+
+### 6.32 ReportRecordAssociatedContentSimpleVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `fileList` | List\<ReportFileSimpleVO> | 关联附件列表（见 **6.33**） |
+
+### 6.33 ReportFileSimpleVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `downloadUrl` | String | 下载 URL |
+| `fileName` | String | 文件名 |
+| `fileSummary` | String | 文件摘要 |
+| `resourceId` | Long | 资源 ID |
+| `size` | Long | 文件大小（字节） |
+| `suffix` | String | 文件后缀 |
+| `duration` | Integer | 音频时长（秒） |
+| `translationWord` | String | 语音转译文字 |
+
+### 6.34 ReportReplySimpleVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `content` | String | 回复内容 |
+| `createTime` | Timestamp | 回复时间 |
+| `fileList` | List\<ReportFileSimpleVO> | 回复附件（见 **6.33**） |
+| `replyEmpName` | String | 回复人 |
+| `title` | String | 回复人职位 |
+| `type` | String | 回复类型：`common`、`suggest`、`decide_agree`、`decide_disagree`、`sign`、`lead`、`feedback`、`plan_feedback`、`rebut`、`file_audit`、`business` |
+
+### 6.35 MailBoxAssociatedVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `content` | String | 邮件内容（JSON 字符串，如 `{"content":"<div>abc</div>"}`） |
+| `id` | Long | 主键 ID |
+| `realContent` | String | 解析后的邮件内容（不带 js） |
+| `subject` | String | 邮件主题 |
+
+### 6.36 ReportPlanAISimpleVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 主键 ID |
+| `main` | String | 任务名称 |
+| `needful` | String | 任务描述 |
+| `requirement` | String | 任务要求（AI 要求） |
+| `target` | String | 任务目标 |
+
+### 6.37 ReportRecordSimpleVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `content` | String | 汇报内容 |
+| `createTime` | Timestamp | 创建时间 |
+| `leadContent` | String | 指引内容 |
+| `main` | String | 汇报主题 |
+| `reportRecordType` | Integer | 工作汇报类型：`1`-工作交流、`2`-工作指引、`3`-文件签批、`4`-AI 汇报、`5`-工作汇报 |
+| `updateTime` | Timestamp | 修改时间 |
+
+### 6.38 ReportSimpleInfoByTypeVO
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `associatedContent` | ReportRecordAssociatedContentSimpleVO | 关联内容（见 **6.32**） |
+| `associatedReportList` | List\<ReportSimpleInfoByTypeVO> | 关联汇报列表（递归结构） |
+| `createTime` | Timestamp | 汇报时间 |
+| `mailBoxList` | List\<MailBoxAssociatedVO> | 关联邮件列表（见 **6.35**） |
+| `planIdList` | List\<Long> | 任务 ID 列表 |
+| `planList` | List\<ReportPlanAISimpleVO> | 任务列表（见 **6.36**） |
+| `replyList` | List\<ReportReplySimpleVO> | 回复信息（见 **6.34**） |
+| `reportRecord` | ReportRecordSimpleVO | 汇报信息（见 **6.37**） |
+| `reportRecordId` | Long | 汇报 ID |
+| `writeEmpId` | Long | 写汇报员工 ID |
+| `writeEmpName` | String | 汇报人 |
+
 
 ---
 
