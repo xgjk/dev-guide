@@ -1570,6 +1570,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 ### 2.22 保存月度汇报（saveMonthlyReport）
 
 保存或更新月度汇报内容。基于分组 ID + 月份的唯一键（`uk_group_month`），已存在则更新汇报内容，不存在则新增。
+`reportRecordId` 为非必填；若尚未发送工作汇报，可不传该字段。
 
 **规范命名**：`saveMonthlyReport`（规划 W1）。
 
@@ -1588,7 +1589,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 | `groupId`         | Long   | 是   | 个人分组 ID                             |
 | `reportContent`   | String | 是   | 汇报内容                                |
 | `reportMonth`     | String | 是   | 汇报月份，格式 `YYYY-MM`（如 `2026-04`）|
-| `reportRecordId`  | Long   | 是   | 汇报记录 ID                             |
+| `reportRecordId`  | Long   | 否   | 汇报记录 ID；已发送工作汇报时建议传入   |
 
 **请求体示例**
 
@@ -1596,8 +1597,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/children
 {
   "groupId": 2014631829004371002,
   "reportContent": "## 4月工作汇报\n\n### 一、整体进度\n本月完成了核心业绩目标的80%...",
-  "reportMonth": "2026-04",
-  "reportRecordId": 2014631829004375100
+  "reportMonth": "2026-04"
 }
 ```
 
@@ -1624,8 +1624,7 @@ curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repo
   -d '{
     "groupId": 2014631829004371002,
     "reportContent": "## 4月工作汇报\n\n本月完成了核心业绩目标的80%",
-    "reportMonth": "2026-04",
-    "reportRecordId": 2014631829004375100
+    "reportMonth": "2026-04"
   }'
 ```
 
@@ -2328,7 +2327,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repor
 
 | 项目     | 说明                       |
 | -------- | -------------------------- |
-| 接口地址 | `/bp/task/reportProgress`  |
+| 接口地址 | `/bp/v2/task/reportProgress`  |
 | 请求方式 | `GET`                      |
 
 **请求参数**
@@ -2393,7 +2392,7 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/monthly/repor
 **请求示例**
 
 ```bash
-curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/reportProgress?taskId=2014631829004374017&month=2026-04' \
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/v2/task/reportProgress?taskId=2014631829004374017&month=2026-04' \
   -H 'appKey: XXXXXXXX'
 ```
 
