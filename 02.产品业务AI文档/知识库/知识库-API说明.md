@@ -18,6 +18,7 @@
 | 1.11 | 2026-04-13 | 新增“记忆沙盒”模块 (4.21-4.24)；默认存盘逻辑下放至接入层控制 | 刘艳华 |
 | 1.12 | 2026-04-16 | 移除 saveFileByParentId/saveFileByPath/saveFile 接口的 doc 富文本上传路径（fileType=doc + fileContent），三个接口统一仅支持 fileType=file + resourceId；纯文本内容统一通过 uploadContent 接口入库；更新相关接口说明、curl 示例及数据结构注释 | 刘艳华 |
 | 1.13 | 2026-04-22 | 新增文件版本管理模块（4.25-4.28）：updateFileVersion、getVersionList、getLastVersion、finalizeVersion；扩展 uploadContent（4.18）支持版本更新模式（新增 updateFileId/versionRemark/versionName 字段）；新增 FileVersionVO（5.17）数据结构；更新 5.11 字段说明 | 刘艳华 |
+| 1.14 | 2026-04-22 | 拆分 uploadContent 版本更新模式响应结构：新增 UpdateFileVersionResult（5.18），版本更新模式仅返回 fileId 和 fileName；更新 4.18 响应参数说明 | 刘艳华 |
 
 ## 一、概述
 
@@ -1226,9 +1227,19 @@ curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
 
 **响应参数**
 
+响应结构因调用模式不同而有所区别：
+
+**新建模式**（不传 `updateFileId`）：
+
 | 属性名称 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `data` | Object | `UploadContentToPersonalProjectResult` 结构（详见 **[5.12](#512-uploadcontenttopersonalprojectresult-新增)**） |
+| `data` | Object | `UploadContentToPersonalProjectResult` 结构，详见 **[5.12](#512-uploadcontenttopersonalprojectresult-新增)** |
+
+**版本更新模式**（传 `updateFileId`）：
+
+| 属性名称 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `data` | Object | `UpdateFileVersionResult` 结构，仅含 `fileId` 和 `fileName`，详见 **[5.18](#518-updatefileversionresult-新增)** |
 
 **响应示例（新建文件）**
 
@@ -2173,6 +2184,18 @@ curl -X POST 'https://{域名}/open-api/document-database/file/finalizeVersion' 
 | `updateTime` | Long | 最后更新时间（毫秒时间戳） |
 | `lastVersion` | Boolean | true 表示当前最新版本 |
 | `fileName` | String | 文件名（含后缀） |
+
+---
+
+### 5.18 UpdateFileVersionResult [新增]
+uploadContent 接口**版本更新模式**（传 `updateFileId`）的返回结构。仅含文件标识，不含空间/目录信息。
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `fileId` | Long | 文件 ID |
+| `fileName` | String | 文件名（含后缀） |
+
+> 与新建模式返回的 `UploadContentToPersonalProjectResult`（5.12）不同，版本更新模式不返回 `projectId`、`folderId`、`downloadUrl` 等字段，因为文件位置未发生变化。
 
 ---
 
