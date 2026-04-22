@@ -17,6 +17,7 @@
 | 1.10 | 2026-04-03 | 全量校对上传链路字段准确性：预检接口补充 size/sensitive/suffix 参数；UploadFileSliceParam storageType 修正为 MINIO；SaveResourceParam 修正 suffix/size 为非必填；SaveFileToProjectParam 新增 isSensitive 字段、修正 suffix 描述；全量 curl 示例补全 suffix/size/isSensitive | 刘艳华 |
 | 1.11 | 2026-04-13 | 新增“记忆沙盒”模块 (4.21-4.24)；默认存盘逻辑下放至接入层控制 | 刘艳华 |
 | 1.12 | 2026-04-16 | 移除 saveFileByParentId/saveFileByPath/saveFile 接口的 doc 富文本上传路径（fileType=doc + fileContent），三个接口统一仅支持 fileType=file + resourceId；纯文本内容统一通过 uploadContent 接口入库；更新相关接口说明、curl 示例及数据结构注释 | 刘艳华 |
+| 1.13 | 2026-04-22 | 新增文件版本管理模块（4.25-4.28）：updateFileVersion、getVersionList、getLastVersion、finalizeVersion；扩展 uploadContent（4.18）支持版本更新模式（新增 updateFileId/versionRemark/versionName 字段）；新增 FileVersionVO（5.17）数据结构；更新 5.11 字段说明 | 刘艳华 |
 
 ## 一、概述
 
@@ -252,14 +253,14 @@ https://{域名}/open-api/{接口地址}
 | 额外字段策略 | 忽略未定义字段 |
 | 返回裁剪策略 | 支持 `type`/`excludeFileTypes`/`excludeFolderNames`/`returnFileDesc` 过滤 |
 
-**请求示例**
+**请求示例（新建文件，Agent 归档首选）**
 
 ```bash
 curl -X GET 'https://{域名}/open-api/document-database/file/getChildFiles?parentId=1000' \
   -H 'appKey: YOUR_API_KEY'
 ```
 
-**响应示例**
+**响应示例（新建文件）**
 
 ```json
 {
@@ -269,6 +270,19 @@ curl -X GET 'https://{域名}/open-api/document-database/file/getChildFiles?pare
     {"id": 1001, "name": "技术方案", "type": 1, "parentId": 0, "hasChild": true},
     {"id": 1002, "name": "需求文档.pdf", "type": 2, "parentId": 0, "suffix": "pdf", "size": 204800, "hasChild": false}
   ]
+}
+```
+
+**响应示例（更新版本）**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "fileId": 12345,
+    "fileName": "2026Q1调研报告.md"
+  }
 }
 ```
 
@@ -1169,16 +1183,19 @@ curl -X POST 'https://{域名}/open-api/document-database/file/saveFileByPath' \
 | `content` | String | 是 | 文本/Markdown/HTML 内容字节流 |
 | `fileName` | String | 是 | 保存的文件名 |
 | `fileSuffix` | String | 否 | 文件后缀（如 `md`, `json`, `html`, `txt`）。**强烈建议显式传入**。不传则直接兜底为 `md`，若文件名已含扩展名（如 `报告.html`）会被错误追加 `.md` 后缀 |
-| `folderName` | String | 否 | 逻辑目录名。**默认：'和AI的对话'**。支持多级路径。 |
+| `folderName` | String | 否 | 逻辑目录名。**默认：'和AI的对话'**。支持多级路径。仅在新建模式下有效 |
+| `updateFileId` | Long | 否 | **版本更新模式专用**：要更新版本的文件 ID（即目标文件的 `fileId`，可通过 `getChildFiles`/`searchFile` 查询获得，或上传文件时的返回值）。传入则更新已有文件的版本，不传则新建文件到个人空间 |
+| `versionRemark` | String | 否 | **版本更新模式专用**：版本说明（如"修订了第三章内容"） |
+| `versionName` | String | 否 | **版本更新模式专用**：版本名称（如"V2.0"） |
 
 **请求行为约定**
 
 1. **纯文本限制**：该接口仅支持保存纯文本性质的数据，不支持物理二进制流。
 2. **后缀兜底**：不传 `fileSuffix` 时，系统兜底为 `md`。建议显式传入 `fileSuffix` 以确保文件格式正确。
-3. **默认归档**：如果不传 `folderName`，文件将归档至个人空间默认目录 **“和AI的对话”** 下。
+3. **默认归档**：如果不传 `folderName`，文件将归档至个人空间默认目录 **"和AI的对话"** 下（仅新建模式）。
+4. **版本更新模式**：传入 `updateFileId` 时，接口自动切换为版本更新模式，`folderName` 参数无效，文件内容将作为新版本绑定到目标文件。
 
-**请求示例**
-保存原生 Markdown 文档（Agent 归档首选）
+**请求示例（新建文件，Agent 归档首选）**
 
 ```bash
 curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
@@ -1191,13 +1208,29 @@ curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
   }'
 ```
 
+**请求示例（更新已有文件版本）**
+
+```bash
+curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "updateFileId": 12345,
+    "content": "# 调研结论 V2\n\n## 1. 核心观点（修订版）\n- 方案可行，成本已优化",
+    "fileName": "2026Q1调研报告",
+    "fileSuffix": "md",
+    "versionRemark": "修订了第三章内容",
+    "versionName": "V2.0"
+  }'
+```
+
 **响应参数**
 
 | 属性名称 | 类型 | 说明 |
 | :--- | :--- | :--- |
 | `data` | Object | `UploadContentToPersonalProjectResult` 结构（详见 **[5.12](#512-uploadcontenttopersonalprojectresult-新增)**） |
 
-**响应示例**
+**响应示例（新建文件）**
 
 ```json
 {
@@ -1215,9 +1248,22 @@ curl -X POST 'https://{域名}/open-api/document-database/file/uploadContent' \
 }
 ```
 
+**响应示例（更新版本）**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "fileId": 12345,
+    "fileName": "2026Q1调研报告.md"
+  }
+}
+```
+
 **数据流向**
 
-- 生成的 `fileId` 可直接用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参，实现从“写入”到“阅读/索引”的闭环。
+- 生成的 `fileId` 可直接用于 **4.2 getDownloadInfo** / **4.3 getFileContent** / **4.4 getFullFileContent** 的入参，实现从"写入"到"阅读/索引"的闭环。
 
 ---
 
@@ -1571,6 +1617,280 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 
 ---
 
+
+### 4.25 【版本】上传新文件内容以更新文件版本
+
+将已上传的物理文件资源绑定到已有文件，产生新版本记录。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/updateFileVersion` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | 物理文件版本更新 |
+
+**请求参数**
+
+请求体为 `UpdateFileVersionParam`：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `id` | Long | 是 | 要更新的文件ID |
+| `projectId` | Long | 是 | 文件所在空间ID |
+| `resourceId` | Long | 是 | 新上传的物理资源ID（通过 saveResource 接口获取） |
+| `name` | String | 否 | 文件名（可选，不传则保持原文件名） |
+| `versionStatus` | Integer | 否 | 版本行为控制：1=覆盖当前草稿（默认）；2=强制新建版本；3=新建版本并立即定稿 |
+| `versionName` | String | 否 | 版本名称，如 V2.0 |
+| `versionRemark` | String | 否 | 版本说明 |
+| `suffix` | String | 否 | 文件后缀 |
+| `size` | Long | 否 | 文件大小（字节） |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 否-重复调用会创建多个版本 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/document-database/file/updateFileVersion' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"id":12345,"projectId":2025001,"resourceId":987654321,"versionStatus":3,"versionName":"V2.0","versionRemark":"修正了第三章内容"}'
+```
+
+**响应参数**
+
+`data` 类型为 `Long`，返回文件 ID。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": 12345
+}
+```
+
+**数据流向**
+
+- 返回的 `fileId` 可用于 **4.2 getDownloadInfo** / **4.26 getVersionList** 的入参。
+
+---
+
+### 4.26 【版本】获取文件的所有历史版本列表
+
+获取指定文件的完整版本历史，包括版本号、定稿状态、创建人、备注等信息。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/getVersionList` |
+| 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 查看文件版本历史 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 文件ID |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回全部版本记录 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://{域名}/open-api/document-database/file/getVersionList?fileId=12345' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应参数**
+
+`data` 类型为 `List<FileVersionVO>`，字段详见 **[5.17 FileVersionVO](#517-fileversionvo)**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": [
+    {
+      "id": 1003, "fileId": 12345, "versionNumber": 3, "versionName": "V3.0",
+      "status": 1, "remark": "修正了第三章内容", "label": "初始化",
+      "creator": "张三", "createTime": 1712707200000,
+      "lastVersion": true
+    },
+    {
+      "id": 1002, "fileId": 12345, "versionNumber": 2, "versionName": "V2.0",
+      "status": 2, "remark": "增加附录", "label": "放行",
+      "creator": "李四", "createTime": 1712620800000,
+      "lastVersion": false
+    }
+  ]
+}
+```
+
+**数据流向**
+
+- 返回的版本记录可用于 **4.28 finalizeVersion** 的 `versionNumber` 入参。
+
+---
+
+### 4.27 【版本】获取文件的最新版本信息
+
+快速获取文件当前最新版本的详细信息。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/getLastVersion` |
+| 请求方式 | `GET` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 查询 |
+| 推荐调用场景 | 判断当前版本状态 |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 文件ID |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-天然幂等（只读查询） |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 返回单个版本记录 |
+
+**请求示例**
+
+```bash
+curl -X GET 'https://{域名}/open-api/document-database/file/getLastVersion?fileId=12345' \
+  -H 'appKey: YOUR_API_KEY'
+```
+
+**响应参数**
+
+`data` 类型为 `FileVersionVO`，字段详见 **[5.17 FileVersionVO](#517-fileversionvo)**。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "id": 1003, "fileId": 12345, "versionNumber": 3, "versionName": "V3.0",
+    "status": 2, "remark": "最终定稿版本", "label": "放行",
+    "creator": "张三", "createTime": 1712707200000,
+    "lastVersion": true
+  }
+}
+```
+
+**数据流向**
+
+- 返回的 `status` 字段可用于判断是否需要调用 **4.28 finalizeVersion**。
+
+---
+
+### 4.28 【版本】将指定版本标记为定稿
+
+将文件的某个版本标记为正式定稿状态（status 从 1 变为 2）。
+
+**基本信息**
+
+| 项目 | 说明 |
+| :--- | :--- |
+| 接口地址 | `/document-database/file/finalizeVersion` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+| 接口负责人 | 知识库服务团队 |
+| 所属模块 | 知识库服务 |
+| 版本号 | v1 |
+| 接口类型 | 写入 |
+| 推荐调用场景 | 版本定稿 |
+
+**请求参数**
+
+请求体为 `FinalizeVersionParam`：
+
+| 字段 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `fileId` | Long | 是 | 文件ID |
+| `versionNumber` | Integer | 否 | 要定稿的版本号（不传或传0则定稿最新版本） |
+
+**请求与行为约定**
+
+| 项 | 说明 |
+| --- | --- |
+| 是否支持分页 | 否 |
+| 是否支持批量 | 否 |
+| 幂等性要求 | 是-重复定稿已定稿版本不会报错 |
+| 额外字段策略 | 忽略未定义字段 |
+| 返回裁剪策略 | 不适用 |
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/document-database/file/finalizeVersion' \
+  -H 'appKey: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"fileId":12345,"versionNumber":3}'
+```
+
+**响应参数**
+
+`data` 类型为 `Boolean`，表示操作成功与否。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": "成功",
+  "data": true
+}
+```
+
+**数据流向**
+
+- 定稿后，下次调用 **4.25 updateFileVersion** 或 **4.18 uploadContent（版本更新模式）** 将自动创建新版本。
+
+---
+
 ## 五、公共数据结构
 
 ### 5.1 FileVO
@@ -1749,6 +2069,9 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 | `fileName` | String | 是 | 文件展示名称 |
 | `fileSuffix` | String | 否 | 文件后缀（按需传入，逻辑层默认为 `md`） |
 | `folderName` | String | 否 | 逻辑目录路径。**不传则默认归档至"和AI的对话"目录下**，支持多级路径（如 `"AI生成/调研摘要"`） |
+| `updateFileId` | Long | 否 | **版本更新模式专用**：要更新版本的文件 ID（即目标文件的 `fileId`，可通过 `getChildFiles`/`searchFile` 查询获得，或上传文件时的返回值）。传入则更新已有文件的版本，不传则新建文件到个人空间 |
+| `versionRemark` | String | 否 | **版本更新模式专用**：版本说明（如“修订了第三章内容”） |
+| `versionName` | String | 否 | **版本更新模式专用**：版本名称（如“V2.0”） |
 
 ---
 
@@ -1828,6 +2151,31 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 
 ---
 
+### 5.17 FileVersionVO [新增]
+文件版本信息。
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | Long | 版本记录ID |
+| `fileId` | Long | 文件ID |
+| `versionNumber` | Integer | 版本号（从1开始递增） |
+| `versionName` | String | 版本名称，如 V2.0 |
+| `remark` | String | 版本说明/备注 |
+| `status` | Integer | 版本状态：1=未定稿（草稿），2=已定稿 |
+| `resourceId` | Long | 底层资源ID |
+| `resourceType` | String | 资源来源类型：upload=上传，translation=翻译 |
+| `fileType` | String | 文件类型：file=普通文件，doc=富文本 |
+| `label` | String | 版本标签：原始、初始化、放行、翻译 |
+| `createBy` | Long | 创建人ID |
+| `creator` | String | 创建人姓名 |
+| `createTime` | Long | 创建时间（毫秒时间戳） |
+| `updater` | String | 最后更新人姓名 |
+| `updateTime` | Long | 最后更新时间（毫秒时间戳） |
+| `lastVersion` | Boolean | true 表示当前最新版本 |
+| `fileName` | String | 文件名（含后缀） |
+
+---
+
 ## 六、错误码说明
 
 开放平台接口统一使用 `resultCode` 表示业务处理结果。除通用的成功（1）和失败（0）外，系统还定义了以下标准错误码，便于调用方进行精确的分支处理与异常提示：
@@ -1889,6 +2237,6 @@ curl -X GET 'https://{域名}/open-api/document-database/memory/getProjectConten
 
 ---
 
-**文档版本**：v1.12
-**更新日期**：2026-04-16
+**文档版本**：v1.13
+**更新日期**：2026-04-22
 **维护人/团队**：知识库服务团队
