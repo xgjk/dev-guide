@@ -1416,8 +1416,27 @@ curl -N -X POST 'https://{域名}/open-api/work-report/open-platform/report/aiSs
 | `supervisorEmpIdList` | List\<Long> | 否 | 监督人id列表 |
 | `copyEmpIdList` | List\<Long> | 否 | 抄送人id列表 |
 | `observerEmpIdList` | List\<Long> | 否 | 观察者id列表 |
+| `ruleType` | String | 是 | 提醒/汇报规则类型，取值见下节「`ruleType` 与 `ruleValue`、`requiredIndex` 联动说明」。可选值：`once`、`day`、`week`、`month`、`n_week`、`n_month` |
+| `ruleValue` | Integer | 条件 | 规则间隔。仅当 `ruleType` 为 `day`、`n_week`、`n_month` 时按规则传值，其余类型不传。见下节 |
+| `requiredIndex` | String | 条件 | 提醒日/星期几/月内日期。`ruleType` 为 `once`、`week`、`month`、`n_week`、`n_month` 时按规则有值，格式见下节 |
+| `requiredValue` | String | 是 | 提醒时间，格式 `HH:mm:ss` |
 | `endTime` | Long | 是 | 任务结束时间(时间戳) |
-| `pushNow` | Integer | 否 | 任务创建后是否立即发送通知和待办：0-否、1-是(默认1) |
+| `pushNow` | Integer | 否 | 创建任务后是否发送通知和待办：0-否、1-是(默认1) |
+| `isWorkDay` | Boolean | 否 | 是否仅在工作日发送提醒/待办：`true`-仅工作日(默认)、`false`-非工作日也发送 |
+
+
+**`ruleType` 与 `ruleValue`、`requiredIndex` 联动说明**
+- **`requiredValue`**：汇报提醒的具体时刻，统一为 `HH:mm:ss`。
+- **`requiredIndex` 为字符串**：周序与月内日请传 **数字字符**（如 `"1"`、`"7"`），与业务约定一致；单次汇报时传**日期** `yyyy-MM-dd`。
+
+| `ruleType` | 说明 | `ruleValue` | `requiredIndex` |
+| --- | --- | --- | --- |
+| `once` | 单次汇报 | 不传 | 日期，格式 `yyyy-MM-dd` |
+| `day` | 按天汇报 | 正整数，表示每隔**几天**汇报一次 | 不传 |
+| `week` | 按每周汇报 | 不传 | 取值 `1`–`7`，表示**周一**至**周日**中的一天（`1` 为周一，`7` 为周日） |
+| `month` | 按每月汇报 | 不传 | 取值 `1`–`28`，表示每月 1 号至 28 号中的**一天** |
+| `n_week` | 按多周汇报（当前为双周） | 固定为 `2`（每隔两周一次） | 取值 `1`–`7`，含义同 `week` |
+| `n_month` | 按多月汇报 | 取值为 `2` 或 `3`（分别表示每隔 2 个月、每隔 3 个月汇报一次） | 取值 `1`–`28`，含义同 `month` |
 
 **响应参数**
 
@@ -1454,8 +1473,12 @@ curl -X POST 'https://{域名}/open-api/work-report/open-platform/report/plan/cr
   "supervisorEmpIdList": [],
   "copyEmpIdList": [],
   "observerEmpIdList": [],
+  "ruleType": "week",
+  "requiredIndex": "1",
+  "requiredValue": "09:00:00",
   "endTime": 1774972799000,
-  "pushNow": 1
+  "pushNow": 1,
+  "isWorkDay": true
 }'
 ```
 
