@@ -27,6 +27,7 @@
 | 3.1 | 2026-04-17 | 获取汇报内容(5.5)接口响应参数增加汇报标题 (main) | 付光伟 |
 | 3.2 | 2026-04-20 | 新增汇报催办与工作任务催办接口 (5.43-5.44) | 龙继海 |
 | 3.3 | 2026-04-21 | 获取汇报正文附件回复邮件信息与创建汇报或工作任务的分享连接 (5.45-5.46) | 龙继海 |
+| 3.4 | 2026-04-22 | 新增获取/绑定/解绑/邮箱、同步邮箱数据、邮件分页、汇报搜索接口 (5.47-5.52)| 龙继海 |
 
 
 
@@ -91,6 +92,12 @@
 44. [**工作任务催办**](#544-工作任务催办) — 对工作任务处理人发送催办。
 45. [**获取汇报正文、附件、回复、关联汇报、关联邮件信息**](#545-获取汇报正文附件回复关联汇报关联邮件信息) — 根据汇报ID和类型列表获取汇报正文、附件、回复、关联汇报、关联邮件信息。
 46. [**创建汇报或工作任务的分享连接**](#546-创建汇报或工作任务的分享连接) — 创建汇报或工作任务的分享连接。
+47. [**获取绑定的邮箱账号**](#547-获取绑定的邮箱账号) — 获取当前用户绑定的外部邮箱与同步概览信息。
+48. [**绑定邮箱账号**](#548-绑定邮箱账号) — 为当前用户绑定外部邮箱以获取邮箱邮件信息。
+49. [**解绑邮箱账号**](#549-解绑邮箱账号) — 按已绑定邮箱主键解绑。
+50. [**同步邮箱数据**](#550-同步邮箱数据) — 按绑定邮箱主键主动触发一次该账号邮件数据同步（异步任务以服务端为准）。
+51. [**分页查询收件箱/发件箱邮件列表**](#551-分页查询收件箱发件箱邮件列表) — 按关键词、邮件类型分页查询已同步的邮件记录。
+52. [**分页搜索汇报列表**](#552-分页搜索汇报列表) — 按时间、关键词、分类与人员等条件分页搜索汇报。
 
 > **延伸阅读**：关于个人标签名称的“增删改查”基础定义管理，请参阅 **[《基础服务 — 标签管理接口》](../基础服务/API接口明细/04-个人标签管理.md)**。
 
@@ -2497,6 +2504,372 @@ curl -X POST 'https://{域名}/open-api/work-report/report/share/create' \
 
 ---
 
+### 5.47 获取绑定的邮箱账号
+
+获取当前用户在工作协同中绑定的外部邮箱账号信息，以及收件/发件同步数量与同步状态；未绑定时 `id` 为空。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/mail/info` |
+| 请求方式 | `GET` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+无（由登录态识别当前用户）。
+
+**响应参数**
+
+`data` 类型为 `EmployeeMailInfoVO`，结构见 **6.39 EmployeeMailInfoVO**。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://{域名}/open-api/work-report/mail/info' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": {
+    "id": 1,
+    "name": "刘健",
+    "avatar": "https://xxx.jpg",
+    "nickname": null,
+    "telephone": "11111",
+    "title": "工程师",
+    "managerEmpId": 1234567890,
+    "corpId": 1000,
+    "status": 1,
+    "personId": 120001,
+    "emailAddress": "x@qq.com",
+    "syncStatus": 1,
+    "lastSyncTime": "2026-04-21T18:00:11.000+00:00",
+    "inboxCount": 56,
+    "outboxCount": null
+  }
+}
+```
+
+---
+
+### 5.48 绑定邮箱账号
+
+为当前用户绑定外部邮箱账号，用于后续同步收件箱/发件箱邮件。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/mail/banding` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+请求体为 JSON，字段如下（见 **6.40 BandingMailParam**）：
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `emailAddress` | String | 否 | 邮箱地址； |
+| `emailPwd` | String | 否 | 邮箱密码；邮箱服务商提供的客户端专用密码 |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，成功返回 `true`。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/mail/banding' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "emailAddress": "user@example.com",
+    "emailPwd": "********"
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": true
+}
+```
+
+---
+
+### 5.49 解绑邮箱账号
+
+按已绑定邮箱记录主键解绑，停止该账号的邮件同步。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/mail/unbind` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `employeeMailId` | Long | 是 | 绑定的邮箱 ID（与 **6.39** 中 `id` 一致） |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，成功返回 `true`。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/mail/unbind?employeeMailId=1' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": true
+}
+```
+
+---
+
+### 5.50 同步邮箱数据
+
+按已绑定的 `employeeMailId` 主动触发该邮箱账号的邮件数据同步。具体为同步、队列执行或全量/增量，以服务端实现为准；调用成功仅表示**受理或触发成功**（`data: true`），不代表本请求内已同步完成。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/mail/sync` |
+| 请求方式 | `GET` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `employeeMailId` | Long | 是 | 绑定的邮箱 ID（与 **6.39** 中 `id` 一致，见 **5.47** 获取） |
+
+**响应参数**
+
+`data` 类型为 `Boolean`，成功返回 `true`。
+
+**请求示例**
+
+```bash
+curl -X GET 'https://{域名}/open-api/work-report/mail/sync?employeeMailId=1' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": true
+}
+```
+
+---
+
+### 5.51 分页查询收件箱/发件箱邮件列表
+
+对已同步到工作协同的邮件记录进行分页查询，可按主题/正文关键词与邮件类型（收件箱/发件箱）筛选。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/mail/page` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+请求体为 JSON，字段如下（见 **6.41 SearchMailParam**）：
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `keyWord` | String | 否 | 搜索主题与邮件内容 |
+| `mailType` | Integer | 否 | 邮件类型：`1`-收件箱、`2`-发件箱 |
+| `pageIndex` | Integer | 否 | 当前页号，**从 1 开始** |
+| `pageSize` | Integer | 否 | 每页记录数 |
+
+**响应参数**
+
+`data` 类型为 `PageInfo<MailPageItemVO>`（见 **6.3 PageInfo\<T>**），`list` 元素结构见 **6.42 MailPageItemVO**。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/mail/page' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "keyWord": "项目",
+    "mailType": 1,
+    "pageIndex": 1,
+    "pageSize": 20
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": {
+    "total": 100,
+    "pageNum": 1,
+    "pageSize": 20,
+    "size": 20,
+    "list": [
+      {
+        "id": 1,
+        "employeeMailId": 100,
+        "mailType": 1,
+        "mailAccount": "user@example.com",
+        "msgId": "<msg@host>",
+        "uid": "uid-1",
+        "subject": "本周进展",
+        "fromMail": "a@example.com",
+        "toMails": "b@example.com",
+        "ccMails": "",
+        "replyTo": "",
+        "content": "{\"content\":\"<div>abc</div>\"}",
+        "realContent": "abc",
+        "attachments": "[{\"name\":\"a.pdf\",\"url\":\"https://xxx\"}]",
+        "sendTime": "2026-04-21T18:00:11.000+00:00",
+        "createTime": "2026-04-21T18:01:00.000+00:00",
+        "updateTime": "2026-04-21T18:01:00.000+00:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 5.52 分页搜索汇报列表
+
+按时间范围、关键词、汇报分类、发件人/收件人范围等条件分页查询汇报列表；关键词可以是汇报主题、汇报唯一编码、汇报发送人/接收人、汇报内容。
+
+**基本信息**
+
+| 项目 | 说明 |
+| ------------ | ----------------------------------- |
+| 接口地址 | `/work-report/report/record/searchPage` |
+| 请求方式 | `POST` |
+| Content-Type | `application/json` |
+
+**请求参数**
+
+请求体为 JSON，字段如下（见 **6.43 SearchReportRecordPageParam**）：
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `beginTime` | Long | 否 | 汇报开始时间，**毫秒时间戳** |
+| `endTime` | Long | 否 | 汇报结束时间，**毫秒时间戳** |
+| `keyWord` | String | 否 | 关键词，匹配主题、唯一编码、发汇报人、汇报内容等 |
+| `pageIndex` | Integer | 是 | 页码，**从 0 开始** |
+| `pageSize` | Integer | 是 | 每页记录数 |
+| `classificationIdList` | List\<Long> | 否 | 汇报分类 ID 列表 |
+| `fromEmpIdList` | List\<String> | 否 | 发汇报人（写汇报人）员工 ID 列表；元素建议按字符串传参以避免精度问题 |
+| `toEmpIdList` | List\<String> | 否 | 接收汇报人员工 ID 列表；元素建议按字符串传参 |
+
+**响应参数**
+
+`data` 类型为 `PageInfo<ReportRecordSearchItemVO>`（见 **6.3 PageInfo\<T>**,注:当前接口分页返回`pageNum`从0开始），`list` 元素结构见 **6.44 ReportRecordSearchItemVO** 及其嵌套 **6.45 - 6.47**。
+
+**请求示例**
+
+```bash
+curl -X POST 'https://{域名}/open-api/work-report/report/record/searchPage' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: {appKey}' \
+  -d '{
+    "beginTime": 0,
+    "endTime": 0,
+    "keyWord": "",
+    "classificationIdList": [],
+    "fromEmpIdList": [],
+    "toEmpIdList": [],
+    "pageIndex": 0,
+    "pageSize": 20
+  }'
+```
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "data": {
+    "total": 1,
+    "pageNum": 0,
+    "pageSize": 20,
+    "list": [
+      {
+        "id": "1",
+        "code": "",
+        "fromEmp": {
+          "id": 399238,
+          "name": "www",
+          "corpId": 10000
+        },
+        "toEmpList": [
+          {
+            "id": 20001,
+            "name": "rrrr",
+            "corpId": 10000
+          }
+        ],
+        "label": null,
+        "main": "",
+        "projectName": "",
+        "title": "",
+        "needful": "",
+        "textContent": "xxxxxxxxxxxxxxxx",
+        "fileList": null,
+        "classificationObjectList": [
+          {
+            "id": 31121223,
+            "name": "其他"
+          }
+        ],
+        "type": "合同管理（OPS）",
+        "status": 1,
+        "reportTime": 1776655129000,
+        "mailSubject": null,
+        "mailRealContent": null,
+        "isLead": 0,
+        "isSign": 0,
+        "corpId": 10000
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## 六、公共数据结构
 
 ### 6.1 ReportLevelParam
@@ -3064,6 +3437,146 @@ curl -X POST 'https://{域名}/open-api/work-report/report/share/create' \
 | `reportRecordId` | Long | 汇报 ID |
 | `writeEmpId` | Long | 写汇报员工 ID |
 | `writeEmpName` | String | 汇报人 |
+
+### 6.39 EmployeeMailInfoVO
+
+获取绑定邮箱信息接口（**5.47**）成功时 `data` 的对象类型。`id` 为空或缺失时表示尚未绑定外部邮箱（以服务端实现为准）。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 绑定的邮箱 ID；**空表示未绑定** |
+| `name` | String | 用户名称 |
+| `nickname` | String | 昵称 |
+| `corpId` | Long | 企业 id |
+| `emailAddress` | String | 绑定的邮箱地址 |
+| `avatar` | String | 头像 URL |
+| `personId` | Long | 用户 personId（与企业无关） |
+| `telephone` | String | 手机号 |
+| `title` | String | 职位 |
+| `status` | Integer | 状态：`1`-正常、`2`-禁用（含离职等） |
+| `inboxCount` | Integer | 收件箱已同步数量 |
+| `lastSyncTime` | String | 最近同步时间，格式 `yyyy-MM-ddTHH:mm:ss.SSSXXX`（含时区偏移） |
+| `managerEmpId` | Long | 直属主管员工 id |
+| `outboxCount` | Integer | 发件箱已同步数量 |
+| `syncStatus` | Integer | 同步状态：`0`-正在同步中、`1`-同步已结束 |
+
+### 6.40 BandingMailParam
+
+绑定邮箱（**5.48**）请求体对象。字段在 OpenAPI 中可为空，**实际落库/同步前通常需要有效邮箱与密码**。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `emailAddress` | String | 邮箱地址 |
+| `emailPwd` | String | 邮箱密码（传输与存储以服务端安全策略为准） |
+
+### 6.41 SearchMailParam
+
+邮件分页（**5.51**）请求体对象。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `keyWord` | String | 搜索主题与邮件内容 |
+| `mailType` | Integer | 邮件类型：`1`-收件箱、`2`-发件箱 |
+| `pageIndex` | Integer | 当前页号，**从 1 开始** |
+| `pageSize` | Integer | 每页记录数 |
+
+### 6.42 MailPageItemVO
+
+已同步邮件列表分页（**5.51**）`PageInfo` 的 `list` 元素类型。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 邮件记录主键 id |
+| `employeeMailId` | Long | 绑定的邮箱 id |
+| `mailAccount` | String | 邮箱账号 |
+| `mailType` | Integer | 邮件类型：`1`-收件箱、`2`-发件箱 |
+| `msgId` | String | 邮件 Message-ID |
+| `uid` | String | 邮件 UID（与协议/服务端实现相关） |
+| `subject` | String | 主题 |
+| `fromMail` | String | 发件人 |
+| `toMails` | String | 收件人；多人时逗号分隔 |
+| `ccMails` | String | 抄送人；多人时逗号分隔 |
+| `replyTo` | String | 回复时使用的收件人 |
+| `content` | String | 邮件内容，通常为 JSON 字符串，如 `{"content":"<div>abc</div>"}` |
+| `realContent` | String | 解析后的正文（不含可执行脚本） |
+| `attachments` | String | 附件，JSON 数组字符串，如 `[{"name":"abc","url":"http://ab.c"}]` |
+| `sendTime` | String | 发件时间，格式 `yyyy-MM-ddTHH:mm:ss.SSSXXX` |
+| `createTime` | String | 创建时间 |
+| `updateTime` | String | 修改时间 |
+
+### 6.43 SearchReportRecordPageParam
+
+汇报搜索分页（**5.52**）请求体对象。
+
+| 字段名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `beginTime` | Long | 否 | 汇报开始时间（毫秒时间戳） |
+| `endTime` | Long | 否 | 汇报结束时间（毫秒时间戳） |
+| `keyWord` | String | 否 | 关键词：主题、唯一编码、发汇报人、内容等 |
+| `pageIndex` | Integer | 是 | 页码，**从 0 开始** |
+| `pageSize` | Integer | 是 | 每页条数 |
+| `classificationIdList` | List\<Long> | 否 | 汇报分类 id 列表 |
+| `fromEmpIdList` | List\<String> | 否 | 发汇报人（写汇报人）员工 id 列表 |
+| `toEmpIdList` | List\<String> | 否 | 接收汇报人员工 id 列表 |
+
+### 6.44 ReportRecordSearchItemVO
+
+汇报搜索分页（**5.52**）`PageInfo` 的 `list` 元素类型（OpenAPI/检索返回字段可能扩展，以实际响应为准）。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | String | 汇报 id |
+| `code` | String | 汇报唯一编码 |
+| `main` | String | 汇报主题（标题） |
+| `title` | String | 计划标题 |
+| `needful` | String | 计划汇报内容要求 |
+| `textContent` | String | 汇报内容 |
+| `type` | String | 汇报类型（如业务线名称/类型描述） |
+| `status` | Integer | 状态，如 `1` 已提交（以产品定义为准） |
+| `reportTime` | Long | 汇报时间（毫秒时间戳） |
+| `corpId` | String / Long | 企业 id；序列化中可能出现字符串，对接建议按 Long/字符串双兼容 |
+| `label` | String | 标签，多个以分号分隔 |
+| `projectName` | String | 关联业务名，多个以分号分隔 |
+| `isLead` | Integer | 是否指引汇报：`0` 否、`1` 是 |
+| `isSign` | Integer | 是否文件签批：`0` 否、`1` 是 |
+| `mailSubject` | String | 关联邮件主题 |
+| `mailRealContent` | String | 关联邮件解析正文（无 js） |
+| `leadContent` | String | 需指引内容 |
+| `fileList` | List\<EsWorkFile> | 附件/超链列表（见 **6.47**） |
+| `fromEmp` | EsEmpInfo | 写汇报人（见 **6.45**） |
+| `toEmpList` | List\<EsEmpInfo> | 接收汇报人列表（见 **6.45**） |
+| `classificationObjectList` | List\<EsClassification> | 分类列表（见 **6.46**） |
+
+### 6.45 EsEmpInfo
+
+搜索汇报项中的参与人简要信息（**5.52 / 6.44**）。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 员工 id |
+| `name` | String | 姓名 |
+| `corpId` | Long / String | 企业 id；序列化中可能出现字符串，对接按 Long/字符串兼容 |
+| `deptQueryCodeList` | List\<String> | 部门 queryCode 集合（以接口返回为准，可为空） |
+
+### 6.46 EsClassification
+
+搜索汇报项中的分类信息（**5.52 / 6.44**）。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | Long | 分类 id |
+| `name` | String | 分类名称 |
+
+### 6.47 EsWorkFile
+
+搜索汇报项中的附件或超链（**5.52 / 6.44**）。含义与 `OpenPlatformFileVO`（**6.24**）类似，为检索侧（ES）返回的简化结构。
+
+| 字段名 | 类型 | 说明 |
+| --- | --- | --- |
+| `fileId` | String | 文件/资源 id |
+| `name` | String | 名称或链接描述 |
+| `type` | String | 类型（如 `file`/`url` 等，以返回为准） |
+| `url` | String | 链接或下载地址 |
 
 
 ---
