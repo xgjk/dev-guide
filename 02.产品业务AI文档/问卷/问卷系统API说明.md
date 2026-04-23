@@ -78,6 +78,9 @@
 - `OpenSi2026SubmissionDetailVO`：社保专项单人提交详情（`answers` 为对象）
 - `OpenSi2026StatisticsVO`：社保专项统计（`submissions` 为原始提交列表）
 - `OpenSi2026SubmissionPayloadVO`：社保专项原始提交项（含 `payloadJson`）
+- `OpenSi2026NotifySendResponse`：社保专项批量通知受理结果
+- `OpenSi2026NotifyPressureResponse`：社保专项催办结果汇总
+- `OpenSi2026NotifyPressureItemVO`：社保专项催办逐条结果
 
 ---
 
@@ -223,15 +226,40 @@
 
 请求参数：无（按全量口径统计）。
 
+### 2.13 2026 人事社保专项-批量发送专项通知（sendSi2026Notify）
+
+| 项目 | 说明 |
+|------|------|
+| 方法 | `POST` |
+| 接口地址 | `/questionnaire/social-insurance/notify/send` |
+| 下游地址 | `/open/social-insurance-2026/notify/send` |
+| 返回类型 | `Result<OpenSi2026NotifySendResponse>` |
+
+请求参数：无（按专项通知名单异步受理发送）。
+
+### 2.14 2026 人事社保专项-专项通知催办（pressureSi2026Notify）
+
+| 项目 | 说明 |
+|------|------|
+| 方法 | `GET` |
+| 接口地址 | `/questionnaire/social-insurance/notify/pressure` |
+| 下游地址 | `/open/social-insurance-2026/notify/pressure` |
+| 返回类型 | `Result<OpenSi2026NotifyPressureResponse>` |
+
+请求参数：无（按专项通知发送结果进行催办）。
+
 ---
 
 ## 三、一致性说明（调用说明是否需要改）
 
 已核对 `QuestionnaireController` 实际路径与 [《问卷系统API调用说明》](./问卷系统API调用说明.md)：
 
-- 已覆盖 12 个接口；
+- 已覆盖 14 个接口；
 - 已对齐社保专项外部路径为 `/questionnaire/social-insurance/**`；
-- 已对齐专项统计接口无 `formCode` 入参。
+- 已对齐专项统计接口无 `formCode` 入参；
+- 已对齐专项通知发送/催办接口（对应下游文档 8.4/8.5）。
+
+补充说明：下游文档 `8.3` 为 `payload_json` 结构说明，不是独立 HTTP 接口。
 
 当前调用说明无需额外修改。若后续控制器路径再调整，请同步更新两份文档中的“本服务路径”与“下游路径”映射。
 
