@@ -2,7 +2,7 @@
 
 **配套文档**：[《BP 目标管理 Open API 调用说明》](./BP系统API调用说明.md)（修订记录、概述、通用约定、接口清单索引、场景编排、注意事项与历史路径）。**本文仅描述数据模型、接口契约与公共类型。**
 
-> **最新变更（v1.21）**：新增 2.34 获取汇报推进情况 Markdown（`getReportProgressMarkdown`），按任务 ID + 月份返回汇报 AI 结构化摘要与回复，供大模型消费。
+> **最新变更（v1.22）**：新增 2.35 保存目标月报信息（`saveTaskMonthlyReading`）和 2.36 查询目标月报信息（`getTaskMonthlyReading`），支持按任务 ID + 月份保存和查询目标月报阅读内容。
 
 ---
 
@@ -2399,6 +2399,128 @@ curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/v2/task/repor
 **数据流向**
 
 `taskId` 来自 **2.4 查询任务树**、**2.18~2.20 轻量列表** 或 **2.5~2.7 详情接口**返回的 `id`。若该月份无汇报或无有效推进记录，返回 `"暂无汇报推进记录。"` 或 `"暂无有效的汇报推进记录。"`。
+
+---
+
+### 2.35 保存目标月报信息（saveTaskMonthlyReading）
+
+保存或更新目标月报阅读内容。根据任务 ID + 月份查询，已存在则覆盖更新内容，不存在则新增。
+
+**规范命名**：`saveTaskMonthlyReading`（规划 W3）。
+
+**基本信息**
+
+| 项目         | 说明                               |
+| ------------ | ---------------------------------- |
+| 接口地址     | `/bp/task/monthlyReading/save`     |
+| 请求方式     | `POST`                             |
+| Content-Type | `application/json`                 |
+
+**请求参数**
+
+| 参数      | 类型   | 必填 | 说明                                     |
+| --------- | ------ | ---- | ---------------------------------------- |
+| `taskId`  | Long   | 是   | 任务 ID（目标 / 关键成果 / 关键举措）    |
+| `month`   | String | 是   | 月份，格式 `YYYY-MM`（如 `2026-04`）     |
+| `content` | String | 是   | 阅读内容                                 |
+
+**请求体示例**
+
+```json
+{
+  "taskId": 2014631829004374017,
+  "month": "2026-04",
+  "content": "## 4月目标月报阅读内容\n\n### 核心进展\n本月完成了关键里程碑..."
+}
+```
+
+**响应参数**
+
+`data`：`Boolean`，保存成功返回 `true`。
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": true
+}
+```
+
+**请求示例**
+
+```bash
+curl -X POST 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/monthlyReading/save' \
+  -H 'appKey: XXXXXXXX' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "taskId": 2014631829004374017,
+    "month": "2026-04",
+    "content": "## 4月目标月报阅读内容\n\n本月完成了关键里程碑"
+  }'
+```
+
+**数据流向**
+
+`taskId` 来自 **2.4 查询任务树**、**2.18~2.20 轻量列表** 或 **2.5~2.7 详情接口**返回的 `id`。保存后可通过 **2.36 查询目标月报信息** 查询。
+
+---
+
+### 2.36 查询目标月报信息（getTaskMonthlyReading）
+
+根据任务 ID 和月份查询目标月报阅读内容。若该月份无记录，`data` 为 `null`。
+
+**规范命名**：`getTaskMonthlyReading`（规划 R6）。
+
+**基本信息**
+
+| 项目     | 说明                              |
+| -------- | --------------------------------- |
+| 接口地址 | `/bp/task/monthlyReading/get`     |
+| 请求方式 | `GET`                             |
+
+**请求参数**
+
+| 参数     | 类型   | 必填 | 说明                                     |
+| -------- | ------ | ---- | ---------------------------------------- |
+| `taskId` | Long   | 是   | 任务 ID（目标 / 关键成果 / 关键举措）    |
+| `month`  | String | 是   | 月份，格式 `YYYY-MM`（如 `2026-04`）     |
+
+**响应参数**
+
+`data`：`TaskMonthlyReadingVO`，字段如下：
+
+| 字段      | 类型   | 说明               |
+| --------- | ------ | ------------------ |
+| `taskId`  | Long   | 任务 ID            |
+| `month`   | String | 月份，格式 YYYY-MM |
+| `content` | String | 阅读内容           |
+
+**响应示例**
+
+```json
+{
+  "resultCode": 1,
+  "resultMsg": null,
+  "data": {
+    "taskId": "2014631829004374017",
+    "month": "2026-04",
+    "content": "## 4月目标月报阅读内容\n\n### 核心进展\n本月完成了关键里程碑..."
+  }
+}
+```
+
+**请求示例**
+
+```bash
+curl -X GET 'https://sg-al-cwork-web.mediportal.com.cn/open-api/bp/task/monthlyReading/get?taskId=2014631829004374017&month=2026-04' \
+  -H 'appKey: XXXXXXXX'
+```
+
+**数据流向**
+
+`taskId` 来自 **2.4 查询任务树**、**2.18~2.20 轻量列表** 或 **2.5~2.7 详情接口**返回的 `id`。数据通过 **2.35 保存目标月报信息** 写入。
 
 ---
 
