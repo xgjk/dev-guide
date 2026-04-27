@@ -78,6 +78,8 @@
 - `OpenSi2026SubmissionDetailVO`：社保专项单人提交详情（`answers` 为对象）
 - `OpenSi2026StatisticsVO`：社保专项统计（`submissions` 为原始提交列表）
 - `OpenSi2026SubmissionPayloadVO`：社保专项原始提交项（含 `payloadJson`）
+- `OpenSi2026EmployeeListResponse`：社保专项名单查询响应（通知名单/已完成名单复用）
+- `OpenSi2026EmployeeSimpleVO`：社保专项员工简要信息（`employeeId/employeeName/cloudEmployeeId`）
 - `OpenSi2026NotifySendResponse`：社保专项批量通知受理结果
 - `OpenSi2026NotifyPressureResponse`：社保专项催办结果汇总
 - `OpenSi2026NotifyPressureItemVO`：社保专项催办逐条结果
@@ -226,7 +228,28 @@
 
 请求参数：无（按全量口径统计）。
 
-### 2.13 2026 人事社保专项-批量发送专项通知（sendSi2026Notify）
+### 2.13 2026 人事社保专项-通知名单查询（getSi2026NotifyTargets）
+
+| 项目 | 说明 |
+|------|------|
+| 方法 | `GET` |
+| 接口地址 | `/questionnaire/social-insurance/notify/targets` |
+| 下游地址 | `/open/social-insurance-2026/notify/targets` |
+| 返回类型 | `Result<OpenSi2026EmployeeListResponse>` |
+
+请求参数：无。
+
+### 2.14 2026 人事社保专项-已完成填写名单查询（getSi2026CompletedSubmissions）
+
+| 项目 | 说明 |
+|------|------|
+| 方法 | `GET` |
+| 接口地址 | `/questionnaire/social-insurance/submission/completed` |
+| 下游地址 | `/open/social-insurance-2026/submission/completed` |
+| 返回类型 | `Result<OpenSi2026EmployeeListResponse>` |
+
+请求参数：无。
+### 2.15 2026 人事社保专项-批量发送专项通知（sendSi2026Notify）
 
 | 项目 | 说明 |
 |------|------|
@@ -237,7 +260,7 @@
 
 请求参数：无（按专项通知名单异步受理发送）。
 
-### 2.14 2026 人事社保专项-专项通知催办（pressureSi2026Notify）
+### 2.16 2026 人事社保专项-专项通知催办（pressureSi2026Notify）
 
 | 项目 | 说明 |
 |------|------|
@@ -254,10 +277,10 @@
 
 已核对 `QuestionnaireController` 实际路径与 [《问卷系统API调用说明》](./问卷系统API调用说明.md)：
 
-- 已覆盖 14 个接口；
+- 已覆盖 16 个接口；
 - 已对齐社保专项外部路径为 `/questionnaire/social-insurance/**`；
 - 已对齐专项统计接口无 `formCode` 入参；
-- 已对齐专项通知发送/催办接口（对应下游文档 8.4/8.5）。
+- 已对齐专项名单查询/发送/催办接口（对应下游文档 8.4/8.5）。
 
 补充说明：下游文档 `8.3` 为 `payload_json` 结构说明，不是独立 HTTP 接口。
 

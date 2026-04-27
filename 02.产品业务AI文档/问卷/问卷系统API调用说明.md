@@ -21,6 +21,7 @@
 | 1.5 | 2026-04-21 | `getSi2026Statistics` 移除 `formCode` 传参，统一按全量口径查询 | OpenAPI-Agent |
 | 1.6 | 2026-04-21 | 对齐实际代码路径：专项接口外部路径修正为 `/questionnaire/social-insurance/**` | OpenAPI-Agent |
 | 1.7 | 2026-04-23 | 新增专项通知发送/催办接口（对应下游文档 8.4/8.5） | OpenAPI-Agent |
+| 1.8 | 2026-04-23 | 新增专项名单查询接口（通知名单、已完成名单，对应下游文档 4.1/4.2） | OpenAPI-Agent |
 
 ---
 
@@ -28,7 +29,7 @@
 
 本服务在 `open-api` 网关层新增了问卷聚合控制器：`QuestionnaireController`，对外统一暴露 `/questionnaire/**` 路径，并透传到下游 `questionnaire` 服务的 `/open/**` 接口。
 
-当前开放能力共 14 个（与当前代码一致）：
+当前开放能力共 16 个（与当前代码一致）：
 
 1. `getSubmissionStatus` — 查询提交状态
 2. `getSubmissionDetail` — 查询提交详情
@@ -44,6 +45,8 @@
 12. `getSi2026Statistics` — 2026 人事社保专项统计
 13. `sendSi2026Notify` — 2026 人事社保专项批量发送通知（异步受理）
 14. `pressureSi2026Notify` — 2026 人事社保专项通知催办（无参）
+15. `getSi2026NotifyTargets` — 2026 人事社保专项通知名单查询
+16. `getSi2026CompletedSubmissions` — 2026 人事社保专项已完成填写名单查询
 
 ---
 
@@ -137,6 +140,8 @@ https://{域名}/open-api/{接口地址}
 | 5.12 | getSi2026Statistics | GET | `/questionnaire/social-insurance/statistics` | `/open/social-insurance-2026/statistics` | 读 | 2026 社保专项统计 |
 | 5.13 | sendSi2026Notify | POST | `/questionnaire/social-insurance/notify/send` | `/open/social-insurance-2026/notify/send` | 写 | 2026 社保专项批量发送通知（异步受理） |
 | 5.14 | pressureSi2026Notify | GET | `/questionnaire/social-insurance/notify/pressure` | `/open/social-insurance-2026/notify/pressure` | 写 | 2026 社保专项通知催办（无参） |
+| 5.15 | getSi2026NotifyTargets | GET | `/questionnaire/social-insurance/notify/targets` | `/open/social-insurance-2026/notify/targets` | 读 | 2026 社保专项通知名单查询 |
+| 5.16 | getSi2026CompletedSubmissions | GET | `/questionnaire/social-insurance/submission/completed` | `/open/social-insurance-2026/submission/completed` | 读 | 2026 社保专项已完成填写名单查询 |
 
 ---
 
@@ -151,8 +156,8 @@ https://{域名}/open-api/{接口地址}
 **路径 C（名单运营）**：`5.5 -> 5.6 -> 5.8/5.9`  
 先通知，再催办，最后复盘已提交与未提交名单。
 
-**路径 D（明细导出）**：`5.3` 或 `5.7`  
-- 需要分页：走 `5.3`  
+**路径 D（明细导出）**：`5.3` 或 `5.7`
+- 需要分页：走 `5.3`
 - 需要按条件全量已提交：走 `5.7`
 
 **路径 E（名单初始化）**：`5.10 -> 5.5 -> 5.6`  
@@ -163,6 +168,9 @@ https://{域名}/open-api/{接口地址}
 
 **路径 G（社保专项触达闭环）**：`5.13 -> 5.14 -> 5.11/5.12`  
 先批量发送专项通知，再对未提交对象执行催办，最后结合详情与统计复盘效果。
+
+**路径 H（社保专项名单比对）**：`5.15 -> 5.16`  
+先拉通知名单，再拉已完成名单，调用方可做差集得到“待完成人员名单”。
 
 ---
 
@@ -211,6 +219,12 @@ https://{域名}/open-api/{接口地址}
 3. 调 `5.14`：`GET /questionnaire/social-insurance/notify/pressure` 对未提交对象催办
 4. 结合 `5.11/5.12` 评估催办效果与提交转化
 
+### 场景八：2026 人事社保专项名单核对
+
+1. 调 `5.15`：`GET /questionnaire/social-insurance/notify/targets`
+2. 调 `5.16`：`GET /questionnaire/social-insurance/submission/completed`
+3. 对 `employeeId` 做集合运算：`通知名单 - 已完成名单`，得到待跟进名单
+
 ---
 
 ## 八、注意事项
@@ -228,14 +242,16 @@ https://{域名}/open-api/{接口地址}
 11. **专项 payload 解析**：`5.11` 的 `answers` 为对象，`5.12` 的 `submissions[].payloadJson` 为原始 JSON 字符串，调用方需按场景选择解析策略。
 12. **专项通知发送为异步受理**：`5.13` 成功返回代表“已受理”，不代表全部发送完成；以批次号和下游发送结果表为准。
 13. **8.3 非接口**：下游文档 `8.3` 是 `payload_json` 结构说明，不需要在网关层新增 Controller/Feign 接口。
+14. **名单查询口径**：`5.15` 来自通知名单表，`5.16` 来自已提交记录，两者字段一致（含 `cloudEmployeeId`）但来源不同，请勿混淆。
 
 ---
 
 ## 九、附录：与下游接口编号对照
 
-本服务 14 个接口与 [《问卷开放接口API说明》](./问卷开放接口API说明.md) 编号一一对应：
+本服务 16 个接口与 [《问卷开放接口API说明》](./问卷开放接口API说明.md) 编号一一对应：
 
 - 本文 `5.1~5.10` 对应下游文档 `4.1~4.10`。
 - 本文 `5.11~5.12` 对应下游文档 `8.1~8.2`。
 - 本文 `5.13~5.14` 对应下游文档 `8.4~8.5`。
+- 本文 `5.15~5.16` 对应下游文档 `4.1~4.2`（问卷 Open 接口补充段落）。
 
