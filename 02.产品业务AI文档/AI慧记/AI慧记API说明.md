@@ -10,6 +10,7 @@
 | 1.3 | 2026-03-31 | 删除已废弃接口，重新编号接口列表；完善公共数据结构 | - |
 | 1.4 | 2026-04-10 | 新增 **4.7** 通过文件URL创建慧记接口说明（`startChatByFileUrl`） | - |
 | 1.5 | 2026-04-16 | 合并原 1.5/1.6 变更：统一示例与 `recordState` 口径；补充 4.2 示例字段、完善 4.4 `lastTs`/时间戳与错误码/失败示例；概述与通用说明补全；业务流程改为 3.1～3.6；第四章接口分组；第五章公共数据结构集中；新增最佳实践、FAQ、接口调用示例与注意事项分类 | doc-editor |
+| 1.6 | 2026-04-27 | 新增 UTC 时间字符串字段（`*IsoUtc`）；时间字段统一 ISO8601 UTC 输出，旧毫秒时间戳字段标注废弃与迁移计划 | doc-editor |
 
 > 说明：早期修订记录中的小节编号若与当前第四章不一致，以**当前第四章与「一、概述」表格**为准；历史条目不再改写编号，仅在 1.1/1.2 中注明与现编号的对应关系。
 
@@ -131,6 +132,13 @@ https://{域名}/open-api/{接口地址}
 
 - **限流**：按 `appKey`、IP 或网关策略限制 QPS；超限常见返回 **`429`** 或业务文案提示「频繁」，处理见 **六、错误码说明** 与 **七、最佳实践**。
 - **配额**：单日调用量、创建慧记条数等**以开放平台或项目组公布为准**；联调前请向管理员确认。
+
+### 2.9 时间字段规范（新增）
+
+- 绝对时间字段统一新增 ISO8601 UTC 字符串字段，命名为 `*IsoUtc`。
+- 标准格式：`yyyy-MM-dTHH:mm:ss.SSSZ`（示例：`2026-04-7T08:09:10.123Z`）。
+- 历史毫秒时间戳字段（Long）保留兼容，但标注为废弃；建议逐步迁移到 `*IsoUtc`。
+- 禁止使用：时间戳直出（仅面向新接入）、无 `T`/`Z` 字符串、非 UTC 偏移时间字符串。
 
 ---
 
@@ -272,7 +280,9 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/chatListByPage' \
             "name": "产品周会（录制中）",
             "recordState": 0,
             "createTime": 1716345600000,
+            "createTimeIsoUtc": "2026-05-22T00:00:00.000Z",
             "finishTime": null,
+            "finishTimeIsoUtc": null,
             "meetingLength": null,
             "simpleSummary": null
          },
@@ -281,7 +291,9 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/chatListByPage' \
             "name": "上周复盘（已结束）",
             "recordState": 2,
             "createTime": 1715740800000,
+            "createTimeIsoUtc": "2026-05-15T00:00:00.000Z",
             "finishTime": 1715745300000,
+            "finishTimeIsoUtc": "2026-05-15T01:15:00.000Z",
             "meetingLength": 2700000,
             "simpleSummary": "示例摘要"
          }
@@ -437,7 +449,8 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/splitRecordListV2' \
 | 字段名      | 类型   | AI决策 | 说明 |
 | ----------- | ------ | --- | ---- |
 | `text`      | String | 是   | 转写文本（会议原文片段）。 |
-| `realTime`  | Long   | 否   | 现实时间戳（毫秒），用于排序与时间段筛选。 |
+| `realTime`  | Long   | 否   | 现实时间戳（毫秒，历史字段，建议迁移至 `realTimeIsoUtc`）。 |
+| `realTimeIsoUtc` | String | 否 | 现实时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 | `startTime` | Long   | 是   | 开始时间（相对录音起点的毫秒数），用于排序、增量与时间段筛选。 |
 
 **响应示例**
@@ -449,6 +462,7 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/splitRecordListV2' \
    "data": [
       {
          "realTime": 1774613847119,
+         "realTimeIsoUtc": "2026-04-27T03:50:47.119Z",
          "startTime": 120000,
          "text": "片段会议原文..."
       }
@@ -521,7 +535,9 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/listHuiJiIdsByMeetingNumber
          "name": "周例会",
          "recordState": 2,
          "createTime": 1716345600000,
+         "createTimeIsoUtc": "2026-05-22T00:00:00.000Z",
          "finishTime": 1716349200000,
+         "finishTimeIsoUtc": "2026-05-22T01:00:00.000Z",
          "meetingLength": 3600000,
          "personId": null
       }
@@ -649,13 +665,15 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId' \
 | ------------------ | --------------------- | --- | --------------------- |
 | `_id`              | String                | 是   | 慧记 ID               |
 | `chatType`         | Integer               | 否   | 聊天类型               |
-| `createTime`       | Long                  | 否   | 创建时间（毫秒）        |
+| `createTime`       | Long                  | 否   | 创建时间（毫秒，历史字段，建议迁移至 `createTimeIsoUtc`） |
+| `createTimeIsoUtc` | String                | 否   | 创建时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`） |
 | `meetingLength`    | Long                  | 否   | 会议时长（毫秒）        |
 | `name`             | String                | 是   | 会议名称               |
 | `simpleSummary`    | String                | 是   | 简要摘要               |
 | `srcText`          | String                | 是   | 原始文本               |
 | `srcUser`          | Object                | 否   | 分享来源用户信息；常见子字段：`_id`（用户 ID）、`name`（用户名称） |
-| `updateTime`       | Long                  | 否   | 更新时间（毫秒）        |
+| `updateTime`       | Long                  | 否   | 更新时间（毫秒，历史字段，建议迁移至 `updateTimeIsoUtc`） |
+| `updateTimeIsoUtc` | String                | 否   | 更新时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`） |
 
 **响应示例**
 
@@ -667,6 +685,7 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId' \
       "_id": "664f1a2b3c4d5e6f7a8b9c0d",
       "chatType": 7,
       "createTime": 1716345600000,
+      "createTimeIsoUtc": "2026-05-22T00:00:00.000Z",
       "meetingLength": 3600000,
       "name": "产品周会（分享副本）",
       "simpleSummary": "本次会议讨论了Q2产品路线图...",
@@ -675,7 +694,8 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/getChatFromShareId' \
          "_id": "user_001",
          "name": "张三"
       },
-      "updateTime": 1716349200000
+      "updateTime": 1716349200000,
+      "updateTimeIsoUtc": "2026-05-22T01:00:00.000Z"
    }
 }
 ```
@@ -784,8 +804,10 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
 | `fileUrl`    | String  | 是   | 文件 URL。 |
 | `fileExt`    | String  | 否   | 文件扩展名。 |
 | `name`       | String  | 是   | 慧记名称。 |
-| `createTime` | Long    | 否   | 创建时间（毫秒）。 |
-| `updateTime` | Long    | 否   | 更新时间（毫秒）。 |
+| `createTime` | Long    | 否   | 创建时间（毫秒，历史字段，建议迁移至 `createTimeIsoUtc`）。 |
+| `createTimeIsoUtc` | String | 否 | 创建时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
+| `updateTime` | Long    | 否   | 更新时间（毫秒，历史字段，建议迁移至 `updateTimeIsoUtc`）。 |
+| `updateTimeIsoUtc` | String | 否 | 更新时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 | `personId`   | String  | 否   | 人员 ID。 |
 | `userId`     | String  | 否   | 用户 ID。 |
 
@@ -803,7 +825,9 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
       "fileExt": "m4a",
       "name": "2026-04-10 11:17:13 记录",
       "createTime": 1775791033252,
+      "createTimeIsoUtc": "2026-04-09T03:17:13.252Z",
       "updateTime": 1775791033252,
+      "updateTimeIsoUtc": "2026-04-09T03:17:13.252Z",
       "personId": "12028",
       "userId": "1742024210481586177"
    }
@@ -829,8 +853,10 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
 | `name`          | String                 | 会议名称。 |
 | `recordState`   | Integer                | 录音状态。本文档与 Open API 约定：**`0`** 录制中，**`2`** 已结束，**`3`** 处理出错。源码 `FindChatVO` 中 `@ApiModelProperty` 曾出现 `1` 表示结束，**若实际 JSON 与本文不一致，以联调返回值为准**。 |
 | `combineState`  | Integer                | 文件合并状态：`0` 进行中，`2` 已完成（若下游返回）。 |
-| `createTime`    | Long                   | 创建时间（毫秒时间戳）。 |
-| `finishTime`    | Long                   | 完成时间（毫秒时间戳）。 |
+| `createTime`    | Long                   | 创建时间（毫秒时间戳，已废弃；迁移到 `createTimeIsoUtc`）。 |
+| `createTimeIsoUtc` | String              | 创建时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
+| `finishTime`    | Long                   | 完成时间（毫秒时间戳，已废弃；迁移到 `finishTimeIsoUtc`）。 |
+| `finishTimeIsoUtc` | String              | 完成时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 | `meetingLength` | Long                   | 会议时长（毫秒）。**可能为空**，例如慧记未结束或会议仍进行中。 |
 | `tidyText`      | String                 | 整理后正文摘要；可能为空。 |
 | `simpleSummary` | String                 | 简单摘要（`tidyText` 为空时兜底）；可能为空。 |
@@ -875,7 +901,8 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
 | 字段名      | 类型   | 说明 |
 | ----------- | ------ | ---- |
 | `text`      | String | 转写文本（会议原文片段）。 |
-| `realTime`  | Long   | 现实时间戳（毫秒），用于排序与筛选。 |
+| `realTime`  | Long   | 现实时间戳（毫秒，已废弃；迁移到 `realTimeIsoUtc`），用于排序与筛选。 |
+| `realTimeIsoUtc` | String | 现实时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 | `startTime` | Long   | 相对录音起点的毫秒数，用于排序与增量。 |
 
 ---
@@ -902,13 +929,15 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
 | --------------- | ------- | ---- |
 | `_id`           | String  | 慧记 ID。 |
 | `chatType`      | Integer | 聊天类型。 |
-| `createTime`    | Long    | 创建时间（毫秒）。 |
+| `createTime`    | Long    | 创建时间（毫秒，已废弃；迁移到 `createTimeIsoUtc`）。 |
+| `createTimeIsoUtc` | String | 创建时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 | `meetingLength` | Long    | 会议时长（毫秒）。 |
 | `name`          | String  | 会议名称。 |
 | `simpleSummary` | String  | 简要摘要。 |
 | `srcText`       | String  | 来源文本。 |
 | `srcUser`       | SrcUser | 分享来源用户；子字段 `_id`、`name`。 |
-| `updateTime`    | Long    | 更新时间（毫秒）。 |
+| `updateTime`    | Long    | 更新时间（毫秒，已废弃；迁移到 `updateTimeIsoUtc`）。 |
+| `updateTimeIsoUtc` | String | 更新时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 
 ---
 
@@ -918,8 +947,10 @@ curl 'https://{域名}/open-api/ai-huiji/meetingChat/startChatByFileUrl' \
 | ---------------- | ------- | ---- |
 | `_id`            | String  | 慧记 ID。 |
 | `chatType`       | Integer | 慧记类型。 |
-| `createTime`     | Long    | 创建时间（毫秒）。 |
-| `updateTime`     | Long    | 更新时间（毫秒）。 |
+| `createTime`     | Long    | 创建时间（毫秒，已废弃；迁移到 `createTimeIsoUtc`）。 |
+| `createTimeIsoUtc` | String | 创建时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
+| `updateTime`     | Long    | 更新时间（毫秒，已废弃；迁移到 `updateTimeIsoUtc`）。 |
+| `updateTimeIsoUtc` | String | 更新时间（ISO8601 UTC，格式 `yyyy-MM-dTHH:mm:ss.SSSZ`）。 |
 | `recordState`    | Integer | 与慧记 `recordState` 语义一致（见 **5.1**）。 |
 | `fileUrl`        | String  | 文件 URL。 |
 | `fileExt`        | String  | 文件扩展名。 |
@@ -1011,7 +1042,7 @@ A：须为 **指定 Bucket** 的外链可访问地址；见 **4.7** 前置说明
 ### 10.1 通用约定
 
 1. **所有接口均为 POST 请求**：即使是查询类接口也使用 POST，请求体为 JSON。
-2. **时间戳格式**：时间字段均为**毫秒级**时间戳（13 位），如 `1716345600000`。
+2. **时间字段格式**：绝对时间优先使用 `*IsoUtc`（ISO8601 UTC，`yyyy-MM-dTHH:mm:ss.SSSZ`）；毫秒时间戳字段仅用于兼容存量调用方。
 3. **分页页码从 0 开始**：**4.1** 的 `pageNum` 从 0 起。
 
 ### 10.2 参数与 ID
@@ -1043,5 +1074,5 @@ A：须为 **指定 Bucket** 的外链可访问地址；见 **4.7** 前置说明
 
 ---
 
-**文档版本**：v1.5  
-**更新日期**：2026-04-16
+**文档版本**：v1.6  
+**更新日期**：2026-04-27
