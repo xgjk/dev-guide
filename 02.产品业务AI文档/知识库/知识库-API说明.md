@@ -19,6 +19,8 @@
 | 1.12 | 2026-04-16 | 移除 saveFileByParentId/saveFileByPath/saveFile 接口的 doc 富文本上传路径（fileType=doc + fileContent），三个接口统一仅支持 fileType=file + resourceId；纯文本内容统一通过 uploadContent 接口入库；更新相关接口说明、curl 示例及数据结构注释 | 刘艳华 |
 | 1.13 | 2026-04-22 | 新增文件版本管理模块（4.25-4.28）：updateFileVersion、getVersionList、getLastVersion、finalizeVersion；扩展 uploadContent（4.18）支持版本更新模式（新增 updateFileId/versionRemark/versionName 字段）；新增 FileVersionVO（5.17）数据结构；更新 5.11 字段说明 | 刘艳华 |
 | 1.14 | 2026-04-22 | 拆分 uploadContent 版本更新模式响应结构：新增 UpdateFileVersionResult（5.18），版本更新模式仅返回 fileId 和 fileName；更新 4.18 响应参数说明 | 刘艳华 |
+| 1.15 | 2026-04-27 | DownloadInfoVO 新增 previewUrl 字段（forceDownload=false 时填充在线预览短链接）；Agent 应使用 previewUrl 给用户展示预览链接，downloadUrl 仅用于下载 | 刘艳华 |
+| 1.14 | 2026-04-22 | 拆分 uploadContent 版本更新模式响应结构：新增 UpdateFileVersionResult（5.18），版本更新模式仅返回 fileId 和 fileName；更新 4.18 响应参数说明 | 刘艳华 |
 
 ## 一、概述
 
@@ -136,7 +138,8 @@ https://{域名}/open-api/{接口地址}
 
 1. **凭据拉取**：调用 **4.2 获取文件下载与在线预览凭据**（`GET /document-database/file/getDownloadInfo`），传入 `forceDownload=false` 以声明为在线预览。
 2. **打开方式决策路由**：
-   - 检查响应里的 `DownloadInfoVO.openWith`：
+   - **优先使用 `previewUrl`**：响应中的 `previewUrl` 是可直接给用户点击的在线预览短链接，Agent 应直接将此链接提供给用户。
+   - 若需要更精细的渲染控制，检查 `DownloadInfoVO.openWith`：
      - 若为 `2` (PDF)：可直接采用 H5 预览套件，若 `lazyLoad=true`，则支持无感知流式分页加载降低带宽。
      - 若为 `4` (HTML 转化版)：直接使用 `<iframe>` 载入 `downloadUrl` 进行快照渲染。
 
@@ -351,6 +354,7 @@ curl -X GET 'https://{域名}/open-api/document-database/file/getDownloadInfo?fi
   "resultMsg": null,
   "data": {
     "downloadUrl": "https://oss.example.com/signed-urlxxx",
+    "previewUrl": "https://cwork-web-test.xgjktech.com.cn/p/1c6e69e174e34001",
     "fileId": 20001,
     "openWith": 2,
     "lazyLoad": true,
@@ -363,7 +367,9 @@ curl -X GET 'https://{域名}/open-api/document-database/file/getDownloadInfo?fi
 
 **数据流向**
 
-- 返回的 `downloadUrl` 直接用于前端下载/预览；`openWith` 用于决策渲染方式。
+- `previewUrl`：在线预览短链接（`forceDownload=false` 时填充），**Agent 应将此链接提供给用户点击预览**
+- `downloadUrl`：OSS 签名直链，用于文件下载（`forceDownload=true` 时使用）
+- `openWith`：前端渲染方式决策，供需要精细控制渲染的场景使用
 
 ---
 
@@ -1931,7 +1937,8 @@ curl -X POST 'https://{域名}/open-api/document-database/file/finalizeVersion' 
 
 | 字段 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `downloadUrl` | String | 下载 url / 临时签名 |
+| `downloadUrl` | String | 下载直链（OSS 签名 URL），用于文件下载 |
+| `previewUrl` | String | **在线预览短链接**（`forceDownload=false` 时填充），可直接给用户点击预览；`forceDownload=true` 时为 `null`。**Agent 应优先使用此字段给用户展示预览链接** |
 | `thumbnailUrl` | String | 图片缩略图 url |
 | `fileName` | String | 文件名 |
 | `versionNumber` | Integer | 版本号 |
