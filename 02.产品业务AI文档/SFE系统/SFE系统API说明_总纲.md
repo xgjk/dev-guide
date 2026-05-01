@@ -1,6 +1,6 @@
 # SFE系统 Open API 接口文档（总纲）
 
-> 本文档是 SFE 系统 API 接口文档的总纲。详细的通用约定请参阅 [_通用约定.md](_通用约定.md)，具体接口细节请参阅各子文档。
+> 本文档是 SFE 系统 API 接口文档的总纲。详细的通用约定请参阅 [_通用约定.md](API接口明细/_通用约定.md)，具体接口细节请参阅各子文档。
 
 ---
 
@@ -81,23 +81,23 @@
 
 | 序号 | 接口名称 | 接口地址 | 所属文档 |
 | ---- | -------- | -------- | -------- |
-| 4.1 | 查询用户授权的区划 | `/bia/open/biz-service/sfe-user/zone` | [01-授权与基础数据](01-授权与基础数据.md) |
-| 4.2 | 查询用户授权的产品 | `/bia/open/biz-service/sfe-user/product` | [01-授权与基础数据](01-授权与基础数据.md) |
-| 4.3 | 查询用户授权的客户 | `/bia/open/biz-service/sfe-user/customer` | [01-授权与基础数据](01-授权与基础数据.md) |
-| 4.4 | 查询用户授权客户的画像 | `/bia/open/biz-service/sfe-user/customer-profile` | [01-授权与基础数据](01-授权与基础数据.md) |
-| 4.5 | 查询用户授权的覆盖分管关系 | `/bia/open/biz-service/sfe-user/coverage` | [01-授权与基础数据](01-授权与基础数据.md) |
-| 4.6 | 查询用户参与的数据采集项目摘要 | `/bia/open/biz-service/sfe-user/project-summary` | [02-项目与模板查询](02-项目与模板查询.md) |
-| 4.7 | 查询项目的周期列表 | `/bia/open/biz-service/sfe-user/project-period` | [02-项目与模板查询](02-项目与模板查询.md) |
-| 4.8 | 查询项目的填报模板 | `/bia/open/biz-service/sfe-user/project-schema` | [02-项目与模板查询](02-项目与模板查询.md) |
-| 4.9 | 查询项目的角色权限 | `/bia/open/biz-service/sfe-user/project-role` | [02-项目与模板查询](02-项目与模板查询.md) |
-| 4.10 | 查询用户的待办任务状态 | `/bia/open/biz-service/sfe-user/project-task` | [03-用户数据查询](03-用户数据查询.md) |
-| 4.11 | 查询用户的计划编制数据 | `/bia/open/biz-service/sfe-user/project-plan` | [03-用户数据查询](03-用户数据查询.md) |
-| 4.12 | 查询用户的实际结果数据 | `/bia/open/biz-service/sfe-user/project-actual` | [03-用户数据查询](03-用户数据查询.md) |
-| 4.13 | 查询用户的采集填报数据 | `/bia/open/biz-service/sfe-user/project-general` | [03-用户数据查询](03-用户数据查询.md) |
-| 4.14 | 查询指定区划的待办任务 | `/bia/open/biz-service/sfe-zone/project-task` | [04-区划数据查询](04-区划数据查询.md) |
-| 4.15 | 查询指定区划的计划编制数据 | `/bia/open/biz-service/sfe-zone/project-plan` | [04-区划数据查询](04-区划数据查询.md) |
-| 4.16 | 查询指定区划的实际结果数据 | `/bia/open/biz-service/sfe-zone/project-actual` | [04-区划数据查询](04-区划数据查询.md) |
-| 4.17 | 查询指定区划的采集数据 | `/bia/open/biz-service/sfe-zone/project-general` | [04-区划数据查询](04-区划数据查询.md) |
+| 4.1 | 查询用户授权的区划 | `/bia/open/biz-service/sfe-user/zone` | [01-授权与基础数据](API接口明细/01-授权与基础数据.md) |
+| 4.2 | 查询用户授权的产品 | `/bia/open/biz-service/sfe-user/product` | [01-授权与基础数据](API接口明细/01-授权与基础数据.md) |
+| 4.3 | 查询用户授权的客户 | `/bia/open/biz-service/sfe-user/customer` | [01-授权与基础数据](API接口明细/01-授权与基础数据.md) |
+| 4.4 | 查询用户授权客户的画像 | `/bia/open/biz-service/sfe-user/customer-profile` | [01-授权与基础数据](API接口明细/01-授权与基础数据.md) |
+| 4.5 | 查询用户授权的覆盖分管关系 | `/bia/open/biz-service/sfe-user/coverage` | [01-授权与基础数据](API接口明细/01-授权与基础数据.md) |
+| 4.6 | 查询用户参与的数据采集项目摘要 | `/bia/open/biz-service/sfe-user/project-summary` | [02-项目与模板查询](API接口明细/02-项目与模板查询.md) |
+| 4.7 | 查询项目的周期列表 | `/bia/open/biz-service/sfe-user/project-period` | [02-项目与模板查询](API接口明细/02-项目与模板查询.md) |
+| 4.8 | 查询项目的填报模板 | `/bia/open/biz-service/sfe-user/project-schema` | [02-项目与模板查询](API接口明细/02-项目与模板查询.md) |
+| 4.9 | 查询项目的角色权限 | `/bia/open/biz-service/sfe-user/project-role` | [02-项目与模板查询](API接口明细/02-项目与模板查询.md) |
+| 4.10 | 查询用户的待办任务状态 | `/bia/open/biz-service/sfe-user/project-task` | [03-用户数据查询](API接口明细/03-用户数据查询.md) |
+| 4.11 | 查询用户的计划编制数据 | `/bia/open/biz-service/sfe-user/project-plan` | [03-用户数据查询](API接口明细/03-用户数据查询.md) |
+| 4.12 | 查询用户的实际结果数据 | `/bia/open/biz-service/sfe-user/project-actual` | [03-用户数据查询](API接口明细/03-用户数据查询.md) |
+| 4.13 | 查询用户的采集填报数据 | `/bia/open/biz-service/sfe-user/project-general` | [03-用户数据查询](API接口明细/03-用户数据查询.md) |
+| 4.14 | 查询指定区划的待办任务 | `/bia/open/biz-service/sfe-zone/project-task` | [04-区划数据查询](API接口明细/04-区划数据查询.md) |
+| 4.15 | 查询指定区划的计划编制数据 | `/bia/open/biz-service/sfe-zone/project-plan` | [04-区划数据查询](API接口明细/04-区划数据查询.md) |
+| 4.16 | 查询指定区划的实际结果数据 | `/bia/open/biz-service/sfe-zone/project-actual` | [04-区划数据查询](API接口明细/04-区划数据查询.md) |
+| 4.17 | 查询指定区划的采集数据 | `/bia/open/biz-service/sfe-zone/project-general` | [04-区划数据查询](API接口明细/04-区划数据查询.md) |
 
 ---
 
