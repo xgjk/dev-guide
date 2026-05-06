@@ -81,6 +81,12 @@
 *   **工作流 A3：物理文件更新绑定**
     1. AI 重新生成了一份 PDF 报告，调用底层文件存储接口上传，得到 `resourceId`。
     2. 调用【物理文件入库与版本控制】的 `updateFileVersion`，将老文件的 `fileId` 与新的 `resourceId` 绑定，生成 V2.0 版本。
+*   **工作流 A4：知识库冷启动与增量同步（推荐）**
+    1. **冷启动全量**：调用【空间与目录树管理】的 `listDescendantFiles(rootFileId, suffix=md, cursor/limit)` 分页拉取子树全部 Markdown 元数据。
+    2. **按需拉正文**：仅对需要进入向量库/索引的文件，再调用 `getFullFileContent(fileId)` 获取提纯正文。
+    3. **增量轮询**：周期性调用 `listChanges(since=lastSyncTime, cursor/limit)` 拉取变更，直到 `nextCursor` 为空；使用返回的 `serverTime` 更新本地水位。
+    4. **对账优化**：对 `event=upsert` 的文件，可先用 `batchGetMeta(fileIds)` 批量检查元数据，必要时再拉全文；对 `event=delete` 则按语义删除本地索引/缓存。
+    5. **显式建目录**：需要提前预置目录结构时，调用 `createFolder(projectId,parentId,name,cover/autoRename)` 创建空目录节点。
 
 ### 4.2 分类 B：面向前端 / 客户端界面的工作流
 *   **工作流 B1：文件管理器导航**
