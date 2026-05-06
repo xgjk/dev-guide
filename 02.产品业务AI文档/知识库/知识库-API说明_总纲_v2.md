@@ -64,6 +64,11 @@
 *   **最小化原则**：列表接口仅返回元数据（名称/类型/大小/后缀），不返回正文内容。
 *   **格式提纯**：`getFullFileContent` 专为 AI 设计，返回全局提纯的 Markdown 文本，保留标题/列表/表格等语义。注意：**大文件可能存在异步解析延迟**。
 *   **去重原则**：`FileVO` 中的 `ancestorNames` 已包含完整路径信息，不重复返回多级嵌套体。
+*   **正文获取的两条入口（v2 起对齐）**：
+    - **`getFullFileContent`**（详见 [03-AI与纯文本高速通道.md](API接口明细_v2/03-AI与纯文本高速通道.md)）：永远返回全量正文，AI / 拼接 prompt 首选。
+    - **`getFileContent`**（详见 [04-UI终端预览与阅读.md](API接口明细_v2/04-UI终端预览与阅读.md#43-获取ui阅读模式根据文件id和页码分页获取内容)）：UI 流式分页阅读首选；
+      对**有分页类型**（pdf / pptx / ppt / docx / doc 等）按 `pageNumber` 返回单页文本；
+      对**无分页类型**（md / txt / html / htm / xml / notex / xls / xlsx）忽略 `pageNumber`，**直接返回全量正文，与 `getFullFileContent` 内容等价**。
 
 ## 四、核心业务工作流 (Workflow)
 
@@ -95,6 +100,9 @@
     3. 用户点击某文件夹，通过 `getChildFiles` (`parentId`) 动态下钻。
 *   **工作流 B2：在线流式阅读**
     1. 拿到 `fileId` 后，调用【终端预览】的 `getDownloadInfo`，将返回的 `previewUrl` 分发给 IFrame 或 H5 套件渲染展示。
+    2. 若需要在 UI 内做"段落分页 / 文本流式渲染"，可直接调【终端预览】的 `getFileContent(fileId, pageNumber)`：
+       - **有分页类型**（pdf/pptx/docx 等）：按 `pageNumber` 取该页文本；
+       - **无分页类型**（md/txt/html 等）：`pageNumber` 被忽略，返回全量正文（与 `getFullFileContent` 内容一致）。
 
 ## 五、错误码说明
 
