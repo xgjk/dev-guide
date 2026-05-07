@@ -4,6 +4,7 @@
 
 | 版本 | 日期 | 变更摘要 | 变更人 |
 |------|------|----------|--------|
+| 1.4 | 2026-05-07 | 访问地址对齐 Open API：`https://{域名}/open-api/{接口地址}`；鉴权改为请求头 `appKey`，移除独立鉴权换 token 流程 | - |
 | 1.3 | 2026-03-31 | 增加模版发布/下架接口（changeMobanState）说明 | 杨宵 |
 | 1.2 | 2026-03-31 | 对齐模版接口为 saveMoban/delMoban，移除删除二次确认约束并更新模版参数结构 | 杨宵 |
 | 1.1 | 2026-03-27 | 增加模版新建/编辑/删除接口，删除前二次确认约束 | 杨宵 |
@@ -11,7 +12,7 @@
 
 ## 一、概述
 
-本文档描述了 **AI情报系统** 在“模版管理（查询/新建/编辑/删除）-生成报告-查看进度与结果-修改章节内容”场景下对外提供的 API 接口。通过这些接口，可以实现以下业务能力：
+本文档描述了 **AI情报系统** 在“模版管理（查询/新建/编辑/删除）-生成报告-查看进度与结果-修改章节内容”场景下对外提供的 API 接口。全部接口均为 `POST`，完整 URL 为 `https://{域名}/open-api` 加上各小节「接口地址」（相对 `/open-api` 的路径，如 `/ai-report/moban/listMobanByPageV2`）；域名见 **2.2 环境信息**。通过这些接口，可以实现以下业务能力：
 
 1. **分页查询模版列表** — 按关键词、目录、是否仅看我的等条件筛选可用模版
 2. **获取模版详情** — 查看模版的章节、子章节与提示词结构，判断是否适合当前报告任务
@@ -32,56 +33,26 @@
 
 ### 2.1 访问地址
 
-业务接口访问地址：
-
-```text
-https://{业务域名}/ai-report/{接口地址}
+```
+https://{域名}/open-api/{接口地址}
 ```
 
-鉴权接口访问地址：
-
-```text
-https://{鉴权域名}/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}
-```
+其中 `{接口地址}` 为各接口小节表格中的「接口地址」字段（例如 `/ai-report/moban/listMobanByPageV2`），与 **AI慧记 Open API** 使用同一网关前缀 `/open-api`。
 
 ### 2.2 环境信息
 
-| 环境 | 域名/Base URL | 备注 |
-|------|---------------|------|
-| 生产环境-业务接口 | `https://sg-al-cwork-web.mediportal.com.cn` | AI情报业务接口 |
-| 生产环境-鉴权接口 | `https://sg-al-cwork-web.mediportal.com.cn` | 通过 `CWork Key` 换取 `access-token` |
+| 环境   | 域名/Base URL                    | 备注 |
+| ------ | ------------------------------- | ---- |
+| 生产环境 | `https://sg-al-cwork-web.mediportal.com.cn` | 与 AI慧记 Open API 一致 |
 
 ### 2.3 公共请求头
 
-| Header | 说明 | 是否必填 |
-|--------|------|----------|
-| `access-token` | 业务请求凭证，通过鉴权接口返回的 `data.xgToken` 获取 | 是 |
-| `Content-Type` | 请求体类型，本文档中的 POST 接口统一为 `application/json` | 按接口要求 |
+| Header         | 说明                                    | 是否必填 |
+| -------------- | --------------------------------------- | -------- |
+| `appKey`       | 应用密钥，请联系管理员获取                  | 是       |
+| `Content-Type` | 固定为 `application/json`（所有接口均为 POST） | 是       |
 
-### 2.4 鉴权说明
-
-所有 AI情报业务接口均使用 `access-token` 鉴权。若当前没有可用 token，可先调用鉴权接口：
-
-```bash
-curl -X GET 'https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_gpt&appKey={CWork Key}' \
-  -H 'Content-Type: application/json'
-```
-
-鉴权成功后，从返回结果中取 `data.xgToken`，并在后续所有业务接口中放入请求头 `access-token`。
-
-鉴权返回示例：
-
-```json
-{
-  "resultCode": 1,
-  "resultMsg": null,
-  "data": {
-    "xgToken": "xxx"
-  }
-}
-```
-
-### 2.5 通用响应结构
+### 2.4 通用响应结构
 
 所有业务接口返回统一的 `Result<T>` 结构：
 
@@ -194,8 +165,8 @@ curl -X GET 'https://cwork-web.mediportal.com.cn/user/login/appkey?appCode=cms_g
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/listMobanByPageV2' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/moban/listMobanByPageV2' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "pageNum": 0,
@@ -270,8 +241,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/listMobanByPag
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/mobanDetail' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/moban/mobanDetail' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "mobanId": "moban_1001"
@@ -365,8 +336,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/mobanDetail' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/startTask' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/task/startTask' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "mobanId": "moban_1001",
@@ -428,8 +399,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/startTask' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/checkTask' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/task/checkTask' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "taskId": "task_9001"
@@ -490,8 +461,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/checkTask' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/taskDetailV2' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/task/taskDetailV2' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "taskId": "task_9001"
@@ -596,8 +567,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/taskDetailV2' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listTaskByPage' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/task/listTaskByPage' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "pageNum": 0,
@@ -676,8 +647,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listTaskByPage'
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/updateQuestionResult' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/task/updateQuestionResult' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "questionId": "question_5001",
@@ -730,8 +701,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/updateQuestionR
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersion' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/task/listResultVersion' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "questionId": "question_5001"
@@ -846,8 +817,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/task/listResultVersi
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/saveMoban' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/moban/saveMoban' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "创新药尽调模版",
@@ -895,8 +866,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/saveMoban' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/updateMoban' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/moban/updateMoban' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "mobanId": "moban_1001",
@@ -939,8 +910,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/updateMoban' \
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/changeMobanState' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/moban/changeMobanState' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "mobanId": "moban_1001",
@@ -971,8 +942,8 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/changeMobanSta
 **请求示例**
 
 ```bash
-curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/delMoban' \
-  -H 'access-token: {access-token}' \
+curl -X POST 'https://{域名}/open-api/ai-report/moban/delMoban' \
+  -H 'appKey: {appKey}' \
   -H 'Content-Type: application/json' \
   -d '{
     "mobanId": "moban_1001"
@@ -1121,7 +1092,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/delMoban' \
 |------------|------|
 | 1 | 请求成功 |
 | 0 | 通用失败 |
-| 401 | 鉴权失败或 `access-token` 无效 |
+| 401 | 鉴权失败或 `appKey` 无效 |
 | 500 | 系统异常，请稍后重试 |
 
 > 说明：AI情报业务接口文档当前未提供完整业务错误码表。除以上通用码外，其余错误码请以实际接口返回为准。
@@ -1130,7 +1101,7 @@ curl -X POST 'https://cwork-api.mediportal.com.cn/ai-report/moban/delMoban' \
 
 ## 七、注意事项
 
-1. **鉴权前置**：所有业务接口都依赖 `access-token`，而不是直接传 `appKey`。只有鉴权接口才使用 `CWork Key`。
+1. **鉴权方式**：所有业务接口均在请求头携带 `appKey`（与 **AI慧记 Open API** 一致），无需再调用独立接口换取 `access-token`。
 2. **页码起始值**：模版列表和报告列表接口中的 `pageNum` 从 `0` 开始，不是从 `1` 开始。
 3. **任务为异步流程**：调用 `startTask` 后不要立即假设报告已生成完成，应通过 `checkTask` 轮询状态，再调用 `taskDetailV2` 获取内容。
 4. **章节修改粒度**：章节直接编辑接口操作的是子章节 `questionId`，不是 `taskId`，也不是章节名称。
