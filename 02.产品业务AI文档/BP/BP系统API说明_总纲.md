@@ -138,6 +138,8 @@ Period（周期）
 > **`ActionFullVO`**：`getActionDetail`（**二、2.7**）响应 `data` 的类型，**由本表标为 Full（✅）的字段组成**，**不继承** `BaseTaskVO`。
 
 > **关于 `groupId`**：**二、2.5 / 2.6 / 2.7** 返回的 `GoalFullVO` / `KeyResultFullVO` / `ActionFullVO` **均不在响应体中带 `groupId`**。分组 ID 请在调用链中从 **二、2.2 / 2.3 / 2.4** 等前置结果保留；或结合 `path`、`upwardTaskList` / `downTaskList` 中 `SimpleTaskVO.groupInfo` 等字段使用。
+>
+> **关于对齐任务类型**：`upwardTaskList` / `downTaskList` 使用 `SimpleTaskVO`，其中包含 `type` 字段，可用于区分对齐任务是 `目标`、`关键成果` 还是 `关键举措`。
 
 ---
 
