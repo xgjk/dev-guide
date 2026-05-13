@@ -141,7 +141,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `regionName`   | String  | 否   | 大区名称，支持模糊查询 |
 | `areaName`     | String  | 否   | 地区名称，支持模糊查询 |
 | `territoryName`| String  | 否   | 辖区名称，支持模糊查询 |
-| `monthNo`      | String  | 否   | 月份                   |
+| `monthNo`      | String  | 否   | 月份，格式如202604    |
 | `page`         | Integer | 否   | 页码，默认第 1 页      |
 
 **请求示例**
@@ -151,7 +151,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
   -H 'appKey: XXXXXXXX' \
   -H 'Content-Type: application/json' \
   -d '{
-    "monthNo": "2026-01"
+    "monthNo": "202604"
   }'
 ```
 
@@ -243,7 +243,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
       "medicationPotentialLevel": "A级",
       "academicLevel": "主任医师",
       "cyFocusType": "核心客户",
-      "monthNo": "2026-01",
+      "monthNo": "202604",
       "cqFocusType": "Q1核心",
       "cmFocusType": "月度重点",
       "lastMonthCompletion": 100,
@@ -450,7 +450,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `zoneId`     | String  | 否   | 区划 ID                |
 | `regionName` | String  | 否   | 大区名称，支持模糊查询 |
 | `areaName`   | String  | 否   | 地区名称，支持模糊查询 |
-| `monthNo`    | String  | 否   | 月份                   |
+| `monthNo`    | String  | 否   | 月份，格式如202604    |
 | `page`       | Integer | 否   | 页码，默认第 1 页      |
 
 **请求示例**
@@ -460,7 +460,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
   -H 'appKey: XXXXXXXX' \
   -H 'Content-Type: application/json' \
   -d '{
-    "monthNo": "2026-01"
+    "monthNo": "202604"
   }'
 ```
 
@@ -528,7 +528,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
       "areaName": "上海地区",
       "productName": "益路取",
       "cmFocusType": "核心客户",
-      "monthNo": 202601,
+      "monthNo": "202604",
       "academicVisitCount": 100,
       "academicVisitUserCount": 50,
       "academicVisitFreq": 2.0,
@@ -600,7 +600,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `regionName`   | String  | 否   | 大区名称，支持模糊查询 |
 | `areaName`     | String  | 否   | 地区名称，支持模糊查询 |
 | `territoryName`| String  | 否   | 辖区名称，支持模糊查询 |
-| `monthNo`      | String  | 否   | 月份                   |
+| `monthNo`      | String  | 否   | 月份，格式如202604    |
 | `page`         | Integer | 否   | 页码，默认第 1 页      |
 
 **请求示例**
@@ -610,7 +610,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
   -H 'appKey: XXXXXXXX' \
   -H 'Content-Type: application/json' \
   -d '{
-    "monthNo": "2026-01"
+    "monthNo": "202604"
   }'
 ```
 
@@ -645,7 +645,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
       "areaName": "上海地区",
       "territoryName": "上海辖区A",
       "productName": "益路取",
-      "monthNo": 202601,
+      "monthNo": "202604",
       "cmFocusType": "核心客户",
       "hcoName": "上海第一人民医院",
       "hcpName": "李医生",
@@ -686,7 +686,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 | `regionName`   | String  | 否   | 大区名称，支持模糊查询 |
 | `areaName`     | String  | 否   | 地区名称，支持模糊查询 |
 | `territoryName`| String  | 否   | 辖区名称，支持模糊查询 |
-| `monthNo`      | String  | 否   | 月份                   |
+| `monthNo`      | String  | 否   | 月份，格式如202604    |
 | `page`         | Integer | 否   | 页码，默认第 1 页      |
 
 **请求示例**
@@ -696,7 +696,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
   -H 'appKey: XXXXXXXX' \
   -H 'Content-Type: application/json' \
   -d '{
-    "monthNo": "2026-01"
+    "monthNo": "202604"
   }'
 ```
 
@@ -732,7 +732,7 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
       "areaName": "上海地区",
       "territoryName": "上海辖区A",
       "managerName": "张三",
-      "monthNo": 202601,
+      "monthNo": "202604",
       "shouldReport": 100,
       "hasReported": 85,
       "reportedRate": "85.0%",
