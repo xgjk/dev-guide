@@ -669,12 +669,12 @@ curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-servic
 **请求示例**
 
 ```bash
-curl -X POST "https://api.example.com/bia/open/biz-service/sfe-ws-report/devManageYearlyTrackingReport" \
-  -H "Content-Type: application/json" \
-  -H "appKey: YOUR_APP_KEY" \
+curl -X POST 'https://erp-web.mediportal.com.cn/erp-open-api/bia/open/biz-service/sfe-ws-report/devManageYearlyTrackingReport' \
+  -H 'Content-Type: application/json' \
+  -H 'appKey: YOUR_APP_KEY' \
   -d '{
     "zoneId": "zone123",
-    "year": 2024,
+    "year": 2026,
     "quarter": 1
   }'
 ```
@@ -786,20 +786,90 @@ curl -X POST "https://api.example.com/bia/open/biz-service/sfe-ws-report/devMana
 | `w12IsPlanningExecute`                      | String | W12是否完全执行              |
 | `w13IsPlanningExecute`                      | String | W13是否完全执行              |
 | `w14IsPlanningExecute`                      | String | W14是否完全执行              |
-| `w1DevelopmentStatus`                       | String | W1周开发状态                 |
-| `w2DevelopmentStatus`                       | String | W2周开发状态                 |
-| `w3DevelopmentStatus`                       | String | W3周开发状态                 |
-| `w4DevelopmentStatus`                       | String | W4周开发状态                 |
-| `w5DevelopmentStatus`                       | String | W5周开发状态                 |
-| `w6DevelopmentStatus`                       | String | W6周开发状态                 |
-| `w7DevelopmentStatus`                       | String | W7周开发状态                 |
-| `w8DevelopmentStatus`                       | String | W8周开发状态                 |
-| `w9DevelopmentStatus`                       | String | W9周开发状态                 |
-| `w10DevelopmentStatus`                      | String | W10周开发状态                |
-| `w11DevelopmentStatus`                      | String | W11周开发状态                |
-| `w12DevelopmentStatus`                      | String | W12周开发状态                |
-| `w13DevelopmentStatus`                      | String | W13周开发状态                |
-| `w14DevelopmentStatus`                      | String | W14周开发状态                |
+| `w1DevelopmentSelect`                       | String | W1院内/双通道开发选择          |
+| `w1IsDualChannelEnabled`                    | String | W1双通道是否已打通             |
+| `w1DevelopmentBottleneckInsight`            | String | W1卡点洞察                     |
+| `w1BottleneckDetailDescription`             | String | W1具体卡点描述                 |
+| `w1WeeklyActionPlan`                        | String | W1当周行动计划                 |
+| `w1LastWeekExecutionFeedback`               | String | W1上周执行结果反馈             |
+| `w2DevelopmentSelect`                       | String | W2院内/双通道开发选择          |
+| `w2IsDualChannelEnabled`                    | String | W2双通道是否已打通             |
+| `w2DevelopmentBottleneckInsight`            | String | W2卡点洞察                     |
+| `w2BottleneckDetailDescription`             | String | W2具体卡点描述                 |
+| `w2WeeklyActionPlan`                        | String | W2当周行动计划                 |
+| `w2LastWeekExecutionFeedback`               | String | W2上周执行结果反馈             |
+| `w3DevelopmentSelect`                       | String | W3院内/双通道开发选择          |
+| `w3IsDualChannelEnabled`                    | String | W3双通道是否已打通             |
+| `w3DevelopmentBottleneckInsight`            | String | W3卡点洞察                     |
+| `w3BottleneckDetailDescription`             | String | W3具体卡点描述                 |
+| `w3WeeklyActionPlan`                        | String | W3当周行动计划                 |
+| `w3LastWeekExecutionFeedback`               | String | W3上周执行结果反馈             |
+| `w4DevelopmentSelect`                       | String | W4院内/双通道开发选择          |
+| `w4IsDualChannelEnabled`                    | String | W4双通道是否已打通             |
+| `w4DevelopmentBottleneckInsight`            | String | W4卡点洞察                     |
+| `w4BottleneckDetailDescription`             | String | W4具体卡点描述                 |
+| `w4WeeklyActionPlan`                        | String | W4当周行动计划                 |
+| `w4LastWeekExecutionFeedback`               | String | W4上周执行结果反馈             |
+| `w5DevelopmentSelect`                       | String | W5院内/双通道开发选择          |
+| `w5IsDualChannelEnabled`                    | String | W5双通道是否已打通             |
+| `w5DevelopmentBottleneckInsight`            | String | W5卡点洞察                     |
+| `w5BottleneckDetailDescription`             | String | W5具体卡点描述                 |
+| `w5WeeklyActionPlan`                        | String | W5当周行动计划                 |
+| `w5LastWeekExecutionFeedback`               | String | W5上周执行结果反馈             |
+| `w6DevelopmentSelect`                       | String | W6院内/双通道开发选择          |
+| `w6IsDualChannelEnabled`                    | String | W6双通道是否已打通             |
+| `w6DevelopmentBottleneckInsight`            | String | W6卡点洞察                     |
+| `w6BottleneckDetailDescription`             | String | W6具体卡点描述                 |
+| `w6WeeklyActionPlan`                        | String | W6当周行动计划                 |
+| `w6LastWeekExecutionFeedback`               | String | W6上周执行结果反馈             |
+| `w7DevelopmentSelect`                       | String | W7院内/双通道开发选择          |
+| `w7IsDualChannelEnabled`                    | String | W7双通道是否已打通             |
+| `w7DevelopmentBottleneckInsight`            | String | W7卡点洞察                     |
+| `w7BottleneckDetailDescription`             | String | W7具体卡点描述                 |
+| `w7WeeklyActionPlan`                        | String | W7当周行动计划                 |
+| `w7LastWeekExecutionFeedback`               | String | W7上周执行结果反馈             |
+| `w8DevelopmentSelect`                       | String | W8院内/双通道开发选择          |
+| `w8IsDualChannelEnabled`                    | String | W8双通道是否已打通             |
+| `w8DevelopmentBottleneckInsight`            | String | W8卡点洞察                     |
+| `w8BottleneckDetailDescription`             | String | W8具体卡点描述                 |
+| `w8WeeklyActionPlan`                        | String | W8当周行动计划                 |
+| `w8LastWeekExecutionFeedback`               | String | W8上周执行结果反馈             |
+| `w9DevelopmentSelect`                       | String | W9院内/双通道开发选择          |
+| `w9IsDualChannelEnabled`                    | String | W9双通道是否已打通             |
+| `w9DevelopmentBottleneckInsight`            | String | W9卡点洞察                     |
+| `w9BottleneckDetailDescription`             | String | W9具体卡点描述                 |
+| `w9WeeklyActionPlan`                        | String | W9当周行动计划                 |
+| `w9LastWeekExecutionFeedback`               | String | W9上周执行结果反馈             |
+| `w10DevelopmentSelect`                      | String | W10院内/双通道开发选择         |
+| `w10IsDualChannelEnabled`                   | String | W10双通道是否已打通            |
+| `w10DevelopmentBottleneckInsight`           | String | W10卡点洞察                    |
+| `w10BottleneckDetailDescription`            | String | W10具体卡点描述                |
+| `w10WeeklyActionPlan`                       | String | W10当周行动计划                |
+| `w10LastWeekExecutionFeedback`              | String | W10上周执行结果反馈            |
+| `w11DevelopmentSelect`                      | String | W11院内/双通道开发选择         |
+| `w11IsDualChannelEnabled`                   | String | W11双通道是否已打通            |
+| `w11DevelopmentBottleneckInsight`           | String | W11卡点洞察                    |
+| `w11BottleneckDetailDescription`            | String | W11具体卡点描述                |
+| `w11WeeklyActionPlan`                       | String | W11当周行动计划                |
+| `w11LastWeekExecutionFeedback`              | String | W11上周执行结果反馈            |
+| `w12DevelopmentSelect`                      | String | W12院内/双通道开发选择         |
+| `w12IsDualChannelEnabled`                   | String | W12双通道是否已打通            |
+| `w12DevelopmentBottleneckInsight`           | String | W12卡点洞察                    |
+| `w12BottleneckDetailDescription`            | String | W12具体卡点描述                |
+| `w12WeeklyActionPlan`                       | String | W12当周行动计划                |
+| `w12LastWeekExecutionFeedback`              | String | W12上周执行结果反馈            |
+| `w13DevelopmentSelect`                      | String | W13院内/双通道开发选择         |
+| `w13IsDualChannelEnabled`                   | String | W13双通道是否已打通            |
+| `w13DevelopmentBottleneckInsight`           | String | W13卡点洞察                    |
+| `w13BottleneckDetailDescription`            | String | W13具体卡点描述                |
+| `w13WeeklyActionPlan`                       | String | W13当周行动计划                |
+| `w13LastWeekExecutionFeedback`              | String | W13上周执行结果反馈            |
+| `w14DevelopmentSelect`                      | String | W14院内/双通道开发选择         |
+| `w14IsDualChannelEnabled`                   | String | W14双通道是否已打通            |
+| `w14DevelopmentBottleneckInsight`           | String | W14卡点洞察                    |
+| `w14BottleneckDetailDescription`            | String | W14具体卡点描述                |
+| `w14WeeklyActionPlan`                       | String | W14当周行动计划                |
+| `w14LastWeekExecutionFeedback`              | String | W14上周执行结果反馈            |
 | `cqActualDevelopmentQuarter`                | String | 实际开发季度                 |
 | `cqActualDevelopmentCost`                   | Number | 实际开发费用/元              |
 
@@ -912,20 +982,90 @@ curl -X POST "https://api.example.com/bia/open/biz-service/sfe-ws-report/devMana
       "w12IsPlanningExecute": "",
       "w13IsPlanningExecute": "",
       "w14IsPlanningExecute": "",
-      "w1DevelopmentStatus": "跟进中",
-      "w2DevelopmentStatus": "跟进中",
-      "w3DevelopmentStatus": "",
-      "w4DevelopmentStatus": "",
-      "w5DevelopmentStatus": "",
-      "w6DevelopmentStatus": "",
-      "w7DevelopmentStatus": "",
-      "w8DevelopmentStatus": "",
-      "w9DevelopmentStatus": "",
-      "w10DevelopmentStatus": "",
-      "w11DevelopmentStatus": "",
-      "w12DevelopmentStatus": "",
-      "w13DevelopmentStatus": "",
-      "w14DevelopmentStatus": "",
+      "w1DevelopmentSelect": "院内开发",
+      "w1IsDualChannelEnabled": "是",
+      "w1DevelopmentBottleneckInsight": "药剂科关系待加强",
+      "w1BottleneckDetailDescription": "药剂科对新品种引进流程不熟悉",
+      "w1WeeklyActionPlan": "拜访药剂科主任，介绍引进流程",
+      "w1LastWeekExecutionFeedback": "已完成拜访，主任表示支持",
+      "w2DevelopmentSelect": "院内开发",
+      "w2IsDualChannelEnabled": "否",
+      "w2DevelopmentBottleneckInsight": "需等待药事会排期",
+      "w2BottleneckDetailDescription": "药事会排期在下一季度",
+      "w2WeeklyActionPlan": "准备药事会申报材料",
+      "w2LastWeekExecutionFeedback": "材料已提交，等待审核",
+      "w3DevelopmentSelect": "",
+      "w3IsDualChannelEnabled": "",
+      "w3DevelopmentBottleneckInsight": "",
+      "w3BottleneckDetailDescription": "",
+      "w3WeeklyActionPlan": "",
+      "w3LastWeekExecutionFeedback": "",
+      "w4DevelopmentSelect": "",
+      "w4IsDualChannelEnabled": "",
+      "w4DevelopmentBottleneckInsight": "",
+      "w4BottleneckDetailDescription": "",
+      "w4WeeklyActionPlan": "",
+      "w4LastWeekExecutionFeedback": "",
+      "w5DevelopmentSelect": "",
+      "w5IsDualChannelEnabled": "",
+      "w5DevelopmentBottleneckInsight": "",
+      "w5BottleneckDetailDescription": "",
+      "w5WeeklyActionPlan": "",
+      "w5LastWeekExecutionFeedback": "",
+      "w6DevelopmentSelect": "",
+      "w6IsDualChannelEnabled": "",
+      "w6DevelopmentBottleneckInsight": "",
+      "w6BottleneckDetailDescription": "",
+      "w6WeeklyActionPlan": "",
+      "w6LastWeekExecutionFeedback": "",
+      "w7DevelopmentSelect": "",
+      "w7IsDualChannelEnabled": "",
+      "w7DevelopmentBottleneckInsight": "",
+      "w7BottleneckDetailDescription": "",
+      "w7WeeklyActionPlan": "",
+      "w7LastWeekExecutionFeedback": "",
+      "w8DevelopmentSelect": "",
+      "w8IsDualChannelEnabled": "",
+      "w8DevelopmentBottleneckInsight": "",
+      "w8BottleneckDetailDescription": "",
+      "w8WeeklyActionPlan": "",
+      "w8LastWeekExecutionFeedback": "",
+      "w9DevelopmentSelect": "",
+      "w9IsDualChannelEnabled": "",
+      "w9DevelopmentBottleneckInsight": "",
+      "w9BottleneckDetailDescription": "",
+      "w9WeeklyActionPlan": "",
+      "w9LastWeekExecutionFeedback": "",
+      "w10DevelopmentSelect": "",
+      "w10IsDualChannelEnabled": "",
+      "w10DevelopmentBottleneckInsight": "",
+      "w10BottleneckDetailDescription": "",
+      "w10WeeklyActionPlan": "",
+      "w10LastWeekExecutionFeedback": "",
+      "w11DevelopmentSelect": "",
+      "w11IsDualChannelEnabled": "",
+      "w11DevelopmentBottleneckInsight": "",
+      "w11BottleneckDetailDescription": "",
+      "w11WeeklyActionPlan": "",
+      "w11LastWeekExecutionFeedback": "",
+      "w12DevelopmentSelect": "",
+      "w12IsDualChannelEnabled": "",
+      "w12DevelopmentBottleneckInsight": "",
+      "w12BottleneckDetailDescription": "",
+      "w12WeeklyActionPlan": "",
+      "w12LastWeekExecutionFeedback": "",
+      "w13DevelopmentSelect": "",
+      "w13IsDualChannelEnabled": "",
+      "w13DevelopmentBottleneckInsight": "",
+      "w13BottleneckDetailDescription": "",
+      "w13WeeklyActionPlan": "",
+      "w13LastWeekExecutionFeedback": "",
+      "w14DevelopmentSelect": "",
+      "w14IsDualChannelEnabled": "",
+      "w14DevelopmentBottleneckInsight": "",
+      "w14BottleneckDetailDescription": "",
+      "w14WeeklyActionPlan": "",
+      "w14LastWeekExecutionFeedback": "",
       "cqActualDevelopmentQuarter": "",
       "cqActualDevelopmentCost": 0
     }
