@@ -82,6 +82,8 @@ Period（周期）
 | statusDesc      | ✅     | ✅   | 进行中/已关闭/未启动/草稿等  |
 | reportCycle     | ✅     | ✅   | 如 `week+1`                  |
 | planDateRange   | ✅     | ✅   | `yyyy-MM-dd ~ yyyy-MM-dd`    |
+| startTime       | ✅     | ✅   | 实际启动时间                 |
+| closeTime       | ✅     | ✅   | 实际关闭时间，未关闭时为空   |
 | taskUsers       | ✅     | ✅   | **每次建议拉取**             |
 | krCount         | ✅     | —    | 下属 KR 数量（仅 Simple 列表） |
 | actionCount     | ✅     | —    | 下属举措总数（仅 Simple 列表） |
@@ -106,6 +108,8 @@ Period（周期）
 | measureStandard | ✅     | ✅   | KR 核心字段    |
 | reportCycle     | ✅     | ✅   |                |
 | planDateRange   | ✅     | ✅   |                |
+| startTime       | ✅     | ✅   | 实际启动时间   |
+| closeTime       | ✅     | ✅   | 实际关闭时间，未关闭时为空 |
 | taskUsers       | ✅     | ✅   | **每次建议拉取** |
 | actionCount     | ✅     | —    | 下属举措数量   |
 | weight          | —      | ✅   | 权重 0–100     |
@@ -127,6 +131,8 @@ Period（周期）
 | statusDesc      | ✅     | ✅   |                |
 | reportCycle     | ✅     | ✅   |                |
 | planDateRange   | ✅     | ✅   |                |
+| startTime       | ✅     | ✅   | 实际启动时间   |
+| closeTime       | ✅     | ✅   | 实际关闭时间，未关闭时为空 |
 | taskUsers       | ✅     | ✅   | **每次建议拉取** |
 | weight          | —      | ✅   | 权重 0–100     |
 | measureStandard | —      | ✅   |                |
